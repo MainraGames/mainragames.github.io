@@ -15,8 +15,21 @@ class GamesLoader {
     }
 
     async loadGames() {
+        // 1) Coba ambil dari localStorage (yang diupdate Admin)
         try {
-            // Try to load from JSON file first
+            const localData = localStorage.getItem('mainra-games-data') || localStorage.getItem('mainra-games');
+            if (localData) {
+                const parsedData = JSON.parse(localData);
+                this.games = parsedData.games || [];
+                this.highlight = parsedData.highlight || null;
+                if (this.games.length > 0) return; // Jika ada data, cukup pakai ini
+            }
+        } catch (e) {
+            console.warn('LocalStorage parse error:', e);
+        }
+
+        // 2) Fallback ke file JSON
+        try {
             const response = await fetch('games-data.json');
             const data = await response.json();
             this.games = data.games || [];
@@ -24,9 +37,9 @@ class GamesLoader {
         } catch (error) {
             console.error('Error loading games from JSON:', error);
 
-            // Fallback to localStorage
+            // 3) Fallback default
             try {
-                const localData = localStorage.getItem('mainra-games');
+                const localData = localStorage.getItem('mainra-games-data') || localStorage.getItem('mainra-games');
                 if (localData) {
                     const parsedData = JSON.parse(localData);
                     this.games = parsedData.games || [];
@@ -132,12 +145,12 @@ class GamesLoader {
 
         if (!gamesGrid) return;
 
-        // Show only featured games for homepage (max 3)
-        const featuredGames = this.games.filter(game => game.featured).slice(0, 3);
-        console.log('Featured games for homepage:', featuredGames.length);
+        // Show latest games for homepage (max 3)
+        const latestGames = [...this.games].sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 3);
+        console.log('Latest games for homepage:', latestGames.length);
 
-        if (featuredGames.length === 0) {
-            console.log('No featured games found, showing empty state');
+        if (latestGames.length === 0) {
+            console.log('No games found, showing empty state');
             gamesGrid.innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #999;">
                     <i class="fas fa-gamepad" style="font-size: 4rem; margin-bottom: 1rem;"></i>
@@ -147,18 +160,10 @@ class GamesLoader {
             return;
         }
 
-        gamesGrid.innerHTML = featuredGames.map(game => `
-            <div class="game-item">
+        gamesGrid.innerHTML = latestGames.map(game => `
+            <div class="game-item simple-card" ${game.playLink && game.playLink !== '#' ? `onclick="window.open('${game.playLink}', '_blank')" style="cursor:pointer;"` : ''}>
                 <img src="${game.image}" alt="${this.escapeHtml(game.title)}" class="game-img" onerror="this.src='https://placehold.co/600x400/333/fff?text=No+Image'">
-                <div class="game-overlay">
-                    <h3>${this.escapeHtml(game.title)}</h3>
-                    <p>${this.escapeHtml(game.description)}</p>
-                    ${game.playLink && game.playLink !== '#' ? 
-                        `<a href="${game.playLink}" target="_blank" class="btn btn-small" style="margin-top: 1rem;">
-                            <i class="fas fa-play"></i> Play Now
-                        </a>` : ''
-                    }
-                </div>
+                <h3 class="game-title">${this.escapeHtml(game.title)}</h3>
             </div>
         `).join('');
 
@@ -209,34 +214,12 @@ class GamesLoader {
         if (highlightText) {
             highlightText.innerHTML = `
                 <h2>${this.escapeHtml(displayTitle)}</h2>
-                <p>${this.escapeHtml(displayDescription)}</p>
-                <p>Featuring engaging gameplay and innovative features, ${this.escapeHtml(displayTitle)} delivers an unforgettable experience for players of all kinds.</p>
-                <div class="highlight-stats">
-                    <div class="stat-item">
-                        <h3>${highlightData.stats?.gameplay || '50+'}</h3>
-                        <p>Gameplay Hours</p>
-                    </div>
-                    <div class="stat-item">
-                        <h3>${highlightData.stats?.characters || '25+'}</h3>
-                        <p>Unique Characters</p>
-                    </div>
-                    <div class="stat-item">
-                        <h3>${highlightData.stats?.worlds || '5+'}</h3>
-                        <p>Distinct Worlds</p>
-                    </div>
-                    <div class="stat-item">
-                        <h3>${highlightGame.rating || '4.5'}</h3>
-                        <p>User Rating</p>
-                    </div>
-                </div>
                 <div class="game-actions">
                     ${highlightGame.playLink && highlightGame.playLink !== '#' ? 
-                        `<a href="${highlightGame.playLink}" target="_blank" class="btn btn-play">Play Now</a>` :
-                        `<a href="#" class="btn btn-play">Coming Soon</a>`
+                        `<a href="${highlightGame.playLink}" target="_blank" class="btn btn-play"><i class="fas fa-play"></i> Play</a>` : ''
                     }
                     ${highlightData.youtubeUrl ? 
-                        `<a href="${highlightData.youtubeUrl}" target="_blank" class="btn btn-details">Watch Trailer</a>` :
-                        `<a href="#" class="btn btn-details">Game Details</a>`
+                        `<a href="${highlightData.youtubeUrl}" target="_blank" class="btn btn-details"><i class="fab fa-youtube"></i> Trailer</a>` : ''
                     }
                 </div>
             `;
@@ -255,7 +238,6 @@ class GamesLoader {
             `).join('');
 
             highlightImage.innerHTML = slides;
-
             const dotsContainer = document.querySelector('.carousel-dots');
             if (dotsContainer) {
                 dotsContainer.innerHTML = dots;
@@ -275,6 +257,7 @@ class GamesLoader {
                 dotsContainer.innerHTML = '<span class="dot active"></span>';
             }
         }
+        try { if (typeof window.initializeCarousel === 'function') setTimeout(window.initializeCarousel, 50); } catch (e) {}
     }
 
     renderGamesPage() {
@@ -326,6 +309,9 @@ class GamesLoader {
     }
 
     escapeHtml(text) {
+        if (typeof text !== 'string') {
+            text = String(text ?? '');
+        }
         const map = {
             '&': '&amp;',
             '<': '&lt;',

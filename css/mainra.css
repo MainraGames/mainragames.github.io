@@ -551,3 +551,29 @@ footer{
   .game-item{height:200px}
   .hero p{font-size:1rem}
 }
+
+
+/* Simple card for game items: image + title only (used on homepage and games page) */
+.game-item.simple-card{
+  height:auto;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.game-item.simple-card .game-img{
+  width:100%;
+  aspect-ratio:16/9;
+  height:auto;
+  object-fit:cover;
+  display:block;
+  transition:transform .5s ease, filter .5s ease;
+}
+.game-item.simple-card:hover .game-img{transform:scale(1.05);filter:brightness(.95)}
+.game-item.simple-card .game-title{
+  padding:.9rem 1rem 1.1rem;
+  font-size:1.1rem;
+  color:var(--accent);
+  text-align:center;
+  background:var(--card-bg);
+  border-top:1px solid var(--border-color);
+}

@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "routes": [
+    {
+      "src": "/admin",
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/admin.html",
+      "has": [{ "type": "cookie", "key": "admin_auth", "value": "1" }],
+      "dest": "/admin.html"
+    },
+    {
+      "src": "/admin.html",
+      "dest": "/api/basic-auth"
+    }
+  ]
+}

@@ -254,6 +254,7 @@
     </div>
 </footer>
 <script src="js/games-loader.js"></script>
+<script src="js/games-sync.js"></script>
 <script src="js/nav.js"></script>
 <script>
     // Set dynamic current year in footer
@@ -277,34 +278,42 @@
         }
         async function renderFeaturedFallback() {
             try {
-                const data = await fetchJson();
                 const grid = document.querySelector('#games .games-grid');
                 if (!grid) return;
-                const featured = (data.games || []).filter(g => g.featured === true).slice(0, 3);
-                if (featured.length === 0) {
+
+                // Ambil dari localStorage dulu
+                let data = null;
+                try {
+                    const ls = localStorage.getItem('mainra-games-data') || localStorage.getItem('mainra-games');
+                    if (ls) data = JSON.parse(ls);
+                } catch (e) {
+                    console.warn('LocalStorage parse error:', e);
+                }
+
+                if (!data) {
+                    data = await fetchJson();
+                }
+
+                const games = (data && data.games) ? data.games : [];
+                const latest = games.slice().sort((a,b)=>(b.id||0)-(a.id||0)).slice(0,3);
+
+                if (latest.length === 0) {
                     grid.innerHTML = `
                         <div class="loading-placeholder" style="grid-column:1/-1;">
                             <i class="fas fa-gamepad"></i>
-                            <p>Belum ada game featured</p>
+                            <p>Belum ada game</p>
                         </div>`;
                     return;
                 }
-                grid.innerHTML = featured.map(g => `
-                    <div class="game-item">
+
+                grid.innerHTML = latest.map(g => `
+                    <div class="game-item simple-card" ${g.playLink && g.playLink !== '#' ? `onclick="window.open('${g.playLink}', '_blank')" style="cursor:pointer;"` : ''}>
                         <img src="${g.image}" 
                              alt="${esc(g.title)}" 
                              class="game-img" 
                              onerror="this.src='https://placehold.co/600x400/333/fff?text=No+Image'"
                              loading="lazy">
-                        <div class="game-overlay">
-                            <h3>${esc(g.title)}</h3>
-                            <p>${esc(((g.description || '')).length > 110 ? g.description.substring(0, 110) + '...' : (g.description || ''))}</p>
-                            ${g.playLink && g.playLink !== '#' ? 
-                                `<a href="${g.playLink}" target="_blank" class="btn btn-small">
-                                    <i class="fas fa-play"></i> Main Sekarang
-                                </a>` : ''
-                            }
-                        </div>
+                        <h3 class="game-title">${esc(g.title)}</h3>
                     </div>
                 `).join('');
             } catch (e) {

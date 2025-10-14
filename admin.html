@@ -71,6 +71,363 @@
             gap: 0.5rem;
         }
 
+        .fetch-preview {
+            background: rgba(76, 201, 240, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .fetch-preview.hidden {
+            display: none;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(76, 201, 240, 0.2);
+        }
+
+        .preview-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            object-fit: cover;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .preview-info h4 {
+            color: var(--accent);
+            margin: 0 0 0.5rem 0;
+            font-size: 1.2rem;
+        }
+
+        .preview-meta {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .preview-meta span {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            color: #ccc;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn-apply {
+            background: linear-gradient(45deg, var(--success), #20c997);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ccc;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-apply:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-cancel:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .sync-indicator {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem;
+            border-radius: 50px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(100px);
+            transition: all 0.3s ease;
+        }
+
+        .sync-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .sync-indicator i {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .simple-admin-panel {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .add-games-section, .highlight-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .add-games-section h2, .highlight-section h2 {
+            color: var(--accent);
+            font-size: 1.6rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-subtitle {
+            color: #ccc;
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .add-game-form {
+            margin-top: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .playstore-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .playstore-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(76, 201, 240, 0.1);
+            background: rgba(255, 255, 255, 0.15);
+            outline: none;
+        }
+
+        .playstore-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .add-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 15px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(138, 43, 226, 0.4);
+        }
+
+        .add-btn:active {
+            transform: translateY(-1px);
+        }
+
+        .add-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .add-btn.loading {
+            color: transparent;
+            position: relative;
+        }
+
+        .add-btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin: -10px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .help-text {
+            color: rgba(76, 201, 240, 0.8);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .highlight-form {
+            margin-top: 2rem;
+        }
+
+        .form-row {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-col {
+            width: 100%;
+        }
+
+        .form-col label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent);
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .form-col input, .form-col select, .form-col textarea {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-col input:focus, .form-col select:focus, .form-col textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(76, 201, 240, 0.1);
+            background: rgba(255, 255, 255, 0.15);
+            outline: none;
+        }
+
+        .form-col input::placeholder, .form-col textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-col select option {
+            background: var(--dark);
+            color: var(--light);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2.5rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            min-width: 140px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--success), #20c997);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(220, 53, 69, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        .btn-secondary:hover {
+            background: var(--danger);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .input-group {
+                flex-direction: column;
+            }
+
+            .add-btn {
+                min-width: auto;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-primary, .btn-secondary {
+                min-width: auto;
+            }
+        }
+
         .back-link i {
             font-size: 0.9em;
         }
@@ -754,65 +1111,13 @@
                 <div class="admin-grid">
                     <div class="form-section">
                         <h2 id="form-title"><i class="fas fa-plus"></i> Tambah Game Baru</h2>
-                        <form id="game-form">
-                            <input type="hidden" id="game-id">
-
-                            <div class="form-group">
-                                <label for="game-title">Judul Game *</label>
-                                <input type="text" id="game-title" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="game-description">Deskripsi *</label>
-                                <textarea id="game-description" required></textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="game-image">Link Gambar *</label>
-                                <input type="url" id="game-image" required placeholder="https://example.com/image.jpg">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="game-play-link">Link Bermain</label>
-                                <input type="url" id="game-play-link" placeholder="https://example.com/play">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="game-status">Status *</label>
-                                <select id="game-status" required>
-                                    <option value="">Pilih Status</option>
-                                    <option value="Released">Released</option>
-                                    <option value="In Development">In Development</option>
-                                    <option value="Planned">Planned</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="game-platform">Platform *</label>
-                                <input type="text" id="game-platform" required placeholder="contoh: PC, Mobile, Console">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="game-screenshots">Screenshots (URL, pisahkan dengan koma)</label>
-                                <textarea id="game-screenshots" placeholder="https://example.com/img1.jpg, https://example.com/img2.jpg"></textarea>
-                            </div>
-
-                            <div class="form-group">
-                                <label>
-                                    <input type="checkbox" id="game-featured" style="margin-right: 0.5rem;">
-                                    Tampilkan di Landing Page (Featured)
-                                </label>
-                            </div>
-
-                            <div style="display: flex; gap: 1rem;">
-                                <button type="submit" class="btn btn-success">
-                                    <i class="fas fa-save"></i> Simpan
-                                </button>
-                                <button type="button" id="cancel-edit" class="btn btn-warning hidden">
-                                    <i class="fas fa-times"></i> Batal
-                                </button>
-                            </div>
-                        </form>
+                        <div class="input-group">
+                            <label for="playstore-link">Link Play Store:</label>
+                            <input type="text" id="playstore-link" placeholder="https://play.google.com/store/apps/details?id=com.example.game">
+                            <button type="button" id="add-game-btn" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Tambah Game
+                            </button>
+                        </div>
                     </div>
 
                     <div class="games-list">
@@ -896,6 +1201,8 @@
                                                 </small>
                                             </div>
 
+                                            <!-- Play Store auto-import dihapus dari editor highlight. Tambah game dari Play Store gunakan bagian "Tambah Game via Play Store". -->
+
                                             <div class="form-group">
                                                 <label for="highlight-stats-gameplay">Jam Gameplay</label>
                                                 <input type="text" id="highlight-stats-gameplay" placeholder="contoh: 100+">
@@ -928,7 +1235,7 @@
                                         <button type="submit" class="btn btn-success">
                                             <i class="fas fa-save"></i> Simpan Highlight
                                         </button>
-                                        <button type="button" id="remove-highlight-btn" class="btn btn-danger">
+                                        <button type="button" id="remove-highlight" class="btn btn-danger">
                                             <i class="fas fa-trash"></i> Hapus Highlight
                                         </button>
                                     </div>
@@ -941,7 +1248,9 @@
         </div>
     </div>
 
+    <script src="js/game-scraper.js"></script>
     <script src="js/admin.js"></script>
+    <script src="js/nav.js"></script>
     <script>
         // Main tab switching functionality
         function switchTab(tabName) {

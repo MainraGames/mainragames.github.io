@@ -1,7 +1,7 @@
 class GameManager {
     constructor() {
         this.games = [];
-        this.currentEditId = null;
+        this.highlight = null;
         this.hasUnsavedChanges = false;
         this.init();
     }
@@ -9,68 +9,191 @@ class GameManager {
     async init() {
         await this.loadGames();
         this.setupEventListeners();
+        this.setupSyncListeners();
         this.renderGames();
+        this.updateHighlightGameSelect();
+        this.renderCurrentHighlight();
     }
 
     async loadGames() {
+        // Prefer localStorage (admin edits), fallback to games-data.json
         try {
-            const response = await fetch('games-data.json');
-            const data = await response.json();
-            this.games = data.games;
+            let data = null;
+            try {
+                const ls = localStorage.getItem('mainra-games-data') || localStorage.getItem('mainra-games');
+                if (ls) data = JSON.parse(ls);
+            } catch (e) {
+                console.warn('LocalStorage parse error:', e);
+            }
+            if (!data) {
+                const response = await fetch('games-data.json?' + Date.now());
+                data = await response.json();
+            }
+            this.games = Array.isArray(data?.games) ? data.games : [];
+            this.highlight = data?.highlight || null;
         } catch (error) {
             console.error('Error loading games:', error);
             this.showAlert('Error loading games data', 'danger');
             this.games = [];
+            this.highlight = null;
         }
         this.renderHighlightSection();
         this.updateExportButton();
     }
 
     setupEventListeners() {
-        const form = document.getElementById('game-form');
+        const addGameBtn = document.getElementById('add-game-btn');
         const highlightForm = document.getElementById('highlight-form');
-        const cancelBtn = document.getElementById('cancel-edit');
-        const removeHighlightBtn = document.getElementById('remove-highlight-btn');
+        const removeHighlightBtn = document.getElementById('remove-highlight');
         const exportBtn = document.getElementById('export-json');
 
-        form.addEventListener('submit', (e) => this.handleFormSubmit(e));
-        if (highlightForm) {
-            highlightForm.addEventListener('submit', (e) => this.handleHighlightFormSubmit(e));
-
-            // Setup real-time preview
-            const previewFields = ['highlight-title', 'highlight-description', 'highlight-youtube', 
-                                   'highlight-stats-gameplay', 'highlight-stats-characters', 'highlight-stats-worlds'];
-            previewFields.forEach(fieldId => {
-                const field = document.getElementById(fieldId);
-                if (field) {
-                    field.addEventListener('input', () => this.updateHighlightPreview());
-                }
-            });
+        // Add game by Play Store link
+        if (addGameBtn) {
+            addGameBtn.addEventListener('click', () => this.addGameByPlayStoreLink());
         }
 
-        cancelBtn.addEventListener('click', () => this.cancelEdit());
+        // Highlight form submission
+        if (highlightForm) {
+            highlightForm.addEventListener('submit', (e) => this.handleHighlightFormSubmit(e));
+        }
+
+        // Remove highlight
         if (removeHighlightBtn) {
             removeHighlightBtn.addEventListener('click', () => this.removeHighlight());
         }
+
+        // Export functionality
         if (exportBtn) {
             exportBtn.addEventListener('click', () => this.exportJSON());
         }
+
+        // Enter key support for Play Store input
+        const playstoreInput = document.getElementById('playstore-link');
+        if (playstoreInput) {
+            playstoreInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.addGameByPlayStoreLink();
+                }
+            });
+        }
+        // (Cleaned) Additional listeners removed to avoid duplicates and undefined variables
+        // Real-time preview listeners can be attached where needed without duplications.
     }
 
-    handleFormSubmit(e) {
-        e.preventDefault();
-
-        const formData = {
-            title: document.getElementById('game-title').value,
-            image: document.getElementById('game-image').value,
-            playLink: document.getElementById('game-play-link').value || '#',
-            featured: document.getElementById('game-featured').checked
+    setupSyncListeners() {
+        // Setup synchronization between admin and public pages
+        if (typeof BroadcastChannel !== 'undefined') {
+            this.syncChannel = new BroadcastChannel('mainra-games-sync');
+            this.syncChannel.addEventListener('message', (event) => {
+                const data = event.data;
+                if (!data || typeof data !== 'object') return;
+                if (data.type === 'request-sync') {
+                    const payload = { games: this.games, highlight: this.highlight };
+                    this.syncChannel.postMessage({
+                        type: 'games-updated',
+                        source: 'admin',
+                        data: payload,
+                        timestamp: Date.now()
+                    });
+                }
+            });
+        }
+        // Helper to dispatch updates whenever data changes
+        this.dispatchUpdates = () => {
+            const payload = { games: this.games, highlight: this.highlight };
+            if (this.syncChannel) {
+                this.syncChannel.postMessage({
+                    type: 'games-updated',
+                    source: 'admin',
+                    data: payload,
+                    timestamp: Date.now()
+                });
+            }
+            try {
+                window.dispatchEvent(new CustomEvent('mainra-games-updated', { detail: { source: 'admin', data: payload } }));
+            } catch {}
         };
+    }
 
-        if (this.currentEditId) {
-            this.updateGame(this.currentEditId, formData);
-        } else {
-            this.addGame(formData);
+    async addGameByPlayStoreLink() {
+        const linkInput = document.getElementById('playstore-link');
+        const addBtn = document.getElementById('add-game-btn');
+        const rawUrl = (linkInput && linkInput.value || '').trim();
+
+        if (!rawUrl) {
+            this.showAlert('Tempelkan link Play Store terlebih dahulu', 'warning');
+            if (linkInput) linkInput.focus();
+            return;
+        }
+
+        const playStorePattern = /^https?:\/\/play\.google\.com\/store\/apps\/details\?id=/i;
+        if (!playStorePattern.test(rawUrl)) {
+            this.showAlert('Masukkan link Play Store yang valid', 'danger');
+            if (linkInput) linkInput.focus();
+            return;
+        }
+
+        const pkg = this.extractPackageId(rawUrl);
+        if (!pkg) {
+            this.showAlert('Gagal membaca package id dari link Play Store', 'danger');
+            return;
+        }
+        const normalizedLink = this.normalizePlayLink(pkg);
+
+        // Cegah duplikasi berdasarkan package id
+        const isDuplicate = this.games.some(g => this.extractPackageId(g.playLink || '') === pkg);
+        if (isDuplicate) {
+            this.showAlert('Game sudah ada dalam daftar (duplikasi dihindari).', 'warning');
+            if (linkInput) linkInput.value = '';
+            return;
+        }
+
+        if (addBtn) {
+            addBtn.disabled = true;
+            addBtn.classList.add('loading');
+        }
+
+        try {
+            const result = await scrapePlayStoreData(normalizedLink);
+
+            let newGame;
+            if (result && result.success && result.data) {
+                const data = result.data;
+                newGame = {
+                    id: Date.now(),
+                    title: data.title || this.humanizePackageId(pkg) || 'Untitled',
+                    image: data.image || 'https://placehold.co/300x200/333/fff?text=No+Image',
+                    description: (data.description || '').trim(),
+                    playLink: normalizedLink,
+                    featured: false
+                };
+            } else {
+                // Fallback: tambah entri minimal jika scraping gagal
+                newGame = {
+                    id: Date.now(),
+                    title: this.humanizePackageId(pkg) || pkg,
+                    image: 'https://placehold.co/300x200/333/fff?text=No+Image',
+                    description: '',
+                    playLink: normalizedLink,
+                    featured: false
+                };
+                console.warn('Scrape gagal, menggunakan fallback minimal:', result && result.error);
+            }
+
+            this.games.push(newGame);
+            this.saveGames();
+            this.renderGames();
+
+            if (linkInput) linkInput.value = '';
+            this.showAlert(`✓ "${newGame.title}" berhasil ditambahkan`, 'success');
+        } catch (err) {
+            console.error('Add game error:', err);
+            this.showAlert('Gagal menambahkan game: ' + (err && err.message ? err.message : err), 'danger');
+        } finally {
+            if (addBtn) {
+                addBtn.disabled = false;
+                addBtn.classList.remove('loading');
+            }
         }
     }
 
@@ -227,7 +350,7 @@ class GameManager {
                 <img src="${game.image}" alt="${this.escapeHtml(game.title)}" onerror="this.src='https://placehold.co/60x45/333/fff?text=No+Image'">
                 <div class="highlight-info">
                     <h4>${this.escapeHtml(game.title)}</h4>
-                    <p>${this.escapeHtml(game.description.substring(0, 80))}${game.description.length > 80 ? '...' : ''}</p>
+                    <p>${this.escapeHtml((game.description || '').substring(0, 80))}${(game.description || '').length > 80 ? '...' : ''}</p>
                 </div>
             </div>
         `).join('');
@@ -244,6 +367,13 @@ class GameManager {
                 editTabBtn.style.opacity = '0.5';
             }
         }
+    }
+
+    // Backward-compat shim for older call site
+    updateHighlightGameSelect() {
+        // Keep highlight selector in sync with current games
+        this.renderHighlightSelector();
+        this.updateEditTabState();
     }
 
     selectHighlightGame(gameId) {
@@ -399,6 +529,35 @@ class GameManager {
         return null;
     }
 
+    // Helpers for Play Store handling
+    extractPackageId(url) {
+        if (!url) return null;
+        try {
+            const m = url.match(/[?&]id=([A-Za-z0-9._-]+)/i);
+            return m ? m[1] : null;
+        } catch (_) {
+            return null;
+        }
+    }
+
+    normalizePlayLink(packageId) {
+        if (!packageId) return '';
+        return `https://play.google.com/store/apps/details?id=${packageId}`;
+    }
+
+    humanizePackageId(packageId) {
+        if (!packageId) return '';
+        let s = packageId.split('.').pop() || packageId;
+        // Insert spaces between camelCase and digits
+        s = s.replace(/([a-z])([A-Z])/g, '$1 $2');
+        s = s.replace(/([A-Za-z])(\d)/g, '$1 $2');
+        s = s.replace(/(\d)([A-Za-z])/g, '$1 $2');
+        s = s.replace(/[_-]+/g, ' ');
+        // Title case
+        s = s.replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.slice(1));
+        return s.trim();
+    }
+
     cancelEdit() {
         this.currentEditId = null;
         this.resetForm();
@@ -412,14 +571,21 @@ class GameManager {
     }
 
     saveGames() {
-        // In a real application, this would send data to a server
-        // For local development, we'll use localStorage as backup
-        const gamesData = { 
+        const gamesData = {
             games: this.games,
             highlight: this.highlight
         };
-        localStorage.setItem('mainra-games', JSON.stringify(gamesData));
-
+        try {
+            localStorage.setItem('mainra-games', JSON.stringify(gamesData));
+            // Save under alternate key for compatibility with public loader
+            localStorage.setItem('mainra-games-data', JSON.stringify(gamesData));
+        } catch (e) {
+            console.warn('Failed to persist to localStorage:', e);
+        }
+        // Broadcast updates to other tabs/pages
+        if (typeof this.dispatchUpdates === 'function') {
+            this.dispatchUpdates();
+        }
         // Mark that there are unsaved changes
         this.hasUnsavedChanges = true;
         this.updateExportButton();
@@ -489,10 +655,10 @@ class GameManager {
                         ${this.highlight && this.highlight.gameId == game.id && this.highlight.active ? '<span class="status-badge" style="background: var(--accent); color: var(--dark); font-size: 0.7rem;"><i class="fas fa-crown"></i> Highlight</span>' : ''}
                     </div>
                 </div>
-                <p>${this.escapeHtml(game.description)}</p>
+                <p>${this.escapeHtml(game.description || '')}</p>
 
                 <div class="game-meta">
-                    <div><span>Status:</span> <span class="status-badge status-${game.status.toLowerCase().replace(' ', '')}">${this.escapeHtml(game.status)}</span></div>
+                    <div><span>Status:</span> <span class="status-badge ${'status-' + String(game.status || 'Released').toLowerCase().replace(/\s+/g,'')}">${this.escapeHtml(game.status || 'Released')}</span></div>
                     <div><span>Platform:</span> ${this.escapeHtml(game.platform || 'N/A')}</div>
                     <div><span>Screenshots:</span> ${game.screenshots ? game.screenshots.length : 1} gambar</div>
                 </div>
@@ -528,6 +694,9 @@ class GameManager {
     }
 
     escapeHtml(text) {
+        if (typeof text !== 'string') {
+            text = String(text ?? '');
+        }
         const map = {
             '&': '&amp;',
             '<': '&lt;',
