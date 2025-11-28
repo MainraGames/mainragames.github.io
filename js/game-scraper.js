@@ -53,6 +53,19 @@ async function scrapePlayStoreData(url) {
         return { title, image, description };
     };
 
+    const normalizeImageUrl = (u) => {
+        if (!u) return '';
+        try {
+            let s = String(u).trim();
+            if (s.startsWith('//')) s = 'https:' + s;
+            if (s.startsWith('/')) s = 'https://play.google.com' + s;
+            // Upgrade common Play Store icon sizes
+            s = s.replace(/=w\d+(-h\d+)?-rw$/i, '=w512-h512-rw');
+            s = s.replace(/=s\d+-rw$/i, '=s512-rw');
+            return s;
+        } catch { return u; }
+    };
+
     try {
         // First try server-side scraper if available (more reliable, bypasses CORS)
         try {
@@ -68,7 +81,7 @@ async function scrapePlayStoreData(url) {
                         success: true,
                         data: {
                             title: (json.data.title || '').trim(),
-                            image: json.data.image || '',
+                            image: normalizeImageUrl(json.data.image || ''),
                             description: (json.data.description || '').trim(),
                             playLink: json.data.playLink || buildPlayUrl(pkg)
                         }
@@ -84,7 +97,7 @@ async function scrapePlayStoreData(url) {
             // Not enough data, let caller fallback
             return { success: false, error: 'Could not extract title/icon' };
         }
-        return { success: true, data: { title: (title || '').trim(), image: image || '', description: (description || '').trim(), playLink: buildPlayUrl(pkg) } };
+        return { success: true, data: { title: (title || '').trim(), image: normalizeImageUrl(image || ''), description: (description || '').trim(), playLink: buildPlayUrl(pkg) } };
     } catch (error) {
         console.error('Error scraping Play Store:', error);
         return { success: false, error: 'Failed to extract game data from Play Store' };
