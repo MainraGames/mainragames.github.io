@@ -15,111 +15,84 @@ class GamesLoader {
     }
 
     async loadGames() {
-        // 1) Coba ambil dari localStorage (yang diupdate Admin)
+        // Fallback ke file JSON
         try {
-            const localData = localStorage.getItem('mainra-games-data') || localStorage.getItem('mainra-games');
-            if (localData) {
-                const parsedData = JSON.parse(localData);
-                this.games = parsedData.games || [];
-                this.highlight = parsedData.highlight || null;
-                if (this.games.length > 0) return; // Jika ada data, cukup pakai ini
-            }
-        } catch (e) {
-            console.warn('LocalStorage parse error:', e);
-        }
-
-        // 2) Fallback ke file JSON
-        try {
-            const response = await fetch('games-data.json');
+            const response = await fetch('assets/data/games-data.json');
             const data = await response.json();
             this.games = data.games || [];
             this.highlight = data.highlight || null;
         } catch (error) {
             console.error('Error loading games from JSON:', error);
 
-            // 3) Fallback default
-            try {
-                const localData = localStorage.getItem('mainra-games-data') || localStorage.getItem('mainra-games');
-                if (localData) {
-                    const parsedData = JSON.parse(localData);
-                    this.games = parsedData.games || [];
-                    this.highlight = parsedData.highlight || null;
-                } else {
-                    // Default fallback data with new structure
-                    this.games = [
-                        {
-                            id: 1,
-                            title: "Adventure Quest",
-                            description: "A 2D adventure game with unique mechanics and an engaging storyline",
-                            image: "https://placehold.co/600x400/8a2be2/ffffff?text=Adventure+Quest",
-                            screenshots: [
-                                "https://placehold.co/600x400/8a2be2/ffffff?text=Adventure+Quest+1",
-                                "https://placehold.co/600x400/7c3aed/ffffff?text=Adventure+Quest+2"
-                            ],
-                            playLink: "#",
-                            category: "Adventure",
-                            status: "Released",
-                            releaseDate: "2024-01-15",
-                            featured: true,
-                            platform: "PC, Mobile",
-                            rating: "4.8"
-                        },
-                        {
-                            id: 2,
-                            title: "Space Defender",
-                            description: "A space shooter with stunning visuals",
-                            image: "https://placehold.co/600x400/ff6b6b/ffffff?text=Space+Defender",
-                            screenshots: [
-                                "https://placehold.co/600x400/ff6b6b/ffffff?text=Space+Defender+1",
-                                "https://placehold.co/600x400/ef4444/ffffff?text=Space+Defender+2"
-                            ],
-                            playLink: "#",
-                            category: "Shooter",
-                            status: "Released",
-                            releaseDate: "2024-02-20",
-                            featured: true,
-                            platform: "PC, Console",
-                            rating: "4.9"
-                        },
-                        {
-                            id: 3,
-                            title: "Mystic Worlds",
-                            description: "An RPG set in a vast fantasy world featuring a diverse cast of characters",
-                            image: "https://placehold.co/600x400/4cc9f0/ffffff?text=Mystic+Worlds",
-                            screenshots: [
-                                "https://placehold.co/600x400/4cc9f0/ffffff?text=Mystic+Worlds+1",
-                                "https://placehold.co/600x400/0ea5e9/ffffff?text=Mystic+Worlds+2"
-                            ],
-                            playLink: "#",
-                            category: "RPG",
-                            status: "In Development",
-                            releaseDate: "2024-06-01",
-                            featured: true,
-                            platform: "PC, Mobile",
-                            rating: "4.7"
-                        }
-                    ];
-
-                    // Default highlight data
-                    this.highlight = {
-                        gameId: 2,
-                        customTitle: "",
-                        customDescription: "",
-                        youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                        stats: {
-                            gameplay: "100+",
-                            characters: "50+",
-                            worlds: "10+"
-                        },
-                        active: true,
-                        lastUpdated: "2024-01-15T10:00:00Z"
-                    };
+            // Default fallback data with new structure
+            this.games = [
+                {
+                    id: 1,
+                    title: "Adventure Quest",
+                    description: "A 2D adventure game with unique mechanics and an engaging storyline",
+                    image: "https://placehold.co/600x400/8a2be2/ffffff?text=Adventure+Quest",
+                    screenshots: [
+                        "https://placehold.co/600x400/8a2be2/ffffff?text=Adventure+Quest+1",
+                        "https://placehold.co/600x400/7c3aed/ffffff?text=Adventure+Quest+2"
+                    ],
+                    playLink: "#",
+                    category: "Adventure",
+                    status: "Released",
+                    releaseDate: "2024-01-15",
+                    featured: true,
+                    platform: "PC, Mobile",
+                    rating: "4.8"
+                },
+                {
+                    id: 2,
+                    title: "Space Defender",
+                    description: "A space shooter with stunning visuals",
+                    image: "https://placehold.co/600x400/ff6b6b/ffffff?text=Space+Defender",
+                    screenshots: [
+                        "https://placehold.co/600x400/ff6b6b/ffffff?text=Space+Defender+1",
+                        "https://placehold.co/600x400/ef4444/ffffff?text=Space+Defender+2"
+                    ],
+                    playLink: "#",
+                    category: "Shooter",
+                    status: "Released",
+                    releaseDate: "2024-02-20",
+                    featured: true,
+                    platform: "PC, Console",
+                    rating: "4.9"
+                },
+                {
+                    id: 3,
+                    title: "Mystic Worlds",
+                    description: "An RPG set in a vast fantasy world featuring a diverse cast of characters",
+                    image: "https://placehold.co/600x400/4cc9f0/ffffff?text=Mystic+Worlds",
+                    screenshots: [
+                        "https://placehold.co/600x400/4cc9f0/ffffff?text=Mystic+Worlds+1",
+                        "https://placehold.co/600x400/0ea5e9/ffffff?text=Mystic+Worlds+2"
+                    ],
+                    playLink: "#",
+                    category: "RPG",
+                    status: "In Development",
+                    releaseDate: "2024-06-01",
+                    featured: true,
+                    platform: "PC, Mobile",
+                    rating: "4.7"
                 }
-            } catch (localError) {
-                console.error('Error loading from localStorage:', localError);
-                this.games = [];
-                this.highlight = null;
-            }
+            ];
+
+            // Default highlight data
+            this.highlight = {
+                gameId: 2,
+                customTitle: "",
+                customDescription: "",
+                youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                stats: {
+                    gameplay: "100+",
+                    characters: "50+",
+                    worlds: "10+"
+                },
+                active: true,
+                lastUpdated: "2024-01-15T10:00:00Z"
+            };
         }
     }
 

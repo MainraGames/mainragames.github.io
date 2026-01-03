@@ -1,9 +1,0 @@
-# Ensure .txt files (including app-ads.txt) are served as text/plain
-AddType text/plain .txt
-
-# Optional: if mod_headers is available, make the charset explicit
-<IfModule mod_headers.c>
-  <Files "app-ads.txt">
-    Header set Content-Type "text/plain; charset=UTF-8"
-  </Files>
-</IfModule>

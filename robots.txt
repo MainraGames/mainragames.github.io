@@ -1,32 +1,5 @@
-User-agent: Google-adstxt
-# Explicitly allow Google ads crawler to fetch app-ads.txt
-User-agent: AdsBot-Google
-Allow: /app-ads.txt
-Allow: /
-
-# Also allow general Googlebot (some checks may use it)
-User-agent: Googlebot
-Allow: /app-ads.txt
-Allow: /
-
-# Default policy for all crawlers
-User-agent: *
-Allow: /app-ads.txt
-Allow: /
 User-agent: *
 Allow: /
+Allow: /app-ads.txt
 
 Sitemap: https://mainragames.com/sitemap.xml
-
-Disallow: /admin/
-Disallow: /private/
-Disallow: /cgi-bin/
-Disallow: /tmp/
-Disallow: /*.sql
-Disallow: /*.sql.gz
-Disallow: /wp-admin/
-Disallow: /wp-includes/
-Disallow: /search?
-Disallow: /?replytocom
-Disallow: /feed/
-Disallow: /trackback/
