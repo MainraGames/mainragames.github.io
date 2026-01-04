@@ -12,13 +12,13 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini bers
 ## Struktur File
 - `index.html` — Halaman utama menampilkan highlight dan 3 game terbaru.
 - `games.html` — Daftar lengkap game dan highlight.
-- `assets/data/games-data.json` — Sumber data game.
-- `assets/js/games-loader.js` — Logika untuk memuat dan merender data game ke halaman.
-- `assets/js/nav.js` — Kontrol navigasi dan menu mobile.
-- `assets/css/mainra.css` — Gaya visual website.
-- `assets/img/` — Folder berisi gambar dan ikon website.
+- `Assets/data/games-data.json` — Sumber data game.
+- `Assets/js/games-loader.js` — Logika untuk memuat dan merender data game ke halaman.
+- `Assets/js/nav.js` — Kontrol navigasi dan menu mobile.
+- `Assets/css/mainra.css` — Gaya visual website.
+- `Assets/img/` — Folder berisi gambar dan ikon website.
 
 ## Cara Kerja
-1. Data game dikelola melalui file `assets/data/games-data.json`.
+1. Data game dikelola melalui file `Assets/data/games-data.json`.
 2. Halaman web membaca file JSON tersebut saat dimuat.
 3. Konten dirender secara dinamis ke dalam elemen-elemen HTML yang sesuai.

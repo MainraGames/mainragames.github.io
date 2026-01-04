@@ -17,7 +17,7 @@ class GamesLoader {
     async loadGames() {
         // Fallback ke file JSON
         try {
-            const response = await fetch('assets/data/games-data.json');
+            const response = await fetch('Assets/data/games-data.json');
             const data = await response.json();
             this.games = data.games || [];
             this.highlight = data.highlight || null;

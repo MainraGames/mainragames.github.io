@@ -19,32 +19,32 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Mainra Games">
     <meta property="og:locale" content="en_US">
-    <meta property="og:image" content="https://www.mainragames.com/assets/img/LogoMainraGames.png">
+    <meta property="og:image" content="https://www.mainragames.com/Assets/img/LogoMainraGames.png">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Mainra Games - Studio & Community">
     <meta name="twitter:description" content="A game development studio and community dedicated to bringing ideas to life.">
-    <meta name="twitter:image" content="assets/img/LogoMainraGames.png">
+    <meta name="twitter:image" content="Assets/img/LogoMainraGames.png">
     <meta name="twitter:site" content="@mainragames">
 
     <!-- Image/Logo meta -->
-    <meta name="image" content="assets/img/LogoMainraGames.png">
-    <meta itemprop="image" content="assets/img/LogoMainraGames.png">
-    <link rel="apple-touch-icon" href="assets/img/LogoMainraGames.png">
-    <link rel="icon" type="image/png" sizes="192x192" href="assets/img/LogoMainraGames.png">
+    <meta name="image" content="Assets/img/LogoMainraGames.png">
+    <meta itemprop="image" content="Assets/img/LogoMainraGames.png">
+    <link rel="apple-touch-icon" href="Assets/img/LogoMainraGames.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="Assets/img/LogoMainraGames.png">
 
-    <link rel="icon" type="image/x-icon" href="assets/img/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="Assets/img/favicon.ico">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="assets/css/mainra.css?v=1.1">
+    <link rel="stylesheet" href="Assets/css/mainra.css?v=1.1">
 </head>
 <body>
 <!-- Header -->
 <header>
     <div class="container navbar">
         <a href="index.html" class="logo">
-            <img src="assets/img/LogoMainraGames.png" alt="Mainra Games" width="160" height="55">
+            <img src="Assets/img/LogoMainraGames.png" alt="Mainra Games" width="160" height="55">
             <span class="sr-only">Mainra Games</span>
         </a>
         <ul class="nav-links">
@@ -66,7 +66,7 @@
         <div class="mobile-nav-content">
             <div class="mobile-nav-header">
                 <a href="index.html" class="logo">
-                    <img src="assets/img/LogoMainraGames.png" alt="Mainra Games" width="160" height="55">
+                    <img src="Assets/img/LogoMainraGames.png" alt="Mainra Games" width="160" height="55">
                     <span class="sr-only">Mainra Games</span>
                 </a>
                 <button class="close-nav">
@@ -254,8 +254,8 @@
         </div>
     </div>
 </footer>
-<script src="assets/js/games-loader.js?v=1.1"></script>
-<script src="assets/js/nav.js?v=1.1"></script>
+<script src="Assets/js/games-loader.js?v=1.1"></script>
+<script src="Assets/js/nav.js?v=1.1"></script>
 <script>
     // Set dynamic current year in footer
     (function () {
@@ -263,14 +263,14 @@
         if (y) y.textContent = new Date().getFullYear();
     })();
 
-    // Ensure games loader is initialized and add robust fallback to render from assets/data/games-data.json
+    // Ensure games loader is initialized and add robust fallback to render from Assets/data/games-data.json
     (function () {
         function hasRenderedHomepageGames() {
             return document.querySelectorAll('#games .games-grid .game-item').length > 0;
         }
         async function fetchJson() {
-            const res = await fetch('assets/data/games-data.json?' + Date.now());
-            if (!res.ok) throw new Error('Failed to fetch assets/data/games-data.json: ' + res.status);
+            const res = await fetch('Assets/data/games-data.json?' + Date.now());
+            if (!res.ok) throw new Error('Failed to fetch Assets/data/games-data.json: ' + res.status);
             return res.json();
         }
         function esc(t) {
