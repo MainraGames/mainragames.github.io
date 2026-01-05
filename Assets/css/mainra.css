@@ -249,6 +249,15 @@ footer{
 .highlight-content{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
 .highlight-text h2{font-size:2.5rem;margin-bottom:1.5rem;color:var(--accent)}
 .highlight-text p{margin-bottom:1.5rem;line-height:1.8;color:#ddd}
+.highlight-description{
+  color:#ddd;
+  line-height:1.8;
+  font-size:1.1rem;
+  margin-bottom:2rem;
+  max-width:100%;
+  text-align:left;
+  opacity:.95
+}
 .highlight-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;margin:2rem 0}
 .stat-item{text-align:center;padding:1.5rem;background:var(--card-bg);border-radius:15px;border:1px solid var(--border-color);transition:transform .3s ease}
 .stat-item:hover{transform:translateY(-5px);border-color:var(--accent)}
@@ -283,7 +292,19 @@ footer{
 .games-list .game-item:hover .game-image img{transform:scale(1.1)}
 .game-content{padding:1.5rem;flex:1;display:flex;flex-direction:column}
 .game-title{font-size:1.5rem;margin-bottom:1rem;color:var(--accent)}
-.game-description{color:#ccc;margin-bottom:1.5rem;flex:1}
+.game-description{
+  color:#ccc;
+  margin-bottom:1.5rem;
+  flex:1;
+  line-height:1.7;
+  font-size:1rem;
+  display:-webkit-box;
+  -webkit-line-clamp:3;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  min-height:4.5rem
+}
 .game-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem}
 .game-platform{background:rgba(106,17,203,.2);color:var(--accent);padding:.5rem 1rem;border-radius:20px;font-size:.9rem}
 .game-rating{color:#ffd700;font-size:1rem}

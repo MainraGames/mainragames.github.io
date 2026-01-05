@@ -1,31 +1,106 @@
 {
   "games": [
     {
-      "id": 1755469795000,
-      "title": "Game Pengenalan Binatang",
-      "image": "https://play-lh.googleusercontent.com/RsT5E894y68QTWBKGntX8r_t-XILwtHITWvDG9dXztrHsvtsC-9GYZycdNehkheapQA=w240-h480-rw",
-      "playLink": "https://play.google.com/store/apps/details?id=com.Mainra.GamePengenalanBinatang",
-      "featured": true
+      "id": 1767570835077,
+      "title": "Litterally Diving",
+      "description": "🌊 Litterally DivingClean the ocean, save the life!Join Ally on a mission to clean the ocean from piles of trash! Use balloons to lift garbage to the surface, protect marine animals, and keep the ecosystem safe.Can you collect the most trash before your oxygen tank runs out?🎮 GameplayApproach and pick up trash scattered in the seaRelease the trash if marine animals get entangledCollect as much as you can to achieve the highest scoreWatch out for your oxygen tank and don’t let it run out!Be careful, whales can appear suddenly!✨ FeaturesFree diving with simple controls.Unique balloons as ocean-cleaning tools.Score system based on speed & precision.Light educational touch on the importance of protecting the ocean.",
+      "image": "https://play-lh.googleusercontent.com/TpDsELFVDDgeV8kKESshsrbXEvZ7-f_jZVRd5ZJo5wFHRv7wfBlwZcGY8pkvrj9AGs-YkKqauatnvtbIMy4kl00=s64-rw",
+      "screenshots": [
+        "https://play-lh.googleusercontent.com/36SJnSYfmNb0GeGx-EA7JUclpg-ciX_Dkpnf1-Fhi-ggFzl0uF0aROC69ut8whJk3U2PPB6DR9cscOnrpHw9aUQ=w1920-h1080-rw",
+        "https://play-lh.googleusercontent.com/N9rqk_m8YfSpoEVjz0gYXYu9_PzoehxCi68jwpqVwZ5c3OocEvhPGzn7NR6h4YG_r3irjWSCcUbtRm1z1X7Te9E=w1920-h1080-rw",
+        "https://play-lh.googleusercontent.com/t4pAu7nh_JzgPB42VGy7socGpcvxi1FHMUUP5j2W6c_n9cTA98mm8s1ULFv1RVfPOcnkKlY6uM4BOCFtHwdKfA=w1920-h1080-rw",
+        "https://play-lh.googleusercontent.com/_H0t57-Yn-HVjqFSl5_PTEg7rPw2vnI4SjV4ZNOlaJHP9ktZI7vdsGcsnDPRNNYCCWrA95EK29jICAUNMBdztSM=w1920-h1080-rw",
+        "https://play-lh.googleusercontent.com/vlI1F6VNwZORbETFiXnrOdgwRmP7scjhUY7TnyYcUuqkTSFq6AJ-Tp1U26fZmoR_FgnCanPRjGeaferdaBi3ZA=w1920-h1080-rw"
+      ],
+      "playLink": "https://play.google.com/store/apps/details?id=com.algaproduction.litterallydiving",
+      "category": "Game",
+      "status": "Released",
+      "releaseDate": "2026-01-04",
+      "featured": true,
+      "platform": "Android",
+      "rating": null,
+      "appId": "com.algaproduction.litterallydiving"
     },
     {
-      "id": 1755469897385,
+      "id": 1767570835079,
       "title": "Pop It 3D Fidget: Multiplayer",
-      "image": "https://play-lh.googleusercontent.com/CMPpi2rAB2fyVLyGdwueoTtU1enGYU-2Xl1xqIF7NIEH6zYg3pI6yfGu1Qc-agchHR-7=w240-h480-rw",
+      "description": "",
+      "image": "https://play-lh.googleusercontent.com/CMPpi2rAB2fyVLyGdwueoTtU1enGYU-2Xl1xqIF7NIEH6zYg3pI6yfGu1Qc-agchHR-7=s256-rw",
+      "screenshots": [],
       "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.Popit3DFidget",
-      "featured": true
+      "category": "Game",
+      "status": "Released",
+      "releaseDate": "2026-01-04",
+      "featured": true,
+      "platform": "Android",
+      "rating": null,
+      "appId": "com.MainraGames.Popit3DFidget"
     },
     {
-      "id": 1755470014160,
+      "id": 1767570835080,
       "title": "Squishy Jelly Merge",
-      "image": "https://play-lh.googleusercontent.com/7cC51UXJa7t84MVuDI1baPfSJp99i63jBJxS9B4ETVau1iMYM0QZbugTyJK9u99acg=w240-h480-rw",
+      "description": "",
+      "image": "https://play-lh.googleusercontent.com/eRfyVsWdfvq_7jT0vAkjkTeH5tktOxWJz0sNMuURhkaRWar3FuYkEIPS_tv8c_E8XZqg7hKMJhp6tfWjXECKqw=s256-rw",
+      "screenshots": [],
       "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.SquishyJellyMerge",
-      "featured": true
+      "category": "Game",
+      "status": "Released",
+      "releaseDate": "2026-01-04",
+      "featured": true,
+      "platform": "Android",
+      "rating": null,
+      "appId": "com.MainraGames.SquishyJellyMerge"
+    },
+    {
+      "id": 1767570835081,
+      "title": "Viking Run Rush",
+      "description": "",
+      "image": "https://play-lh.googleusercontent.com/7jfw4jMne-908BJ14S3SFFLoQK-GrKx6BvUZuBzEA_iCvaobMp81GdHsuBDYDk9r2Q=s256-rw",
+      "screenshots": [],
+      "playLink": "https://play.google.com/store/apps/details?id=com.Mainra.VikingRush",
+      "category": "Game",
+      "status": "Released",
+      "releaseDate": "2026-01-04",
+      "featured": false,
+      "platform": "Android",
+      "rating": null,
+      "appId": "com.Mainra.VikingRush"
+    },
+    {
+      "id": 1767570835082,
+      "title": "Duel Agustusan",
+      "description": "",
+      "image": "https://play-lh.googleusercontent.com/DiEow8t3RWBMw14L2wnbhh80socwEiBVXh4OIpu_pgR6DdMqhyvj0eitP1zw30k4LPp5=s256-rw",
+      "screenshots": [],
+      "playLink": "https://play.google.com/store/apps/details?id=com.MAINRA.ProjectAgustusan",
+      "category": "Game",
+      "status": "Released",
+      "releaseDate": "2026-01-04",
+      "featured": false,
+      "platform": "Android",
+      "rating": null,
+      "appId": "com.MAINRA.ProjectAgustusan"
+    },
+    {
+      "id": 1767570835083,
+      "title": "Pengenalan Binatang",
+      "description": "",
+      "image": "https://play-lh.googleusercontent.com/RsT5E894y68QTWBKGntX8r_t-XILwtHITWvDG9dXztrHsvtsC-9GYZycdNehkheapQA=s256-rw",
+      "screenshots": [],
+      "playLink": "https://play.google.com/store/apps/details?id=com.Mainra.GamePengenalanBinatang",
+      "category": "Game",
+      "status": "Released",
+      "releaseDate": "2026-01-04",
+      "featured": false,
+      "platform": "Android",
+      "rating": null,
+      "appId": "com.Mainra.GamePengenalanBinatang"
     }
   ],
   "highlight": {
-    "gameId": 1755469795000,
-    "customTitle": "Game Pengenalan Binatang",
-    "customDescription": "Petualangan seru mengenal berbagai jenis binatang dengan gameplay puzzle yang menarik",
+    "gameId": 1767570835077,
+    "customTitle": "Litterally Diving",
+    "customDescription": "🌊 Litterally DivingClean the ocean, save the life!Join Ally on a mission to clean the ocean from piles of trash! Use balloons to lift garbage to the surface, protect marine animals, and keep the ecosystem safe.Can you collect the most trash before your oxygen tank runs out?🎮 GameplayApproach and pick up trash scattered in the seaRelease the trash if marine animals get entangledCollect as much as you can to achieve the highest scoreWatch out for your oxygen tank and don’t let it run out!Be careful, whales can appear suddenly!✨ FeaturesFree diving with simple controls.Unique balloons as ocean-cleaning tools.Score system based on speed & precision.Light educational touch on the importance of protecting the ocean.",
     "youtubeUrl": "",
     "stats": {
       "gameplay": "50+",
@@ -33,6 +108,6 @@
       "worlds": "5+"
     },
     "active": true,
-    "lastUpdated": "2025-08-17T22:33:54.232Z"
+    "lastUpdated": "2026-01-04T23:54:00.780Z"
   }
 }

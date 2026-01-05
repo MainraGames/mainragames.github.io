@@ -1,0 +1,23 @@
+{
+  "name": "mainra-games-updater",
+  "version": "1.0.0",
+  "description": "Script untuk memperbarui data game dari Google Play Store",
+  "main": "update-games-from-playstore.js",
+  "scripts": {
+    "update-games": "node update-games-from-playstore.js",
+    "update-games:puppeteer": "node update-games-playstore-puppeteer.js",
+    "update-games:alternative": "node update-games-alternative.js"
+  },
+  "keywords": [
+    "google-play-store",
+    "games",
+    "scraper",
+    "updater"
+  ],
+  "author": "Mainra Games",
+  "license": "MIT",
+  "dependencies": {
+    "google-play-scraper": "^10.0.0",
+    "puppeteer": "^24.34.0"
+  }
+}

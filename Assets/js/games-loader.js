@@ -118,8 +118,15 @@ class GamesLoader {
 
         if (!gamesGrid) return;
 
-        // Show latest games for homepage (max 3)
-        const latestGames = [...this.games].sort((a, b) => (b.id || 0) - (a.id || 0)).slice(0, 3);
+        // Show latest games for homepage (max 3) - sort by releaseDate (newest first) or id
+        const latestGames = [...this.games].sort((a, b) => {
+            // Prioritaskan releaseDate jika tersedia
+            if (a.releaseDate && b.releaseDate) {
+                return new Date(b.releaseDate) - new Date(a.releaseDate);
+            }
+            // Fallback ke ID (tertinggi = terbaru)
+            return (b.id || 0) - (a.id || 0);
+        }).slice(0, 3);
         console.log('Latest games for homepage:', latestGames.length);
 
         if (latestGames.length === 0) {
@@ -133,12 +140,28 @@ class GamesLoader {
             return;
         }
 
-        gamesGrid.innerHTML = latestGames.map(game => `
+        gamesGrid.innerHTML = latestGames.map(game => {
+            // Normalisasi icon agar selalu menggunakan s256-rw
+            let gameIcon = game.image || '';
+            if (gameIcon && gameIcon.includes('play-lh.googleusercontent.com')) {
+                // SELALU gunakan s256-rw untuk konsistensi
+                const baseUrl = gameIcon.split('?')[0].split('=')[0];
+                if (gameIcon.match(/=s\d+-rw/) || gameIcon.includes('=w') || gameIcon.includes('=h')) {
+                    // Ganti parameter yang ada dengan s256-rw
+                    gameIcon = baseUrl + '=s256-rw';
+                } else {
+                    // Tambahkan s256-rw jika tidak ada parameter
+                    gameIcon = baseUrl + '=s256-rw';
+                }
+            }
+            
+            return `
             <div class="game-item simple-card" ${game.playLink && game.playLink !== '#' ? `onclick="window.open('${game.playLink}', '_blank')" style="cursor:pointer;"` : ''}>
-                <img src="${game.image}" alt="${this.escapeHtml(game.title)}" class="game-img" onerror="this.src='https://placehold.co/600x400/333/fff?text=No+Image'">
+                <img src="${gameIcon}" alt="${this.escapeHtml(game.title)}" class="game-img" onerror="this.src='https://placehold.co/600x400/333/fff?text=No+Image'">
                 <h3 class="game-title">${this.escapeHtml(game.title)}</h3>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
         console.log('Homepage games rendered successfully');
     }
@@ -183,10 +206,48 @@ class GamesLoader {
         const displayTitle = highlightData.customTitle || highlightGame.title;
         const displayDescription = highlightData.customDescription || highlightGame.description;
 
+        // Format description - split by newlines and create paragraphs
+        let formattedDescription = '';
+        if (displayDescription) {
+            // Clean up description - remove excessive emojis and format
+            let cleanDesc = displayDescription.trim();
+            
+            // Remove emoji-only lines at the start
+            cleanDesc = cleanDesc.replace(/^[🌊🎮✨🎯🚀💡]+[\s\n]*/g, '');
+            
+            // Split by common separators
+            const descParts = cleanDesc
+                .split(/\n+/)
+                .filter(part => part.trim().length > 0)
+                .map(part => part.trim());
+            
+            if (descParts.length > 0) {
+                // Find first meaningful paragraph (longer than 30 chars)
+                let mainDesc = descParts.find(p => p.length > 30 && !p.match(/^[🌊🎮✨🎯🚀💡]/)) || descParts[0];
+                
+                // If still starts with emoji, remove it
+                mainDesc = mainDesc.replace(/^[🌊🎮✨🎯🚀💡]+\s*/, '');
+                
+                // Limit length for display (keep it readable)
+                if (mainDesc.length > 250) {
+                    // Try to cut at sentence boundary
+                    const cutAt = mainDesc.substring(0, 250).lastIndexOf('.');
+                    if (cutAt > 100) {
+                        mainDesc = mainDesc.substring(0, cutAt + 1);
+                    } else {
+                        mainDesc = mainDesc.substring(0, 250) + '...';
+                    }
+                }
+                
+                formattedDescription = `<p class="highlight-description">${this.escapeHtml(mainDesc)}</p>`;
+            }
+        }
+
         // Update highlight game content
         if (highlightText) {
             highlightText.innerHTML = `
                 <h2>${this.escapeHtml(displayTitle)}</h2>
+                ${formattedDescription}
                 <div class="game-actions">
                     ${highlightGame.playLink && highlightGame.playLink !== '#' ? 
                         `<a href="${highlightGame.playLink}" target="_blank" class="btn btn-play"><i class="fas fa-play"></i> Play</a>` : ''
@@ -248,14 +309,46 @@ class GamesLoader {
             return;
         }
 
-        gamesList.innerHTML = this.games.map(game => `
+        gamesList.innerHTML = this.games.map(game => {
+            // Untuk game di list, gunakan icon kecil dari image field
+            // Icon sudah benar dari listing page, tidak perlu diubah
+            let gameIcon = game.image || '';
+            
+            // Bersihkan URL jika ada format yang salah (misalnya =w240-h480-rw=s256-rw)
+            if (gameIcon.includes('=s256-rw') && gameIcon.includes('=w')) {
+                // Ambil bagian sebelum =s256-rw
+                const parts = gameIcon.split('=s256-rw');
+                if (parts.length > 0) {
+                    gameIcon = parts[0] + '=s256-rw';
+                }
+            }
+            
+            // Pastikan icon menggunakan format yang benar dan selalu s256-rw
+            if (gameIcon && gameIcon.includes('play-lh.googleusercontent.com')) {
+                // SELALU gunakan s256-rw untuk konsistensi
+                // Ganti semua parameter size (s64, s128, s512, dll) dengan s256-rw
+                const baseUrl = gameIcon.split('?')[0].split('=')[0];
+                if (gameIcon.match(/=s\d+-rw/) || gameIcon.includes('=w') || gameIcon.includes('=h')) {
+                    // Ganti parameter yang ada dengan s256-rw
+                    gameIcon = baseUrl + '=s256-rw';
+                } else {
+                    // Tambahkan s256-rw jika tidak ada parameter
+                    gameIcon = baseUrl + '=s256-rw';
+                }
+            }
+            
+            // Jika masih tidak ada icon yang valid, gunakan fallback
+            if (!gameIcon || gameIcon.length < 10) {
+                gameIcon = 'https://placehold.co/256x256/333/fff?text=Game';
+            }
+            
+            return `
             <div class="game-item">
                 <div class="game-image">
-                    <img src="${game.image}" alt="${this.escapeHtml(game.title)}" onerror="this.src='https://placehold.co/600x400/333/fff?text=No+Image'">
+                    <img src="${gameIcon}" alt="${this.escapeHtml(game.title)}" onerror="this.src='https://placehold.co/256x256/333/fff?text=No+Image'">
                 </div>
                 <div class="game-content">
                     <h3 class="game-title">${this.escapeHtml(game.title)}</h3>
-                    <p class="game-description">${this.escapeHtml(game.description)}</p>
                     <div class="game-meta">
                         <span class="game-platform">${this.escapeHtml(game.platform || 'Multi Platform')}</span>
                         ${game.rating ? `<span class="game-rating">${'★'.repeat(Math.floor(game.rating))} ${game.rating}/5</span>` : ''}
@@ -269,7 +362,8 @@ class GamesLoader {
                     </div>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     formatDate(dateStr) {

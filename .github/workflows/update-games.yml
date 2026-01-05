@@ -1,0 +1,55 @@
+name: Update Games from Play Store
+
+on:
+  schedule:
+    # Jalankan setiap hari jam 00:00 UTC (07:00 WIB)
+    - cron: '0 0 * * *'
+  workflow_dispatch: # Bisa dijalankan manual dari GitHub Actions tab
+
+jobs:
+  update-games:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: tools/package.json
+      
+      - name: Install dependencies
+        run: |
+          cd tools
+          npm install
+      
+      - name: Update games from Play Store
+        run: |
+          cd tools
+          npm run update-games
+        continue-on-error: true # Lanjutkan meskipun error (untuk testing)
+      
+      - name: Check for changes
+        id: verify-changed-files
+        run: |
+          if [ -n "$(git status --porcelain Assets/data/games-data.json)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Commit and push changes
+        if: steps.verify-changed-files.outputs.changed == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add Assets/data/games-data.json
+          git commit -m "Auto-update games from Play Store [skip ci]" || exit 0
+          git push
+        continue-on-error: true
+

@@ -285,7 +285,13 @@
                 const data = await fetchJson();
 
                 const games = (data && data.games) ? data.games : [];
-                const latest = games.slice().sort((a,b)=>(b.id||0)-(a.id||0)).slice(0,3);
+                // Sort by releaseDate (newest first) or id
+                const latest = games.slice().sort((a,b)=>{
+                    if (a.releaseDate && b.releaseDate) {
+                        return new Date(b.releaseDate) - new Date(a.releaseDate);
+                    }
+                    return (b.id||0)-(a.id||0);
+                }).slice(0,3);
 
                 if (latest.length === 0) {
                     grid.innerHTML = `
@@ -296,16 +302,32 @@
                     return;
                 }
 
-                grid.innerHTML = latest.map(g => `
+                grid.innerHTML = latest.map(g => {
+                    // Normalisasi icon agar selalu menggunakan s256-rw
+                    let gameIcon = g.image || '';
+                    if (gameIcon && gameIcon.includes('play-lh.googleusercontent.com')) {
+                        // SELALU gunakan s256-rw untuk konsistensi
+                        const baseUrl = gameIcon.split('?')[0].split('=')[0];
+                        if (gameIcon.match(/=s\d+-rw/) || gameIcon.includes('=w') || gameIcon.includes('=h')) {
+                            // Ganti parameter yang ada dengan s256-rw
+                            gameIcon = baseUrl + '=s256-rw';
+                        } else {
+                            // Tambahkan s256-rw jika tidak ada parameter
+                            gameIcon = baseUrl + '=s256-rw';
+                        }
+                    }
+                    
+                    return `
                     <div class="game-item simple-card" ${g.playLink && g.playLink !== '#' ? `onclick="window.open('${g.playLink}', '_blank')" style="cursor:pointer;"` : ''}>
-                        <img src="${g.image}" 
+                        <img src="${gameIcon}" 
                              alt="${esc(g.title)}" 
                              class="game-img" 
                              onerror="this.src='https://placehold.co/600x400/333/fff?text=No+Image'"
                              loading="lazy">
                         <h3 class="game-title">${esc(g.title)}</h3>
                     </div>
-                `).join('');
+                    `;
+                }).join('');
             } catch (e) {
                 console.error('Fallback render (index) failed:', e);
             }
