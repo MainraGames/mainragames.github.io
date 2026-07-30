@@ -332,17 +332,7 @@
                 console.error('Fallback render (index) failed:', e);
             }
         }
-        try {
-            if (typeof window.GamesLoader === 'function') {
-                if (!window.gamesLoader) {
-                    window.gamesLoader = new GamesLoader();
-                } else if (typeof window.gamesLoader.renderGames === 'function') {
-                    window.gamesLoader.renderGames();
-                }
-            }
-        } catch (e) {
-            console.error('Failed to initialize GamesLoader:', e);
-        }
+        // GamesLoader auto-initializes via games-loader.js (no manual init needed)
         setTimeout(function () {
             if (!hasRenderedHomepageGames()) {
                 renderFeaturedFallback();
