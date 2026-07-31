@@ -8,8 +8,14 @@
  * 3. Manual update dengan format JSON yang sudah disediakan
  */
 
-const fs = require('fs');
 const path = require('path');
+const {
+    getStableGameId,
+    readGamesData,
+    resolveHighlightGameId,
+    validateGames,
+    writeGamesData
+} = require('./game-data-utils');
 
 const DEVELOPER_ID = '6814346565652097883';
 const GAMES_DATA_PATH = path.join(__dirname, '..', 'Assets', 'data', 'games-data.json');
@@ -29,8 +35,6 @@ async function fetchWithRapidAPI() {
     }
     
     try {
-        const fetch = require('node-fetch');
-        
         const response = await fetch(
             `https://${RAPIDAPI_HOST}/apps?devId=${DEVELOPER_ID}`,
             {
@@ -78,7 +82,16 @@ async function fetchWithPuppeteer() {
             const appLinks = Array.from(document.querySelectorAll('a[href*="/store/apps/details"]'));
             return appLinks.map(link => {
                 const href = link.getAttribute('href');
-                const appId = href.match(/id=([^&]+)/)?.[1];
+                const match = href.match(/[?&]id=([^&]+)/);
+                if (!match) return null;
+
+                let appId;
+                try {
+                    appId = decodeURIComponent(match[1]);
+                } catch {
+                    return null;
+                }
+
                 const title = link.querySelector('span')?.textContent?.trim() || '';
                 const icon = link.querySelector('img')?.getAttribute('src') || '';
                 
@@ -112,7 +125,7 @@ function getManualGamesData() {
     // Anda bisa copy-paste data dari Google Play Store dan format seperti ini
     return [
         {
-            id: Date.now(),
+            id: "com.Mainra.GamePengenalanBinatang",
             title: "Game Pengenalan Binatang",
             description: "Petualangan seru mengenal berbagai jenis binatang",
             image: "https://play-lh.googleusercontent.com/RsT5E894y68QTWBKGntX8r_t-XILwtHITWvDG9dXztrHsvtsC-9GYZycdNehkheapQA=w240-h480-rw",
@@ -122,7 +135,8 @@ function getManualGamesData() {
             releaseDate: "2024-01-15",
             featured: true,
             platform: "Android",
-            rating: 4.5
+            rating: 4.5,
+            appId: "com.Mainra.GamePengenalanBinatang"
         }
         // Tambahkan game lain di sini
     ];
@@ -154,7 +168,7 @@ async function updateGamesData() {
     
     // Transform ke format yang sesuai
     const formattedGames = games.map((app, index) => ({
-        id: Date.now() + index,
+        id: getStableGameId(app.appId),
         title: app.title,
         description: app.description || app.summary || '',
         image: app.icon || app.image || '',
@@ -169,29 +183,25 @@ async function updateGamesData() {
         appId: app.appId
     }));
     
-    // Baca data existing
-    let existingData = { games: [], highlight: null };
-    if (fs.existsSync(GAMES_DATA_PATH)) {
-        existingData = JSON.parse(fs.readFileSync(GAMES_DATA_PATH, 'utf8'));
-    }
-    
-    // Update
+    validateGames(formattedGames);
+    const existingData = readGamesData(GAMES_DATA_PATH);
+
+    // Resolve a legacy numeric highlight before replacing the old game list.
+    const highlightGameId = resolveHighlightGameId(existingData, formattedGames) || formattedGames[0].id;
     existingData.games = formattedGames;
-    
-    if (!existingData.highlight || !formattedGames.find(g => g.id == existingData.highlight.gameId)) {
-        existingData.highlight = {
-            gameId: formattedGames[0]?.id || null,
-            customTitle: formattedGames[0]?.title || '',
-            customDescription: formattedGames[0]?.description || '',
-            youtubeUrl: "",
-            stats: { gameplay: "50+", characters: "25+", worlds: "5+" },
-            active: true,
-            lastUpdated: new Date().toISOString()
-        };
-    }
-    
-    // Tulis ke file
-    fs.writeFileSync(GAMES_DATA_PATH, JSON.stringify(existingData, null, 2), 'utf8');
+    const highlightGame = formattedGames.find(game => game.id === highlightGameId);
+    existingData.highlight = {
+        ...(existingData.highlight || {}),
+        gameId: highlightGame.id,
+        customTitle: existingData.highlight?.customTitle || highlightGame.title,
+        customDescription: existingData.highlight?.customDescription || highlightGame.description,
+        youtubeUrl: existingData.highlight?.youtubeUrl || "",
+        stats: existingData.highlight?.stats || { gameplay: "50+", characters: "25+", worlds: "5+" },
+        active: existingData.highlight?.active ?? true,
+        lastUpdated: new Date().toISOString()
+    };
+
+    writeGamesData(GAMES_DATA_PATH, existingData);
     console.log(`✅ Berhasil memperbarui ${formattedGames.length} game`);
 }
 

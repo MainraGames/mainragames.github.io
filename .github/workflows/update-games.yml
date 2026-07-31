@@ -6,33 +6,35 @@ on:
     - cron: '0 0 * * *'
   workflow_dispatch: # Bisa dijalankan manual dari GitHub Actions tab
 
+permissions:
+  contents: write
+
 jobs:
   update-games:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-          cache-dependency-path: tools/package.json
+          cache-dependency-path: tools/package-lock.json
       
       - name: Install dependencies
         run: |
           cd tools
-          npm install
+          npm ci
       
       - name: Update games from Play Store
         run: |
           cd tools
           npm run update-games
-        continue-on-error: true # Lanjutkan meskipun error (untuk testing)
       
       - name: Check for changes
         id: verify-changed-files
@@ -49,7 +51,6 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add Assets/data/games-data.json
-          git commit -m "Auto-update games from Play Store [skip ci]" || exit 0
+          git commit -m "Auto-update games from Play Store [skip ci]"
           git push
-        continue-on-error: true
 

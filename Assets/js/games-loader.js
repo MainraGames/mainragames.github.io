@@ -2,6 +2,7 @@ class GamesLoader {
     constructor() {
         this.games = [];
         this.highlight = null;
+        this.loadError = false;
         this.init();
     }
 
@@ -18,82 +19,57 @@ class GamesLoader {
         // Fallback ke file JSON
         try {
             const response = await fetch('Assets/data/games-data.json');
+            if (!response.ok) { throw new Error(`Failed to load games data: ${response.status}`); }
             const data = await response.json();
             this.games = data.games || [];
             this.highlight = data.highlight || null;
         } catch (error) {
             console.error('Error loading games from JSON:', error);
 
-            // Default fallback data with new structure
-            this.games = [
-                {
-                    id: 1,
-                    title: "Adventure Quest",
-                    description: "A 2D adventure game with unique mechanics and an engaging storyline",
-                    image: "https://placehold.co/600x400/8a2be2/ffffff?text=Adventure+Quest",
-                    screenshots: [
-                        "https://placehold.co/600x400/8a2be2/ffffff?text=Adventure+Quest+1",
-                        "https://placehold.co/600x400/7c3aed/ffffff?text=Adventure+Quest+2"
-                    ],
-                    playLink: "#",
-                    category: "Adventure",
-                    status: "Released",
-                    releaseDate: "2024-01-15",
-                    featured: true,
-                    platform: "PC, Mobile",
-                    rating: "4.8"
-                },
-                {
-                    id: 2,
-                    title: "Space Defender",
-                    description: "A space shooter with stunning visuals",
-                    image: "https://placehold.co/600x400/ff6b6b/ffffff?text=Space+Defender",
-                    screenshots: [
-                        "https://placehold.co/600x400/ff6b6b/ffffff?text=Space+Defender+1",
-                        "https://placehold.co/600x400/ef4444/ffffff?text=Space+Defender+2"
-                    ],
-                    playLink: "#",
-                    category: "Shooter",
-                    status: "Released",
-                    releaseDate: "2024-02-20",
-                    featured: true,
-                    platform: "PC, Console",
-                    rating: "4.9"
-                },
-                {
-                    id: 3,
-                    title: "Mystic Worlds",
-                    description: "An RPG set in a vast fantasy world featuring a diverse cast of characters",
-                    image: "https://placehold.co/600x400/4cc9f0/ffffff?text=Mystic+Worlds",
-                    screenshots: [
-                        "https://placehold.co/600x400/4cc9f0/ffffff?text=Mystic+Worlds+1",
-                        "https://placehold.co/600x400/0ea5e9/ffffff?text=Mystic+Worlds+2"
-                    ],
-                    playLink: "#",
-                    category: "RPG",
-                    status: "In Development",
-                    releaseDate: "2024-06-01",
-                    featured: true,
-                    platform: "PC, Mobile",
-                    rating: "4.7"
-                }
-            ];
-
-            // Default highlight data
-            this.highlight = {
-                gameId: 2,
-                customTitle: "",
-                customDescription: "",
-                youtubeUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                stats: {
-                    gameplay: "100+",
-                    characters: "50+",
-                    worlds: "10+"
-                },
-                active: true,
-                lastUpdated: "2024-01-15T10:00:00Z"
-            };
+            // Never invent game data when the source fails.
+            this.games = [];
+            this.highlight = null;
+            this.loadError = true;
         }
+    }
+
+    safeUrl(value, allowedHosts = []) {
+        if (typeof value !== 'string' || !value.trim()) return '';
+
+        try {
+            const url = new URL(value.trim());
+            if (url.protocol !== 'https:' || url.username || url.password) return '';
+            if (allowedHosts.length > 0 && !allowedHosts.includes(url.hostname)) return '';
+            return url.href;
+        } catch {
+            return '';
+        }
+    }
+
+    bindImageFallbacks(container) {
+        container.querySelectorAll('img[data-fallback-src]').forEach(image => {
+            image.addEventListener('error', () => {
+                const fallback = this.safeUrl(image.dataset.fallbackSrc);
+                if (fallback && image.src !== fallback) image.src = fallback;
+            }, { once: true });
+        });
+    }
+
+    bindGameCardLinks(container) {
+        container.querySelectorAll('[data-play-link]').forEach(card => {
+            const openGame = () => {
+                const url = this.safeUrl(card.dataset.playLink, ['play.google.com']);
+                if (url) window.open(url, '_blank', 'noopener,noreferrer');
+            };
+            card.addEventListener('click', openGame);
+            card.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openGame();
+                }
+            });
+        });
+        this.bindImageFallbacks(container);
     }
 
     renderGames() {
@@ -125,7 +101,7 @@ class GamesLoader {
                 return new Date(b.releaseDate) - new Date(a.releaseDate);
             }
             // Fallback ke ID (tertinggi = terbaru)
-            return (b.id || 0) - (a.id || 0);
+            return String(b.id || '').localeCompare(String(a.id || ''));
         }).slice(0, 3);
         console.log('Latest games for homepage:', latestGames.length);
 
@@ -155,13 +131,16 @@ class GamesLoader {
                 }
             }
             
+            const playLink = this.safeUrl(game.playLink, ['play.google.com']);
+            const imageUrl = this.safeUrl(gameIcon, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/600x400/333/fff?text=No+Image';
             return `
-            <div class="game-item simple-card" ${game.playLink && game.playLink !== '#' ? `onclick="window.open('${game.playLink}', '_blank')" style="cursor:pointer;"` : ''}>
-                <img src="${gameIcon}" alt="${this.escapeHtml(game.title)}" class="game-img" onerror="this.src='https://placehold.co/600x400/333/fff?text=No+Image'">
+            <div class="game-item simple-card" ${playLink ? `data-play-link="${this.escapeHtml(playLink)}" tabindex="0" role="link"` : ''}>
+                <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(game.title)}" class="game-img" data-fallback-src="https://placehold.co/600x400/333/fff?text=No+Image">
                 <h3 class="game-title">${this.escapeHtml(game.title)}</h3>
             </div>
             `;
         }).join('');
+        this.bindGameCardLinks(gamesGrid);
 
         console.log('Homepage games rendered successfully');
     }
@@ -188,7 +167,7 @@ class GamesLoader {
         }
 
         // Find the highlighted game
-        const highlightGame = this.games.find(game => game.id == highlightData.gameId);
+        const highlightGame = this.games.find(game => String(game.id) === String(highlightData.gameId));
         if (!highlightGame) {
             if (highlightText) {
                 highlightText.innerHTML = `
@@ -244,16 +223,18 @@ class GamesLoader {
         }
 
         // Update highlight game content
+        const playLink = this.safeUrl(highlightGame.playLink, ['play.google.com']);
+        const trailerUrl = this.safeUrl(highlightData.youtubeUrl, ['youtube.com', 'www.youtube.com', 'youtu.be']);
         if (highlightText) {
             highlightText.innerHTML = `
                 <h2>${this.escapeHtml(displayTitle)}</h2>
                 ${formattedDescription}
                 <div class="game-actions">
-                    ${highlightGame.playLink && highlightGame.playLink !== '#' ? 
-                        `<a href="${highlightGame.playLink}" target="_blank" class="btn btn-play"><i class="fas fa-play"></i> Play</a>` : ''
+                    ${playLink ?
+                        `<a href="${this.escapeHtml(playLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-play"><i class="fas fa-play"></i> Play</a>` : ''
                     }
-                    ${highlightData.youtubeUrl ? 
-                        `<a href="${highlightData.youtubeUrl}" target="_blank" class="btn btn-details"><i class="fab fa-youtube"></i> Trailer</a>` : ''
+                    ${trailerUrl ?
+                        `<a href="${this.escapeHtml(trailerUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-details"><i class="fab fa-youtube"></i> Trailer</a>` : ''
                     }
                 </div>
             `;
@@ -261,34 +242,49 @@ class GamesLoader {
 
         // Update carousel with game screenshots
         if (highlightImage && highlightGame.screenshots && highlightGame.screenshots.length > 0) {
-            const slides = highlightGame.screenshots.map((screenshot, index) => `
+            const fallbackImage = this.safeUrl(highlightGame.image, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/600x400/333/fff?text=No+Image';
+            const slides = highlightGame.screenshots.map((screenshot, index) => {
+                const screenshotUrl = this.safeUrl(screenshot, ['play-lh.googleusercontent.com']);
+                if (!screenshotUrl) return '';
+                return `
                 <div class="carousel-slide ${index === 0 ? 'active' : ''}">
-                    <img src="${screenshot}" alt="${this.escapeHtml(displayTitle)} Screenshot ${index + 1}" onerror="this.src='${highlightGame.image}'">
+                    <img src="${this.escapeHtml(screenshotUrl)}" alt="${this.escapeHtml(displayTitle)} Screenshot ${index + 1}" data-fallback-src="${this.escapeHtml(fallbackImage)}">
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
-            const dots = highlightGame.screenshots.map((_, index) => `
-                <span class="dot ${index === 0 ? 'active' : ''}" onclick="currentSlide(${index + 1})"></span>
-            `).join('');
+            const dots = highlightGame.screenshots.map((screenshot, index) => this.safeUrl(screenshot, ['play-lh.googleusercontent.com']) ? `
+                <button type="button" class="dot ${index === 0 ? 'active' : ''}" data-slide="${index}" aria-label="Go to slide ${index + 1}"></button>
+            ` : '').join('');
 
             highlightImage.innerHTML = slides;
             const dotsContainer = document.querySelector('.carousel-dots');
             if (dotsContainer) {
                 dotsContainer.innerHTML = dots;
+                dotsContainer.querySelectorAll('[data-slide]').forEach(dot => {
+                    dot.addEventListener('click', () => {
+                        if (typeof window.currentSlide === 'function') {
+                            window.currentSlide(Number(dot.dataset.slide) + 1);
+                        }
+                    });
+                });
             }
+            this.bindImageFallbacks(highlightImage);
         } else {
             // Use main game image as single slide
             if (highlightImage) {
+                const imageUrl = this.safeUrl(highlightGame.image, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/600x400/333/fff?text=No+Image';
                 highlightImage.innerHTML = `
                     <div class="carousel-slide active">
-                        <img src="${highlightGame.image}" alt="${this.escapeHtml(displayTitle)}" onerror="this.src='https://placehold.co/600x400/333/fff?text=No+Image'">
+                        <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(displayTitle)}" data-fallback-src="https://placehold.co/600x400/333/fff?text=No+Image">
                     </div>
                 `;
+                this.bindImageFallbacks(highlightImage);
             }
 
             const dotsContainer = document.querySelector('.carousel-dots');
             if (dotsContainer) {
-                dotsContainer.innerHTML = '<span class="dot active"></span>';
+                dotsContainer.innerHTML = '<button type="button" class="dot active" aria-label="Current slide"></button>';
             }
         }
         try { if (typeof window.initializeCarousel === 'function') setTimeout(window.initializeCarousel, 50); } catch (e) {}
@@ -313,6 +309,7 @@ class GamesLoader {
             // Untuk game di list, gunakan icon kecil dari image field
             // Icon sudah benar dari listing page, tidak perlu diubah
             let gameIcon = game.image || '';
+            const playLink = this.safeUrl(game.playLink, ['play.google.com']);
             
             // Bersihkan URL jika ada format yang salah (misalnya =w240-h480-rw=s256-rw)
             if (gameIcon.includes('=s256-rw') && gameIcon.includes('=w')) {
@@ -345,7 +342,7 @@ class GamesLoader {
             return `
             <div class="game-item">
                 <div class="game-image">
-                    <img src="${gameIcon}" alt="${this.escapeHtml(game.title)}" onerror="this.src='https://placehold.co/256x256/333/fff?text=No+Image'">
+                    <img src="${this.escapeHtml(this.safeUrl(gameIcon, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/256x256/333/fff?text=No+Image')}" alt="${this.escapeHtml(game.title)}" data-fallback-src="https://placehold.co/256x256/333/fff?text=No+Image">
                 </div>
                 <div class="game-content">
                     <h3 class="game-title">${this.escapeHtml(game.title)}</h3>
@@ -354,8 +351,8 @@ class GamesLoader {
                         ${game.rating ? `<span class="game-rating">${'★'.repeat(Math.floor(game.rating))} ${game.rating}/5</span>` : ''}
                     </div>
                     <div class="game-actions">
-                        ${game.playLink && game.playLink !== '#' ? 
-                            `<a href="${game.playLink}" target="_blank" class="btn btn-play">Play</a>` :
+                        ${playLink ?
+                            `<a href="${this.escapeHtml(playLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-play">Play</a>` :
                             `<span class="btn" style="opacity: 0.5; cursor: not-allowed;">Coming Soon</span>`
                         }
                         <a href="#" class="btn btn-details">Details</a>
@@ -364,6 +361,7 @@ class GamesLoader {
             </div>
             `;
         }).join('');
+        this.bindImageFallbacks(gamesList);
     }
 
     formatDate(dateStr) {

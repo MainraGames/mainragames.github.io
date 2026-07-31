@@ -1,7 +1,7 @@
 {
   "games": [
     {
-      "id": 1785463340293,
+      "id": "com.MainraGames.Popit3DFidget",
       "title": "Pop It 3D Fidget: Multiplayer",
       "description": "",
       "image": "https://play-lh.googleusercontent.com/rPO9jpkgZs0_ih8GjwxGev-_D3P5AUZwF0UNTrNaR4jBwqMBIVtWBGrIFnvwne_Vb-Aa-moZWgKu_pTrKBsO9A=s256-rw",
@@ -16,7 +16,7 @@
       "appId": "com.MainraGames.Popit3DFidget"
     },
     {
-      "id": 1785463340294,
+      "id": "com.MainraGames.SquishyJellyMerge",
       "title": "Squishy Jelly Merge",
       "description": "",
       "image": "https://play-lh.googleusercontent.com/eRfyVsWdfvq_7jT0vAkjkTeH5tktOxWJz0sNMuURhkaRWar3FuYkEIPS_tv8c_E8XZqg7hKMJhp6tfWjXECKqw=s256-rw",
@@ -31,7 +31,7 @@
       "appId": "com.MainraGames.SquishyJellyMerge"
     },
     {
-      "id": 1785463340295,
+      "id": "com.Mainra.GamePengenalanBinatang",
       "title": "Pengenalan Binatang",
       "description": "",
       "image": "https://play-lh.googleusercontent.com/MFXdAccA-SAMQX9dkyBxKcqE47s07T7ib7sT449BUJdYDH2PkVWAwY71aVdHHHQT_2JIEvw-vFyms3TA9ffF=s256-rw",
@@ -47,7 +47,7 @@
     }
   ],
   "highlight": {
-    "gameId": 1785463340293,
+    "gameId": "com.MainraGames.Popit3DFidget",
     "customTitle": "Pop It 3D Fidget: Multiplayer",
     "customDescription": "",
     "youtubeUrl": "",

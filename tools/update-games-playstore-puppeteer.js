@@ -10,8 +10,14 @@
  * dan memperbarui file Assets/data/games-data.json
  */
 
-const fs = require('fs');
 const path = require('path');
+const {
+    getStableGameId,
+    readGamesData,
+    resolveHighlightGameId,
+    validateGames,
+    writeGamesData
+} = require('./game-data-utils');
 
 // Developer ID dari Google Play Store
 const DEVELOPER_ID = '6814346565652097883';
@@ -151,7 +157,11 @@ async function fetchGamesFromPlayStore() {
                     let appId = null;
                     const idMatch = href.match(/[?&]id=([^&]+)/);
                     if (idMatch) {
-                        appId = idMatch[1];
+                        try {
+                            appId = decodeURIComponent(idMatch[1]);
+                        } catch {
+                            return;
+                        }
                     } else {
                         // Coba format lain
                         const pathMatch = href.match(/\/details\/([^\/\?]+)/);
@@ -455,7 +465,7 @@ async function fetchGamesFromPlayStore() {
         // Transform data ke format yang sesuai dengan games-data.json
         const games = apps.map((app, index) => {
             return {
-                id: Date.now() + index,
+                id: getStableGameId(app.appId),
                 title: app.title,
                 description: '', // Bisa diisi dengan detail scraping jika diperlukan
                 image: app.icon || '',
@@ -651,35 +661,19 @@ async function updateGamesData() {
     let browser;
     try {
         // Baca data existing untuk mempertahankan highlight
-        let existingData = {
-            games: [],
-            highlight: null
-        };
-        
-        if (fs.existsSync(GAMES_DATA_PATH)) {
-            const existingContent = fs.readFileSync(GAMES_DATA_PATH, 'utf8');
-            existingData = JSON.parse(existingContent);
+        const existingData = readGamesData(GAMES_DATA_PATH);
+        if (existingData.games.length > 0) {
             console.log('📂 Data existing ditemukan, mempertahankan highlight...');
         }
         
         // Ambil data baru dari Play Store
         const newGames = await fetchGamesFromPlayStore();
         
-        if (newGames.length === 0) {
-            console.log('⚠️  Tidak ada game baru ditemukan. Data tidak diperbarui.');
-            return;
-        }
-        
-        // Tentukan game yang akan di-highlight
-        let highlightGame = null;
-        if (existingData.highlight && existingData.highlight.gameId) {
-            highlightGame = newGames.find(g => g.id == existingData.highlight.gameId);
-        }
-        
-        // Jika highlight game tidak ditemukan, gunakan game pertama
-        if (!highlightGame) {
-            highlightGame = newGames[0];
-        }
+        validateGames(newGames);
+
+        // Tentukan game yang akan di-highlight, mempertahankan pilihan lama bila masih tersedia.
+        const highlightGameId = resolveHighlightGameId(existingData, newGames) || newGames[0].id;
+        const highlightGame = newGames.find(game => game.id === highlightGameId);
         
         // Ambil detail lengkap untuk highlight game (judul benar + screenshot HD)
         console.log(`\n🎯 Mengambil detail untuk highlight game: ${highlightGame.title}`);
@@ -716,28 +710,26 @@ async function updateGamesData() {
         
         // Update games
         existingData.games = newGames;
-        
+
         // Update highlight dengan data yang sudah diperbaiki
         existingData.highlight = {
+            ...(existingData.highlight || {}),
             gameId: highlightGame.id,
-            customTitle: highlightGame.title, // Gunakan judul yang benar
+            customTitle: highlightGame.title,
             customDescription: highlightGame.description || `Mainkan ${highlightGame.title} sekarang!`,
-            youtubeUrl: "",
-            stats: {
+            youtubeUrl: existingData.highlight?.youtubeUrl || "",
+            stats: existingData.highlight?.stats || {
                 gameplay: "50+",
                 characters: "25+",
                 worlds: "5+"
             },
-            active: true,
+            active: existingData.highlight?.active ?? true,
             lastUpdated: new Date().toISOString()
         };
-        
-        // Tulis ke file
-        fs.writeFileSync(
-            GAMES_DATA_PATH,
-            JSON.stringify(existingData, null, 2),
-            'utf8'
-        );
+
+        // Revalidate after enriching the highlight with scraped screenshots.
+        validateGames(existingData.games);
+        writeGamesData(GAMES_DATA_PATH, existingData);
         
         console.log(`\n✅ Berhasil memperbarui ${newGames.length} game ke ${GAMES_DATA_PATH}`);
         console.log(`📝 Highlight game: ${existingData.highlight.customTitle}`);

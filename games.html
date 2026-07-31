@@ -57,11 +57,11 @@
             <li><a href="privacy-policy.html">Privacy Policy</a></li>
         </ul>
         <a href="https://wa.me/6285117590001" class="btn">Contact Us</a>
-        <div class="hamburger" aria-label="Open navigation" aria-expanded="false">
+        <button type="button" class="hamburger" aria-label="Open navigation" aria-expanded="false">
             <span></span>
             <span></span>
             <span></span>
-        </div>
+        </button>
     </div>
     <!-- Mobile Navigation Overlay -->
     <div class="mobile-nav" aria-hidden="true">
@@ -71,7 +71,7 @@
                     <img src="Assets/img/LogoMainraGames.png" alt="Mainra Games" width="160" height="55">
                     <span class="sr-only">Mainra Games</span>
                 </a>
-                <button class="close-nav" aria-label="Close navigation">
+                <button type="button" class="close-nav" aria-label="Close navigation">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
@@ -118,11 +118,14 @@
                         <!-- Carousel slides will be loaded dynamically -->
                     </div>
 
-                    <button class="carousel-btn prev-btn">
+                    <button type="button" class="carousel-btn prev-btn" aria-label="Previous featured game screenshot">
                         <i class="fas fa-chevron-left"></i>
                     </button>
-                    <button class="carousel-btn next-btn">
+                    <button type="button" class="carousel-btn next-btn" aria-label="Next featured game screenshot">
                         <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button type="button" class="carousel-toggle" aria-pressed="false" aria-label="Pause slideshow">
+                        <i class="fas fa-pause" aria-hidden="true"></i>
                     </button>
 
                     <div class="carousel-dots">
@@ -159,7 +162,7 @@
             <p>Visit Mainra's official pages on Google Play and itch.io</p>
         </div>
         <div class="platforms-grid">
-            <a class="platform-card" href="https://play.google.com/store/apps/dev?id=6814346565652097883" target="_blank" rel="noopener">
+            <a class="platform-card" href="https://play.google.com/store/apps/dev?id=6814346565652097883" target="_blank" rel="noopener noreferrer">
                 <div class="icon" style="background: linear-gradient(135deg,#3ddc84,#34a853);">
                     <i class="fab fa-google-play"></i>
                 </div>
@@ -167,7 +170,7 @@
                 <p>Check out our game list on Google Play Store.</p>
             </a>
 
-            <a class="platform-card" href="https://mainra.itch.io/" target="_blank" rel="noopener">
+            <a class="platform-card" href="https://mainra.itch.io/" target="_blank" rel="noopener noreferrer">
                 <div class="icon" style="background: linear-gradient(135deg,#fa5c5c,#ff0066);">
                     <i class="fab fa-itch-io"></i>
                 </div>
@@ -185,11 +188,11 @@
             <div class="footer-logo">Mainra<span>Games</span></div>
             <p>Transforming Game Ideas into Reality</p>
             <div class="social-links">
-                <a href="https://facebook.com/mainragames" target="_blank"><i class="fab fa-facebook-f"></i></a>
-                <a href="https://twitter.com/mainragames" target="_blank"><i class="fab fa-twitter"></i></a>
-                <a href="https://instagram.com/mainragames" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="https://linkedin.com/company/mainragames" target="_blank"><i class="fab fa-linkedin-in"></i></a>
-                <a href="https://github.com/mainragames" target="_blank"><i class="fab fa-github"></i></a>
+                <a href="https://facebook.com/mainragames" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://twitter.com/mainragames" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
+                <a href="https://instagram.com/mainragames" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+                <a href="https://linkedin.com/company/mainragames" target="_blank" rel="noopener noreferrer"><i class="fab fa-linkedin-in"></i></a>
+                <a href="https://github.com/mainragames" target="_blank" rel="noopener noreferrer"><i class="fab fa-github"></i></a>
             </div>
         </div>
         <div class="copyright">
@@ -199,48 +202,6 @@
 </footer>
 <script src="Assets/js/games-loader.js?v=1.1"></script>
 <script src="Assets/js/nav.js?v=1.1"></script>
-<script>
-  // Set dynamic current year in footer
-  (function () { var y = document.getElementById('currentYear'); if (y) y.textContent = new Date().getFullYear(); })();
-
-  // GamesLoader auto-initializes via games-loader.js (no manual init needed)
-
-  // Minimal carousel helpers used by GamesLoader's highlight renderer
-  let currentSlideIndex = 0;
-  let slides, dots, totalSlides, autoPlayInterval;
-
-  function initializeCarousel() {
-    slides = document.querySelectorAll('.carousel-slide');
-    dots = document.querySelectorAll('.dot');
-    totalSlides = slides.length;
-    if (totalSlides > 0) {
-      clearInterval(autoPlayInterval);
-      autoPlayInterval = setInterval(autoPlay, 5000);
-      const prev = document.querySelector('.prev-btn');
-      const next = document.querySelector('.next-btn');
-      if (prev) prev.addEventListener('click', () => changeSlide(-1));
-      if (next) next.addEventListener('click', () => changeSlide(1));
-    }
-  }
-  function autoPlay() { changeSlide(1); }
-  function changeSlide(direction) {
-    if (!slides || !slides.length) return;
-    slides[currentSlideIndex].classList.remove('active');
-    if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.remove('active');
-    currentSlideIndex = (currentSlideIndex + direction + totalSlides) % totalSlides;
-    slides[currentSlideIndex].classList.add('active');
-    if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.add('active');
-  }
-  function currentSlide(index) {
-    if (!slides || !slides.length) return;
-    slides[currentSlideIndex].classList.remove('active');
-    if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.remove('active');
-    currentSlideIndex = index - 1;
-    slides[currentSlideIndex].classList.add('active');
-    if (dots[currentSlideIndex]) dots[currentSlideIndex].classList.add('active');
-  }
-  window.initializeCarousel = initializeCarousel;
-  window.currentSlide = currentSlide;
-</script>
+<script src="Assets/js/site.js?v=1.1"></script>
 </body>
 </html>

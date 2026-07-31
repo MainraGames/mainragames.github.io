@@ -10,8 +10,14 @@
  * dan memperbarui file Assets/data/games-data.json
  */
 
-const fs = require('fs');
 const path = require('path');
+const {
+    getStableGameId,
+    readGamesData,
+    resolveHighlightGameId,
+    validateGames,
+    writeGamesData
+} = require('./game-data-utils');
 
 // Developer ID dari Google Play Store
 const DEVELOPER_ID = '6814346565652097883';
@@ -79,7 +85,7 @@ async function fetchGamesFromPlayStore() {
         // Transform data ke format yang sesuai dengan games-data.json
         const games = apps.map((app, index) => {
             return {
-                id: Date.now() + index, // Generate unique ID
+                id: getStableGameId(app.appId),
                 title: app.title,
                 description: app.summary || app.description || '',
                 image: app.icon || app.screenshots?.[0] || '',
@@ -158,7 +164,12 @@ async function fetchGamesWithManualScraping() {
                 const href = link.getAttribute('href');
                 const match = href.match(/id=([^&]+)/);
                 if (match) {
-                    const appId = match[1];
+                    let appId;
+                    try {
+                        appId = decodeURIComponent(match[1]);
+                    } catch {
+                        return;
+                    }
                     if (!uniqueApps.has(appId)) {
                         const titleElement = link.querySelector('span[itemprop="name"]') || 
                                             link.querySelector('.WsMG1c') ||
@@ -198,7 +209,7 @@ async function fetchGamesWithManualScraping() {
         // Transform ke format yang sesuai
         const games = apps.map((app, index) => {
             return {
-                id: Date.now() + index,
+                id: getStableGameId(app.appId),
                 title: app.title,
                 description: '', // Akan diisi manual atau dengan detail scraping
                 image: app.icon,
@@ -253,57 +264,36 @@ async function fetchGamesWithFetch() {
 async function updateGamesData() {
     try {
         // Baca data existing untuk mempertahankan highlight
-        let existingData = {
-            games: [],
-            highlight: null
-        };
-        
-        if (fs.existsSync(GAMES_DATA_PATH)) {
-            const existingContent = fs.readFileSync(GAMES_DATA_PATH, 'utf8');
-            existingData = JSON.parse(existingContent);
+        const existingData = readGamesData(GAMES_DATA_PATH);
+        if (existingData.games.length > 0) {
             console.log('Data existing ditemukan, mempertahankan highlight...');
         }
         
         // Ambil data baru dari Play Store
         const newGames = await fetchGamesFromPlayStore();
         
-        if (newGames.length === 0) {
-            console.log('Tidak ada game baru ditemukan. Data tidak diperbarui.');
-            return;
-        }
-        
-        // Update games
+        validateGames(newGames);
+
+        const highlightGameId = resolveHighlightGameId(existingData, newGames) || newGames[0].id;
+        const highlightGame = newGames.find(game => game.id === highlightGameId);
+        existingData.highlight = {
+            ...(existingData.highlight || {}),
+            gameId: highlightGame.id,
+            customTitle: existingData.highlight?.customTitle || highlightGame.title,
+            customDescription: existingData.highlight?.customDescription || highlightGame.description,
+            youtubeUrl: existingData.highlight?.youtubeUrl || "",
+            stats: existingData.highlight?.stats || {
+                gameplay: "50+",
+                characters: "25+",
+                worlds: "5+"
+            },
+            active: existingData.highlight?.active ?? true,
+            lastUpdated: new Date().toISOString()
+        };
         existingData.games = newGames;
-        
-        // Update highlight jika belum ada atau gameId tidak valid
-        if (!existingData.highlight || 
-            !newGames.find(g => g.id == existingData.highlight.gameId)) {
-            // Set game pertama sebagai highlight
-            const firstGame = newGames[0];
-            existingData.highlight = {
-                gameId: firstGame.id,
-                customTitle: firstGame.title,
-                customDescription: firstGame.description,
-                youtubeUrl: "",
-                stats: {
-                    gameplay: "50+",
-                    characters: "25+",
-                    worlds: "5+"
-                },
-                active: true,
-                lastUpdated: new Date().toISOString()
-            };
-        } else {
-            // Update lastUpdated
-            existingData.highlight.lastUpdated = new Date().toISOString();
-        }
-        
-        // Tulis ke file
-        fs.writeFileSync(
-            GAMES_DATA_PATH,
-            JSON.stringify(existingData, null, 2),
-            'utf8'
-        );
+
+        // Tulis melalui file sementara agar kegagalan tidak meninggalkan JSON setengah tertulis.
+        writeGamesData(GAMES_DATA_PATH, existingData);
         
         console.log(`✅ Berhasil memperbarui ${newGames.length} game ke ${GAMES_DATA_PATH}`);
         console.log(`📝 Highlight game: ${existingData.highlight.customTitle}`);

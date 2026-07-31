@@ -49,19 +49,21 @@
             <li><a href="privacy-policy.html">Privacy Policy</a></li>
         </ul>
         <a href="https://wa.me/6285117590001" class="btn">Contact Us</a>
-        <div class="hamburger">
-            <span></span><span></span><span></span>
-        </div>
+        <button type="button" class="hamburger" aria-label="Open navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
     </div>
     <!-- Mobile Navigation Overlay -->
-    <div class="mobile-nav">
+    <div class="mobile-nav" aria-hidden="true">
         <div class="mobile-nav-content">
             <div class="mobile-nav-header">
                 <a href="index.html" class="logo">
                     <img src="Assets/img/LogoMainraGames.png" alt="Mainra Games" width="160" height="55">
                     <span class="sr-only">Mainra Games</span>
                 </a>
-                <button class="close-nav"><i class="fas fa-times"></i></button>
+                <button type="button" class="close-nav" aria-label="Close navigation"><i class="fas fa-times"></i></button>
             </div>
             <ul class="mobile-nav-links">
                 <li><a href="index.html">Home</a></li>
@@ -91,7 +93,7 @@
         <div class="privacy-content">
             <h1>Terms of Use</h1>
 
-            <p>Please read these Terms of Use (“Terms”) carefully before accessing or using any websites, applications, games, or related services provided by Mainra Games (collectively, the “Services”). By accessing or using the Services, you agree to be bound by these Terms and by our Privacy Policy. If you do not agree, do not use the Services.</p>
+            <p>Please read these Terms of Use (&ldquo;Terms&rdquo;) carefully before accessing or using any websites, applications, games, or related services provided by Mainra Games (collectively, the “Services”). By accessing or using the Services, you agree to be bound by these Terms and by our Privacy Policy. If you do not agree, do not use the Services.</p>
 
             <h2>1. Changes to the Terms</h2>
             <p>We may modify these Terms at any time. When we do, we will update the “Last Updated” date or provide other reasonable notice. Your continued use of the Services after changes become effective constitutes acceptance of the updated Terms.</p>
@@ -185,11 +187,11 @@
             <div class="footer-logo">Mainra<span>Games</span></div>
             <p>Transforming Game Ideas into Reality</p>
             <div class="social-links">
-                <a href="https://facebook.com/mainragames" target="_blank"><i class="fab fa-facebook-f"></i></a>
-                <a href="https://twitter.com/mainragames" target="_blank"><i class="fab fa-twitter"></i></a>
-                <a href="https://instagram.com/mainragames" target="_blank"><i class="fab fa-instagram"></i></a>
-                <a href="https://linkedin.com/company/mainragames" target="_blank"><i class="fab fa-linkedin-in"></i></a>
-                <a href="https://github.com/mainragames" target="_blank"><i class="fab fa-github"></i></a>
+                <a href="https://facebook.com/mainragames" target="_blank" rel="noopener noreferrer"><i class="fab fa-facebook-f"></i></a>
+                <a href="https://twitter.com/mainragames" target="_blank" rel="noopener noreferrer"><i class="fab fa-twitter"></i></a>
+                <a href="https://instagram.com/mainragames" target="_blank" rel="noopener noreferrer"><i class="fab fa-instagram"></i></a>
+                <a href="https://linkedin.com/company/mainragames" target="_blank" rel="noopener noreferrer"><i class="fab fa-linkedin-in"></i></a>
+                <a href="https://github.com/mainragames" target="_blank" rel="noopener noreferrer"><i class="fab fa-github"></i></a>
             </div>
         </div>
         <div class="copyright">
@@ -198,24 +200,6 @@
     </div>
 </footer>
 <script src="Assets/js/nav.js?v=1.1"></script>
-<script>
-// Tahun dinamis
-(function(){var y=document.getElementById('currentYear'); if(y) y.textContent=new Date().getFullYear();})();
-
-// Mobile nav behaviour (singkat, konsisten dengan halaman lain)
-const hamburger=document.querySelector('.hamburger');
-const mobileNav=document.querySelector('.mobile-nav');
-const closeNav=document.querySelector('.close-nav');
-if(hamburger&&mobileNav){
-  hamburger.addEventListener('click',()=>{mobileNav.classList.add('active');hamburger.classList.add('active');document.body.style.overflow='hidden';});
-}
-if(closeNav&&mobileNav){
-  closeNav.addEventListener('click',()=>{mobileNav.classList.remove('active');hamburger.classList.remove('active');document.body.style.overflow='';});
-}
-if(mobileNav){
-  mobileNav.addEventListener('click',e=>{if(e.target===mobileNav){mobileNav.classList.remove('active');hamburger.classList.remove('active');document.body.style.overflow='';}});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mobileNav.classList.contains('active')){mobileNav.classList.remove('active');hamburger.classList.remove('active');document.body.style.overflow='';}});
-}
-</script>
+<script src="Assets/js/site.js?v=1.1"></script>
 </body>
 </html>

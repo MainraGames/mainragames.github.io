@@ -17,6 +17,7 @@
       // Hide hamburger to avoid double X
       hamburger.classList.remove('active');
       hamburger.classList.add('is-hidden');
+      hamburger.setAttribute('aria-label', 'Close navigation');
       document.body.style.overflow = 'hidden';
       setAria(true);
       // Focus on the first link for keyboard interaction
@@ -31,6 +32,7 @@
       // Show hamburger again
       hamburger.classList.remove('is-hidden');
       hamburger.classList.remove('active');
+      hamburger.setAttribute('aria-label', 'Open navigation');
       document.body.style.overflow = '';
       setAria(false);
       // Return focus to hamburger for accessibility
