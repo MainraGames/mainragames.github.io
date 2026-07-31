@@ -1,123 +1,62 @@
 {
-    "games":  [
-                  {
-                      "id":  1767570835077,
-                      "title":  "Litterally Diving",
-                      "description":  "🌊 Litterally DivingClean the ocean, save the life!Join Ally on a mission to clean the ocean from piles of trash! Use balloons to lift garbage to the surface, protect marine animals, and keep the ecosystem safe.Can you collect the most trash before your oxygen tank runs out?🎮 GameplayApproach and pick up trash scattered in the seaRelease the trash if marine animals get entangledCollect as much as you can to achieve the highest scoreWatch out for your oxygen tank and don’t let it run out!Be careful, whales can appear suddenly!✨ FeaturesFree diving with simple controls.Unique balloons as ocean-cleaning tools.Score system based on speed \u0026 precision.Light educational touch on the importance of protecting the ocean.",
-                      "image":  "https://play-lh.googleusercontent.com/TpDsELFVDDgeV8kKESshsrbXEvZ7-f_jZVRd5ZJo5wFHRv7wfBlwZcGY8pkvrj9AGs-YkKqauatnvtbIMy4kl00=s64-rw",
-                      "screenshots":  [
-                                          "https://play-lh.googleusercontent.com/36SJnSYfmNb0GeGx-EA7JUclpg-ciX_Dkpnf1-Fhi-ggFzl0uF0aROC69ut8whJk3U2PPB6DR9cscOnrpHw9aUQ=w1920-h1080-rw",
-                                          "https://play-lh.googleusercontent.com/N9rqk_m8YfSpoEVjz0gYXYu9_PzoehxCi68jwpqVwZ5c3OocEvhPGzn7NR6h4YG_r3irjWSCcUbtRm1z1X7Te9E=w1920-h1080-rw",
-                                          "https://play-lh.googleusercontent.com/t4pAu7nh_JzgPB42VGy7socGpcvxi1FHMUUP5j2W6c_n9cTA98mm8s1ULFv1RVfPOcnkKlY6uM4BOCFtHwdKfA=w1920-h1080-rw",
-                                          "https://play-lh.googleusercontent.com/_H0t57-Yn-HVjqFSl5_PTEg7rPw2vnI4SjV4ZNOlaJHP9ktZI7vdsGcsnDPRNNYCCWrA95EK29jICAUNMBdztSM=w1920-h1080-rw",
-                                          "https://play-lh.googleusercontent.com/vlI1F6VNwZORbETFiXnrOdgwRmP7scjhUY7TnyYcUuqkTSFq6AJ-Tp1U26fZmoR_FgnCanPRjGeaferdaBi3ZA=w1920-h1080-rw"
-                                      ],
-                      "playLink":  "https://play.google.com/store/apps/details?id=com.algaproduction.litterallydiving",
-                      "category":  "Game",
-                      "status":  "Released",
-                      "releaseDate":  "2026-01-04",
-                      "featured":  true,
-                      "platform":  "Android",
-                      "rating":  null,
-                      "appId":  "com.algaproduction.litterallydiving"
-                  },
-                  {
-                      "id":  1767570835079,
-                      "title":  "Pop It 3D Fidget: Multiplayer",
-                      "description":  "A relaxing 3D fidget game built around interactive pop-it toys.",
-                      "image":  "https://play-lh.googleusercontent.com/CMPpi2rAB2fyVLyGdwueoTtU1enGYU-2Xl1xqIF7NIEH6zYg3pI6yfGu1Qc-agchHR-7=s256-rw",
-                      "screenshots":  [
-
-                                      ],
-                      "playLink":  "https://play.google.com/store/apps/details?id=com.MainraGames.Popit3DFidget",
-                      "category":  "Game",
-                      "status":  "Released",
-                      "releaseDate":  "2026-01-04",
-                      "featured":  true,
-                      "platform":  "Android",
-                      "rating":  null,
-                      "appId":  "com.MainraGames.Popit3DFidget"
-                  },
-                  {
-                      "id":  1767570835080,
-                      "title":  "Squishy Jelly Merge",
-                      "description":  "Combine colorful squishy jellies to create larger ones in this casual merge game.",
-                      "image":  "https://play-lh.googleusercontent.com/eRfyVsWdfvq_7jT0vAkjkTeH5tktOxWJz0sNMuURhkaRWar3FuYkEIPS_tv8c_E8XZqg7hKMJhp6tfWjXECKqw=s256-rw",
-                      "screenshots":  [
-
-                                      ],
-                      "playLink":  "https://play.google.com/store/apps/details?id=com.MainraGames.SquishyJellyMerge",
-                      "category":  "Game",
-                      "status":  "Released",
-                      "releaseDate":  "2026-01-04",
-                      "featured":  true,
-                      "platform":  "Android",
-                      "rating":  null,
-                      "appId":  "com.MainraGames.SquishyJellyMerge"
-                  },
-                  {
-                      "id":  1767570835081,
-                      "title":  "Viking Run Rush",
-                      "description":  "A fast-paced casual game featuring a Viking-themed run and rush challenge.",
-                      "image":  "https://play-lh.googleusercontent.com/7jfw4jMne-908BJ14S3SFFLoQK-GrKx6BvUZuBzEA_iCvaobMp81GdHsuBDYDk9r2Q=s256-rw",
-                      "screenshots":  [
-
-                                      ],
-                      "playLink":  "https://play.google.com/store/apps/details?id=com.Mainra.VikingRush",
-                      "category":  "Game",
-                      "status":  "Released",
-                      "releaseDate":  "2026-01-04",
-                      "featured":  false,
-                      "platform":  "Android",
-                      "rating":  null,
-                      "appId":  "com.Mainra.VikingRush"
-                  },
-                  {
-                      "id":  1767570835082,
-                      "title":  "Duel Agustusan",
-                      "description":  "A casual duel-themed game inspired by Agustusan celebrations.",
-                      "image":  "https://play-lh.googleusercontent.com/DiEow8t3RWBMw14L2wnbhh80socwEiBVXh4OIpu_pgR6DdMqhyvj0eitP1zw30k4LPp5=s256-rw",
-                      "screenshots":  [
-
-                                      ],
-                      "playLink":  "https://play.google.com/store/apps/details?id=com.MAINRA.ProjectAgustusan",
-                      "category":  "Game",
-                      "status":  "Released",
-                      "releaseDate":  "2026-01-04",
-                      "featured":  false,
-                      "platform":  "Android",
-                      "rating":  null,
-                      "appId":  "com.MAINRA.ProjectAgustusan"
-                  },
-                  {
-                      "id":  1767570835083,
-                      "title":  "Pengenalan Binatang",
-                      "description":  "An educational game focused on introducing players to different animals.",
-                      "image":  "https://play-lh.googleusercontent.com/RsT5E894y68QTWBKGntX8r_t-XILwtHITWvDG9dXztrHsvtsC-9GYZycdNehkheapQA=s256-rw",
-                      "screenshots":  [
-
-                                      ],
-                      "playLink":  "https://play.google.com/store/apps/details?id=com.Mainra.GamePengenalanBinatang",
-                      "category":  "Game",
-                      "status":  "Released",
-                      "releaseDate":  "2026-01-04",
-                      "featured":  false,
-                      "platform":  "Android",
-                      "rating":  null,
-                      "appId":  "com.Mainra.GamePengenalanBinatang"
-                  }
-              ],
-    "highlight":  {
-                      "gameId":  1767570835077,
-                      "customTitle":  "Litterally Diving",
-                      "customDescription":  "🌊 Litterally DivingClean the ocean, save the life!Join Ally on a mission to clean the ocean from piles of trash! Use balloons to lift garbage to the surface, protect marine animals, and keep the ecosystem safe.Can you collect the most trash before your oxygen tank runs out?🎮 GameplayApproach and pick up trash scattered in the seaRelease the trash if marine animals get entangledCollect as much as you can to achieve the highest scoreWatch out for your oxygen tank and don’t let it run out!Be careful, whales can appear suddenly!✨ FeaturesFree diving with simple controls.Unique balloons as ocean-cleaning tools.Score system based on speed \u0026 precision.Light educational touch on the importance of protecting the ocean.",
-                      "youtubeUrl":  "",
-                      "stats":  {
-                                    "gameplay":  "50+",
-                                    "characters":  "25+",
-                                    "worlds":  "5+"
-                                },
-                      "active":  true,
-                      "lastUpdated":  "2026-01-04T23:54:00.780Z"
-                  }
+  "games": [
+    {
+      "id": 1785463340293,
+      "title": "Pop It 3D Fidget: Multiplayer",
+      "description": "",
+      "image": "https://play-lh.googleusercontent.com/rPO9jpkgZs0_ih8GjwxGev-_D3P5AUZwF0UNTrNaR4jBwqMBIVtWBGrIFnvwne_Vb-Aa-moZWgKu_pTrKBsO9A=s256-rw",
+      "screenshots": [],
+      "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.Popit3DFidget",
+      "category": "Game",
+      "status": "Released",
+      "releaseDate": "2026-07-31",
+      "featured": true,
+      "platform": "Android",
+      "rating": null,
+      "appId": "com.MainraGames.Popit3DFidget"
+    },
+    {
+      "id": 1785463340294,
+      "title": "Squishy Jelly Merge",
+      "description": "",
+      "image": "https://play-lh.googleusercontent.com/eRfyVsWdfvq_7jT0vAkjkTeH5tktOxWJz0sNMuURhkaRWar3FuYkEIPS_tv8c_E8XZqg7hKMJhp6tfWjXECKqw=s256-rw",
+      "screenshots": [],
+      "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.SquishyJellyMerge",
+      "category": "Game",
+      "status": "Released",
+      "releaseDate": "2026-07-31",
+      "featured": true,
+      "platform": "Android",
+      "rating": null,
+      "appId": "com.MainraGames.SquishyJellyMerge"
+    },
+    {
+      "id": 1785463340295,
+      "title": "Pengenalan Binatang",
+      "description": "",
+      "image": "https://play-lh.googleusercontent.com/MFXdAccA-SAMQX9dkyBxKcqE47s07T7ib7sT449BUJdYDH2PkVWAwY71aVdHHHQT_2JIEvw-vFyms3TA9ffF=s256-rw",
+      "screenshots": [],
+      "playLink": "https://play.google.com/store/apps/details?id=com.Mainra.GamePengenalanBinatang",
+      "category": "Game",
+      "status": "Released",
+      "releaseDate": "2026-07-31",
+      "featured": true,
+      "platform": "Android",
+      "rating": null,
+      "appId": "com.Mainra.GamePengenalanBinatang"
+    }
+  ],
+  "highlight": {
+    "gameId": 1785463340293,
+    "customTitle": "Pop It 3D Fidget: Multiplayer",
+    "customDescription": "",
+    "youtubeUrl": "",
+    "stats": {
+      "gameplay": "50+",
+      "characters": "25+",
+      "worlds": "5+"
+    },
+    "active": true,
+    "lastUpdated": "2026-07-31T02:02:20.293Z"
+  }
 }
