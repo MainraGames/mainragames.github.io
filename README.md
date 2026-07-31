@@ -39,8 +39,8 @@ Agar informasi seller muncul transparan di file Google:
 
 1. Buka AdMob → **Settings** → **Account**.
 2. Pada **Seller information (sellers.json)**, pilih **Transparent** lalu simpan.
-3. Tambahkan `mainragames.com` sebagai business domain hanya setelah domain tersebut diverifikasi di AdMob. Domain tidak boleh menggunakan `https://`, `www`, subdomain, atau trailing slash.
+3. Tambahkan `mainragames.com` sebagai business domain di AdMob hanya setelah domain tersebut diverifikasi. Domain tidak boleh menggunakan `https://`, `www`, subdomain, atau trailing slash.
 4. Pastikan nama `Mainra Games` sama persis dengan nama pada payments profile AdMob. Jangan mengubah nama di file repository untuk menggantikan pengaturan tersebut.
 5. Tunggu hingga 7 hari, lalu cari `pub-5867723400368399` pada file sellers.json Google untuk memverifikasi hasilnya.
 
-Domain sengaja tidak ditambahkan ke `sellers.json` lokal sebelum verifikasi AdMob. Ini mencegah repository mengklaim domain yang belum dikonfirmasi Google; status transparansi dan data authoritative tetap dikendalikan dari AdMob.
+File lokal ini sekarang mencatat `domain` dan `is_confidential: false` sebagai referensi konfigurasi transparan yang diinginkan. Namun, file ini bukan sumber authoritative AdMob dan tidak memverifikasi kepemilikan domain. Status transparansi, nama seller, dan domain authoritative tetap dikendalikan dari AdMob; verifikasi domain harus dilakukan di sana terlebih dahulu.

@@ -3,7 +3,9 @@
     {
       "seller_id": "pub-5867723400368399",
       "seller_type": "PUBLISHER",
-      "name": "Mainra Games"
+      "name": "Mainra Games",
+      "domain": "mainragames.com",
+      "is_confidential": false
     }
   ]
 }
