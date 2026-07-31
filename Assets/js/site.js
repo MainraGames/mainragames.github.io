@@ -39,6 +39,36 @@
         });
     }
 
+    function initializeRevealAnimations() {
+        const targets = document.querySelectorAll(
+            '.section-title, .service-card, .game-item, .about-text, .contact-info, .contact-form, '
+            + '.platform-card, .benefit-card, .activity-card, .process-step, .pricing-card, '
+            + '.faq-item, .privacy-content, .highlight-text, .highlight-image'
+        );
+        if (!targets.length) return;
+
+        document.body.classList.add('js-ready');
+        targets.forEach((target, index) => {
+            target.classList.add('reveal-target');
+            target.style.setProperty('--reveal-delay', `${Math.min(index % 6, 5) * 60}ms`);
+        });
+
+        if (prefersReducedMotion() || !('IntersectionObserver' in window)) {
+            targets.forEach(target => target.classList.add('is-visible'));
+            return;
+        }
+
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add('is-visible');
+                observer.unobserve(entry.target);
+            });
+        }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+
+        targets.forEach(target => observer.observe(target));
+    }
+
     function prefersReducedMotion() {
         return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     }
@@ -170,6 +200,7 @@
         setCurrentYear();
         initializeFaq();
         initializePricingCards();
+        initializeRevealAnimations();
         updateCarouselToggle();
     }
 

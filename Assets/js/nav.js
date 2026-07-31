@@ -91,13 +91,9 @@
     if (header) {
       const onScroll = () => {
         if (window.scrollY > 100) {
-          header.style.backgroundColor = 'rgba(15, 12, 41, 0.95)';
-          header.style.boxShadow = '0 5px 20px rgba(0, 0, 0, 0.4)';
-          header.style.padding = '0.7rem 0';
+          header.classList.add('is-scrolled');
         } else {
-          header.style.backgroundColor = 'rgba(15, 12, 41, 0.85)';
-          header.style.boxShadow = '0 5px 25px rgba(0, 0, 0, 0.3)';
-          header.style.padding = '1rem 0';
+          header.classList.remove('is-scrolled');
         }
       };
       window.addEventListener('scroll', onScroll, { passive: true });
