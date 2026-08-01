@@ -1,12 +1,12 @@
 {
   "contact_email": "mainragames@gmail.com",
-  "contact_address": "Cilacap, Jawa Tengah, Indonesia",
+  "contact_address": "Jl. Raya Kubangkangkung RT 04 RW 03, Kawunganten, Cilacap, Central Java 53251, Indonesia",
   "version": "1.0",
   "sellers": [
     {
       "seller_id": "pub-5867723400368399",
       "seller_type": "PUBLISHER",
-      "name": "Mainra Games",
+      "name": "Faris Miqdad Al Barro'",
       "domain": "mainragames.com",
       "is_confidential": false
     }
