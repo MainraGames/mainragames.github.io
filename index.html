@@ -40,7 +40,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="Assets/css/mainra.css?v=2.0">
+    <link rel="stylesheet" href="Assets/css/mainra.css?v=2.1">
 </head>
 <body>
 <!-- Header -->
@@ -58,14 +58,15 @@
             <li><a href="privacy-policy.html">Privacy Policy</a></li>
         </ul>
         <a href="https://wa.me/6285117590001" class="btn">Contact Us</a>
-        <button type="button" class="hamburger" aria-label="Open navigation" aria-expanded="false">
+        <button type="button" class="hamburger" aria-label="Open navigation" aria-expanded="false" aria-controls="mobile-navigation">
             <span></span>
             <span></span>
             <span></span>
         </button>
     </div>
-    <!-- Mobile Navigation Overlay -->
-    <div class="mobile-nav" aria-hidden="true">
+</header>
+<!-- Mobile Navigation Overlay -->
+    <nav class="mobile-nav" id="mobile-navigation" aria-hidden="true" aria-label="Mobile navigation">
         <div class="mobile-nav-content">
             <div class="mobile-nav-header">
                 <a href="index.html" class="logo">
@@ -87,8 +88,7 @@
                 <a href="#contact" class="btn btn-full">Contact Us</a>
             </div>
         </div>
-    </div>
-</header>
+    </nav>
 <!-- Hero Section -->
 <section class="hero" id="home">
     <div class="container hero-content">
@@ -262,7 +262,7 @@
     </div>
 </footer>
 <script src="Assets/js/games-loader.js?v=2.0"></script>
-<script src="Assets/js/nav.js?v=2.0"></script>
+<script src="Assets/js/nav.js?v=2.1"></script>
 <script src="Assets/js/site.js?v=2.0"></script>
 </body>
 </html>

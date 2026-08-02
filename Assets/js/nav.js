@@ -1,100 +1,166 @@
 (function () {
-  // Init after DOM ready to ensure elements exist
   document.addEventListener('DOMContentLoaded', function () {
+    const root = document.documentElement;
+    const body = document.body;
     const hamburger = document.querySelector('.hamburger');
     const mobileNav = document.querySelector('.mobile-nav');
     const closeNav = document.querySelector('.close-nav');
     const mobileNavLinks = document.querySelectorAll('.mobile-nav-links a');
+    let lastFocusedElement = null;
+    let lockedScrollY = 0;
+    let bodyScrollStyles = null;
+
+    if (!hamburger || !mobileNav) return;
 
     function setAria(isOpen) {
-      if (hamburger) hamburger.setAttribute('aria-expanded', String(isOpen));
-      if (mobileNav) mobileNav.setAttribute('aria-hidden', String(!isOpen));
+      hamburger.setAttribute('aria-expanded', String(isOpen));
+      hamburger.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
+      mobileNav.setAttribute('aria-hidden', String(!isOpen));
+    }
+
+    function setScrollLock(isLocked) {
+      if (isLocked) {
+        lockedScrollY = window.scrollY;
+        bodyScrollStyles = {
+          position: body.style.position,
+          top: body.style.top,
+          left: body.style.left,
+          right: body.style.right,
+          width: body.style.width
+        };
+        body.style.position = 'fixed';
+        body.style.top = `-${lockedScrollY}px`;
+        body.style.left = '0';
+        body.style.right = '0';
+        body.style.width = '100%';
+      } else if (bodyScrollStyles) {
+        body.style.position = bodyScrollStyles.position;
+        body.style.top = bodyScrollStyles.top;
+        body.style.left = bodyScrollStyles.left;
+        body.style.right = bodyScrollStyles.right;
+        body.style.width = bodyScrollStyles.width;
+        window.scrollTo(0, lockedScrollY);
+        bodyScrollStyles = null;
+      }
+      root.classList.toggle('nav-open', isLocked);
+      body.classList.toggle('nav-open', isLocked);
+    }
+
+    function getFocusableElements() {
+      return Array.from(mobileNav.querySelectorAll('a[href], button:not([disabled])'));
     }
 
     function openNav() {
-      if (!mobileNav || !hamburger) return;
+      if (mobileNav.classList.contains('active')) return;
+      lastFocusedElement = document.activeElement;
       mobileNav.classList.add('active');
-      // Hide hamburger to avoid double X
-      hamburger.classList.remove('active');
       hamburger.classList.add('is-hidden');
-      hamburger.setAttribute('aria-label', 'Close navigation');
-      document.body.style.overflow = 'hidden';
+      setScrollLock(true);
       setAria(true);
-      // Focus on the first link for keyboard interaction
-      const firstLink = mobileNav.querySelector('.mobile-nav-links a');
-      if (firstLink) {
-        try { firstLink.focus(); } catch(_) {}
-      }
-    }
-    function closeNavMenu() {
-      if (!mobileNav || !hamburger) return;
-      mobileNav.classList.remove('active');
-      // Show hamburger again
-      hamburger.classList.remove('is-hidden');
-      hamburger.classList.remove('active');
-      hamburger.setAttribute('aria-label', 'Open navigation');
-      document.body.style.overflow = '';
-      setAria(false);
-      // Return focus to hamburger for accessibility
-      try { hamburger.focus(); } catch(_) {}
+
+      const firstFocusable = getFocusableElements()[0];
+      if (firstFocusable) firstFocusable.focus();
     }
 
-    // Open/Close handlers (guarded)
-    if (hamburger && mobileNav) {
-      hamburger.setAttribute('aria-label', 'Open navigation');
-      hamburger.setAttribute('aria-expanded', 'false');
-      hamburger.addEventListener('click', function(){
-        if (mobileNav.classList.contains('active')) {
-          closeNavMenu();
-        } else {
-          openNav();
-        }
-      });
+    function closeNavMenu(restoreFocus = true) {
+      if (!mobileNav.classList.contains('active')) return;
+      mobileNav.classList.remove('active');
+      hamburger.classList.remove('is-hidden');
+      setScrollLock(false);
+      setAria(false);
+
+      if (restoreFocus) {
+        const focusTarget = lastFocusedElement && typeof lastFocusedElement.focus === 'function'
+          ? lastFocusedElement
+          : hamburger;
+        focusTarget.focus();
+      }
+      lastFocusedElement = null;
     }
-    if (closeNav) {
-      closeNav.setAttribute('aria-label', 'Close navigation');
-      closeNav.addEventListener('click', closeNavMenu);
-    }
-    if (mobileNav) {
-      mobileNav.setAttribute('aria-hidden', 'true');
-      // click backdrop to close
-      mobileNav.addEventListener('click', function (e) {
-        if (e.target === mobileNav) closeNavMenu();
-      });
-    }
-    if (mobileNavLinks && mobileNavLinks.length) {
-      mobileNavLinks.forEach(link => {
-        link.addEventListener('click', closeNavMenu);
-      });
-    }
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && mobileNav && mobileNav.classList.contains('active')) {
+
+    setAria(false);
+
+    hamburger.addEventListener('click', function () {
+      if (mobileNav.classList.contains('active')) {
         closeNavMenu();
+      } else {
+        openNav();
       }
     });
 
-    // Smooth scrolling ONLY for same-page anchors
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
+    if (closeNav) {
+      closeNav.addEventListener('click', function () {
+        closeNavMenu();
+      });
+    }
+
+    mobileNav.addEventListener('click', function (event) {
+      if (event.target === mobileNav) closeNavMenu();
+    });
+
+    mobileNavLinks.forEach(function (link) {
+      link.addEventListener('click', function () {
+        closeNavMenu(false);
+      });
+    });
+
+    document.addEventListener('focusin', function (event) {
+      if (!mobileNav.classList.contains('active') || mobileNav.contains(event.target)) return;
+      const firstFocusable = getFocusableElements()[0];
+      if (firstFocusable) firstFocusable.focus();
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (!mobileNav.classList.contains('active')) return;
+
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeNavMenu();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+      const focusableElements = getFocusableElements();
+      if (!focusableElements.length) return;
+
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === firstFocusable) {
+        event.preventDefault();
+        lastFocusable.focus();
+      } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+        event.preventDefault();
+        firstFocusable.focus();
+      }
+    });
+
+    const desktopQuery = window.matchMedia('(min-width: 769px)');
+    const closeOnDesktop = function (event) {
+      if (event.matches) closeNavMenu(false);
+    };
+    if (desktopQuery.addEventListener) {
+      desktopQuery.addEventListener('change', closeOnDesktop);
+    } else {
+      desktopQuery.addListener(closeOnDesktop);
+    }
+
+    // Smooth scrolling only for same-page anchors.
+    document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
+      anchor.addEventListener('click', function (event) {
         const href = this.getAttribute('href');
         if (!href || href === '#') return;
         const target = document.querySelector(href);
-        if (target) {
-          e.preventDefault();
-          target.scrollIntoView({ behavior: 'smooth' });
-        }
+        if (!target) return;
+        event.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth' });
       });
     });
 
-    // Header scroll effect
+    // Header scroll effect.
     const header = document.querySelector('header');
     if (header) {
-      const onScroll = () => {
-        if (window.scrollY > 100) {
-          header.classList.add('is-scrolled');
-        } else {
-          header.classList.remove('is-scrolled');
-        }
+      const onScroll = function () {
+        header.classList.toggle('is-scrolled', window.scrollY > 100);
       };
       window.addEventListener('scroll', onScroll, { passive: true });
       onScroll();
