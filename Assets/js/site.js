@@ -40,6 +40,8 @@
     }
 
     function initializeRevealAnimations() {
+        if (document.body.classList.contains('no-reveal')) return;
+
         const targets = document.querySelectorAll(
             '.section-title, .service-card, .game-item, .about-text, .contact-info, .contact-form, '
             + '.platform-card, .benefit-card, .activity-card, .process-step, .pricing-card, '
