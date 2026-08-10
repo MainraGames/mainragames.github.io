@@ -9,7 +9,7 @@
       "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.SquishyJellyMerge",
       "category": "Game",
       "status": "Released",
-      "releaseDate": "2026-08-09",
+      "releaseDate": "2026-08-10",
       "featured": true,
       "platform": "Android",
       "rating": null,
@@ -24,7 +24,7 @@
       "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.Popit3DFidget",
       "category": "Game",
       "status": "Released",
-      "releaseDate": "2026-08-09",
+      "releaseDate": "2026-08-10",
       "featured": true,
       "platform": "Android",
       "rating": null,
@@ -39,7 +39,7 @@
       "playLink": "https://play.google.com/store/apps/details?id=com.Mainra.GamePengenalanBinatang",
       "category": "Game",
       "status": "Released",
-      "releaseDate": "2026-08-09",
+      "releaseDate": "2026-08-10",
       "featured": true,
       "platform": "Android",
       "rating": null,
@@ -57,6 +57,6 @@
       "worlds": "5+"
     },
     "active": true,
-    "lastUpdated": "2026-08-09T01:04:57.908Z"
+    "lastUpdated": "2026-08-10T01:06:36.058Z"
   }
 }
