@@ -33,7 +33,8 @@ const GAMES_DATA_PATH = path.join(__dirname, '..', 'Assets', 'data', 'games-data
 async function fetchGamesFromPlayStore() {
     try {
         // Opsi 1: Menggunakan google-play-scraper (perlu install: npm install google-play-scraper)
-        const gplay = require('google-play-scraper');
+        const gplayModule = require('google-play-scraper');
+        const gplay = gplayModule.default || gplayModule;
         
         console.log('Mengambil data aplikasi dari Google Play Store...');
         console.log('Developer ID:', DEVELOPER_ID);
@@ -46,7 +47,8 @@ async function fetchGamesFromPlayStore() {
             apps = await gplay.developer({
                 devId: DEVELOPER_ID,
                 lang: 'en',
-                country: 'us'
+                country: 'us',
+                fullDetail: true
             });
         } 
         // Coba dengan method list jika developer tidak ada
