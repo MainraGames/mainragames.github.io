@@ -287,6 +287,18 @@ class GamesLoader {
                 dotsContainer.innerHTML = '<button type="button" class="dot active" aria-label="Current slide"></button>';
             }
         }
+
+        const firstImage = highlightImage?.querySelector('img');
+        const carousel = highlightImage?.closest('.carousel-container');
+        if (firstImage && carousel) {
+            const applySourceRatio = () => {
+                if (firstImage.naturalWidth && firstImage.naturalHeight) {
+                    carousel.style.setProperty('--carousel-aspect-ratio', `${firstImage.naturalWidth} / ${firstImage.naturalHeight}`);
+                }
+            };
+            if (firstImage.complete && firstImage.naturalWidth) applySourceRatio();
+            else firstImage.addEventListener('load', applySourceRatio, { once: true });
+        }
         try { if (typeof window.initializeCarousel === 'function') setTimeout(window.initializeCarousel, 50); } catch (e) {}
     }
 

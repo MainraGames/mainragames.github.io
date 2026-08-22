@@ -434,12 +434,12 @@ footer { padding: 4rem 0 2rem; background: #080d15; border-top: 1px solid var(--
 .highlight-text h2::before { content: 'FEATURED /'; display: block; margin-bottom: .8rem; color: var(--mainra-orange); font-family: var(--display); font-size: .7rem; letter-spacing: .2em; }
 .highlight-description { margin-bottom: 1.5rem; color: var(--mainra-muted); font-size: 1.05rem; }
 .highlight-image, .carousel-container { overflow: hidden; border: 1px solid var(--mainra-line); border-radius: var(--radius-lg); box-shadow: 0 25px 60px rgba(0, 0, 0, .32); }
-.carousel-container { position: relative; width: 100%; height: 420px; }
+.carousel-container { position: relative; width: 100%; height: auto; max-height: min(72vh, 720px); aspect-ratio: var(--carousel-aspect-ratio, 16 / 9); background: #080d15; transition: aspect-ratio .25s ease; }
 .carousel-wrapper, .carousel-slide { width: 100%; height: 100%; }
 .carousel-wrapper { position: relative; }
 .carousel-slide { position: absolute; inset: 0; opacity: 0; transition: opacity .5s ease; }
 .carousel-slide.active { opacity: 1; }
-.carousel-slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.carousel-slide img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .carousel-btn, .carousel-toggle { position: absolute; z-index: 5; display: inline-flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, .3); background: rgba(11, 17, 28, .72); color: var(--mainra-white); cursor: pointer; backdrop-filter: blur(8px); transition: background-color .2s ease, color .2s ease, transform .2s ease; }
 .carousel-btn { top: 50%; width: 44px; height: 44px; border-radius: var(--radius-sm); transform: translateY(-50%); }
 .carousel-btn:hover, .carousel-toggle:hover { background: var(--mainra-orange); color: var(--mainra-navy-dark); }
@@ -581,7 +581,6 @@ footer { padding: 4rem 0 2rem; background: #080d15; border-top: 1px solid var(--
   .about-content, .contact-container, .platforms-grid.learning { grid-template-columns: 1fr; gap: 2rem; }
   .games-grid, .pricing-grid, .benefits-grid { grid-template-columns: 1fr; }
   .pricing-card.featured, .pricing-card.featured:hover { transform: none; }
-  .carousel-container { height: 300px; }
   .section-title { margin-bottom: 2.2rem; }
 }
 @media (max-width: 480px) {
@@ -592,7 +591,6 @@ footer { padding: 4rem 0 2rem; background: #080d15; border-top: 1px solid var(--
   .hero-btns .btn, .game-actions .btn { width: 100%; }
   .page-header { min-height: 280px; padding-top: calc(var(--header-height) + 3rem); }
   .page-header h1 { font-size: 2.7rem; }
-  .carousel-container { height: 240px; }
   .game-image { height: 180px; }
   .activities-grid { grid-template-columns: 1fr; }
   .social-links { gap: .4rem; }
