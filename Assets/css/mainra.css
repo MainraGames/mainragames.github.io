@@ -315,8 +315,6 @@ html.nav-open, body.nav-open { overflow: hidden; }
 
 /* Hero and page headers */
 .hero, .page-header {
-  --game-x: 76%;
-  --game-y: 42%;
   position: relative;
   overflow: hidden;
   isolation: isolate;
@@ -327,12 +325,7 @@ html.nav-open, body.nav-open { overflow: hidden; }
   position: absolute;
   inset: 0;
   z-index: -2;
-  background:
-    radial-gradient(circle 260px at var(--game-x) var(--game-y), rgba(245, 107, 67, .16), transparent 72%),
-    linear-gradient(rgba(255, 255, 255, .018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, .018) 1px, transparent 1px),
-    linear-gradient(125deg, rgba(34, 45, 64, .95) 0%, rgba(11, 17, 28, .98) 62%);
-  background-size: auto, 48px 48px, 48px 48px, auto;
+  background: linear-gradient(125deg, rgba(34, 45, 64, .95) 0%, rgba(11, 17, 28, .98) 62%);
 }
 .hero::after, .page-header::after {
   content: '';
@@ -360,41 +353,6 @@ html.nav-open, body.nav-open { overflow: hidden; }
 .page-header h1 { max-width: 850px; margin-bottom: 1rem; color: var(--mainra-white); font-size: clamp(2.6rem, 6vw, 5rem); line-height: .98; letter-spacing: -.07em; }
 .page-header h1::first-letter { color: var(--mainra-orange); }
 .page-header p, .page-header .subtitle { max-width: 700px; margin: 0; color: var(--mainra-muted); font-size: 1.12rem; }
-
-/* Lightweight game feedback */
-.game-spark {
-  position: fixed;
-  z-index: 2000;
-  width: 7px;
-  height: 7px;
-  border: 2px solid var(--mainra-orange);
-  pointer-events: none;
-  box-shadow: 0 -14px 0 -1px var(--mainra-orange), 14px 0 0 -1px var(--mainra-orange), 0 14px 0 -1px var(--mainra-orange), -14px 0 0 -1px var(--mainra-orange);
-  transform: translate(-50%, -50%) rotate(45deg) scale(.35);
-  animation: game-spark .55s ease-out forwards;
-}
-.game-spark::after {
-  content: '+10 XP';
-  position: absolute;
-  top: -23px;
-  left: 13px;
-  width: max-content;
-  color: var(--mainra-orange);
-  font-family: var(--display);
-  font-size: .65rem;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-shadow: 0 2px 8px var(--mainra-navy-dark);
-  transform: rotate(-45deg);
-}
-@keyframes game-spark {
-  25% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-50%, -75%) rotate(45deg) scale(1.7); }
-}
-
-.game-item:active, .service-card:active, .platform-card:active, .activity-card:active {
-  transform: translateY(-2px) scale(.985);
-}
 
 /* Generic sections */
 .services, .games, .about, .contact, .highlight-game, .games-section, .platforms,
