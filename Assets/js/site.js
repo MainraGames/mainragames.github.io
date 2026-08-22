@@ -75,6 +75,36 @@
         return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     }
 
+    function initializeGameFeel() {
+        if (prefersReducedMotion()) return;
+
+        if (window.matchMedia?.('(pointer: fine)').matches) {
+            document.querySelectorAll('.hero, .page-header').forEach(surface => {
+                surface.addEventListener('pointermove', event => {
+                    const bounds = surface.getBoundingClientRect();
+                    surface.style.setProperty('--game-x', `${event.clientX - bounds.left}px`);
+                    surface.style.setProperty('--game-y', `${event.clientY - bounds.top}px`);
+                }, { passive: true });
+                surface.addEventListener('pointerleave', () => {
+                    surface.style.removeProperty('--game-x');
+                    surface.style.removeProperty('--game-y');
+                });
+            });
+        }
+
+        document.addEventListener('pointerdown', event => {
+            if (!event.target.closest('.btn, .game-item, .service-card, .platform-card, .activity-card')) return;
+
+            const spark = document.createElement('span');
+            spark.className = 'game-spark';
+            spark.setAttribute('aria-hidden', 'true');
+            spark.style.left = `${event.clientX}px`;
+            spark.style.top = `${event.clientY}px`;
+            spark.addEventListener('animationend', () => spark.remove(), { once: true });
+            document.body.appendChild(spark);
+        }, { passive: true });
+    }
+
     function stopCarouselAutoplay() {
         clearInterval(autoPlayInterval);
         autoPlayInterval = undefined;
@@ -203,6 +233,7 @@
         initializeFaq();
         initializePricingCards();
         initializeRevealAnimations();
+        initializeGameFeel();
         updateCarouselToggle();
     }
 
