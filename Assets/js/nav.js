@@ -16,6 +16,7 @@
       hamburger.setAttribute('aria-expanded', String(isOpen));
       hamburger.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
       mobileNav.setAttribute('aria-hidden', String(!isOpen));
+      mobileNav.inert = !isOpen;
     }
 
     function setScrollLock(isLocked) {

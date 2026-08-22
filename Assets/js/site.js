@@ -93,7 +93,7 @@
         const motionReduced = prefersReducedMotion();
         const unavailable = totalSlides < 2 || motionReduced;
         toggle.hidden = unavailable;
-        toggle.setAttribute('aria-hidden', String(unavailable));
+        toggle.disabled = unavailable;
         if (unavailable) {
             stopCarouselAutoplay();
             return;

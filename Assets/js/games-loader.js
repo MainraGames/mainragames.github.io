@@ -109,7 +109,7 @@ class GamesLoader {
             console.log('No games found, showing empty state');
             gamesGrid.innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #999;">
-                    <i class="fas fa-gamepad" style="font-size: 4rem; margin-bottom: 1rem;"></i>
+                    <i class="fas fa-gamepad" aria-hidden="true" style="font-size: 4rem; margin-bottom: 1rem;"></i>
                     <p>No games available yet</p>
                 </div>
             `;
@@ -135,7 +135,7 @@ class GamesLoader {
             const imageUrl = this.safeUrl(gameIcon, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/600x400/333/fff?text=No+Image';
             return `
             <div class="game-item simple-card" ${playLink ? `data-play-link="${this.escapeHtml(playLink)}" tabindex="0" role="link"` : ''}>
-                <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(game.title)}" class="game-img" data-fallback-src="https://placehold.co/600x400/333/fff?text=No+Image">
+                <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(game.title)}" class="game-img" width="640" height="400" loading="lazy" decoding="async" data-fallback-src="https://placehold.co/600x400/333/fff?text=No+Image">
                 <h3 class="game-title">${this.escapeHtml(game.title)}</h3>
             </div>
             `;
@@ -157,7 +157,7 @@ class GamesLoader {
             if (highlightText) {
                 highlightText.innerHTML = `
                     <div style="text-align: center; padding: 3rem; color: #999;">
-                        <i class="fas fa-crown" style="font-size: 4rem; margin-bottom: 1rem;"></i>
+                        <i class="fas fa-crown" aria-hidden="true" style="font-size: 4rem; margin-bottom: 1rem;"></i>
                         <h2 style="color: #666; margin-bottom: 1rem;">No Featured Game Yet</h2>
                         <p>We are preparing the best featured game for you.</p>
                     </div>
@@ -172,7 +172,7 @@ class GamesLoader {
             if (highlightText) {
                 highlightText.innerHTML = `
                     <div style="text-align: center; padding: 3rem; color: #999;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 4rem; margin-bottom: 1rem; color: var(--warning);"></i>
+                        <i class="fas fa-exclamation-triangle" aria-hidden="true" style="font-size: 4rem; margin-bottom: 1rem; color: var(--warning);"></i>
                         <h2 style="color: #666; margin-bottom: 1rem;">Game Not Found</h2>
                         <p>The selected featured game is not available.</p>
                     </div>
@@ -231,10 +231,10 @@ class GamesLoader {
                 ${formattedDescription}
                 <div class="game-actions">
                     ${playLink ?
-                        `<a href="${this.escapeHtml(playLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-play"><i class="fas fa-play"></i> Play</a>` : ''
+                        `<a href="${this.escapeHtml(playLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-play"><i class="fas fa-play" aria-hidden="true"></i> Play</a>` : ''
                     }
                     ${trailerUrl ?
-                        `<a href="${this.escapeHtml(trailerUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-details"><i class="fab fa-youtube"></i> Trailer</a>` : ''
+                        `<a href="${this.escapeHtml(trailerUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-details"><i class="fab fa-youtube" aria-hidden="true"></i> Trailer</a>` : ''
                     }
                 </div>
             `;
@@ -248,7 +248,7 @@ class GamesLoader {
                 if (!screenshotUrl) return '';
                 return `
                 <div class="carousel-slide ${index === 0 ? 'active' : ''}">
-                    <img src="${this.escapeHtml(screenshotUrl)}" alt="${this.escapeHtml(displayTitle)} Screenshot ${index + 1}" data-fallback-src="${this.escapeHtml(fallbackImage)}">
+                    <img src="${this.escapeHtml(screenshotUrl)}" alt="${this.escapeHtml(displayTitle)} screenshot ${index + 1}" width="768" height="480" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy" decoding="async"'} data-fallback-src="${this.escapeHtml(fallbackImage)}">
                 </div>
             `;
             }).join('');
@@ -276,7 +276,7 @@ class GamesLoader {
                 const imageUrl = this.safeUrl(highlightGame.image, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/600x400/333/fff?text=No+Image';
                 highlightImage.innerHTML = `
                     <div class="carousel-slide active">
-                        <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(displayTitle)}" data-fallback-src="https://placehold.co/600x400/333/fff?text=No+Image">
+                        <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(displayTitle)}" width="768" height="480" fetchpriority="high" data-fallback-src="https://placehold.co/600x400/333/fff?text=No+Image">
                     </div>
                 `;
                 this.bindImageFallbacks(highlightImage);
@@ -297,7 +297,7 @@ class GamesLoader {
         if (this.games.length === 0) {
             gamesList.innerHTML = `
                 <div class="no-games" style="text-align: center; padding: 3rem; color: #999;">
-                    <i class="fas fa-gamepad" style="font-size: 4rem; margin-bottom: 1rem;"></i>
+                    <i class="fas fa-gamepad" aria-hidden="true" style="font-size: 4rem; margin-bottom: 1rem;"></i>
                     <h3>No Games Yet</h3>
                     <p>We are developing exciting games for you.</p>
                 </div>
@@ -342,7 +342,7 @@ class GamesLoader {
             return `
             <div class="game-item">
                 <div class="game-image">
-                    <img src="${this.escapeHtml(this.safeUrl(gameIcon, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/256x256/333/fff?text=No+Image')}" alt="${this.escapeHtml(game.title)}" data-fallback-src="https://placehold.co/256x256/333/fff?text=No+Image">
+                    <img src="${this.escapeHtml(this.safeUrl(gameIcon, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/256x256/333/fff?text=No+Image')}" alt="${this.escapeHtml(game.title)}" width="256" height="256" loading="lazy" decoding="async" data-fallback-src="https://placehold.co/256x256/333/fff?text=No+Image">
                 </div>
                 <div class="game-content">
                     <h3 class="game-title">${this.escapeHtml(game.title)}</h3>
