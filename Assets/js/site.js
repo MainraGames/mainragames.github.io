@@ -19,22 +19,16 @@
             const answer = item.querySelector('.faq-answer');
             if (!question || !answer) return;
 
+            answer.hidden = false;
+            answer.inert = true;
+            answer.setAttribute('aria-hidden', 'true');
+
             question.addEventListener('click', () => {
                 const isOpen = question.getAttribute('aria-expanded') === 'true';
                 question.setAttribute('aria-expanded', String(!isOpen));
-                answer.hidden = isOpen;
+                answer.inert = isOpen;
+                answer.setAttribute('aria-hidden', String(isOpen));
                 item.classList.toggle('active', !isOpen);
-            });
-        });
-    }
-
-    function initializePricingCards() {
-        document.querySelectorAll('.pricing-card').forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                if (!card.classList.contains('featured')) card.style.transform = 'translateY(-10px)';
-            });
-            card.addEventListener('mouseleave', () => {
-                if (!card.classList.contains('featured')) card.style.transform = 'translateY(0)';
             });
         });
     }
@@ -43,7 +37,7 @@
         if (document.body.classList.contains('no-reveal')) return;
 
         const targets = document.querySelectorAll(
-            '.section-title, .service-card, .game-item, .about-text, .contact-info, .contact-form, '
+            '.section-title, .proof-item, .service-card, .game-item, .about-text, .contact-info, .contact-form, '
             + '.platform-card, .benefit-card, .activity-card, .process-step, .pricing-card, '
             + '.faq-item, .privacy-content, .highlight-text, .highlight-image'
         );
@@ -201,7 +195,6 @@
     function initializeSite() {
         setCurrentYear();
         initializeFaq();
-        initializePricingCards();
         initializeRevealAnimations();
         updateCarouselToggle();
     }

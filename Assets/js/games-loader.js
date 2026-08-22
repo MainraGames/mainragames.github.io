@@ -49,8 +49,8 @@ class GamesLoader {
     bindImageFallbacks(container) {
         container.querySelectorAll('img[data-fallback-src]').forEach(image => {
             image.addEventListener('error', () => {
-                const fallback = this.safeUrl(image.dataset.fallbackSrc);
-                if (fallback && image.src !== fallback) image.src = fallback;
+                image.classList.add('is-branded-fallback');
+                image.src = 'Assets/img/LogoMainraGames.png';
             }, { once: true });
         });
     }
@@ -103,6 +103,7 @@ class GamesLoader {
             // Fallback ke ID (tertinggi = terbaru)
             return String(b.id || '').localeCompare(String(a.id || ''));
         }).slice(0, 3);
+        gamesGrid.classList.toggle('is-bento', latestGames.length === 3);
         console.log('Latest games for homepage:', latestGames.length);
 
         if (latestGames.length === 0) {
@@ -132,10 +133,10 @@ class GamesLoader {
             }
             
             const playLink = this.safeUrl(game.playLink, ['play.google.com']);
-            const imageUrl = this.safeUrl(gameIcon, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/600x400/333/fff?text=No+Image';
+            const imageUrl = this.safeUrl(gameIcon, ['play-lh.googleusercontent.com']) || 'Assets/img/LogoMainraGames.png';
             return `
             <div class="game-item simple-card" ${playLink ? `data-play-link="${this.escapeHtml(playLink)}" tabindex="0" role="link"` : ''}>
-                <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(game.title)}" class="game-img" width="640" height="400" loading="lazy" decoding="async" data-fallback-src="https://placehold.co/600x400/333/fff?text=No+Image">
+                <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(game.title)}" class="game-img" width="640" height="400" loading="lazy" decoding="async" data-fallback-src="Assets/img/LogoMainraGames.png">
                 <h3 class="game-title">${this.escapeHtml(game.title)}</h3>
             </div>
             `;
@@ -242,7 +243,7 @@ class GamesLoader {
 
         // Update carousel with game screenshots
         if (highlightImage && highlightGame.screenshots && highlightGame.screenshots.length > 0) {
-            const fallbackImage = this.safeUrl(highlightGame.image, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/600x400/333/fff?text=No+Image';
+            const fallbackImage = this.safeUrl(highlightGame.image, ['play-lh.googleusercontent.com']) || 'Assets/img/LogoMainraGames.png';
             const slides = highlightGame.screenshots.map((screenshot, index) => {
                 const screenshotUrl = this.safeUrl(screenshot, ['play-lh.googleusercontent.com']);
                 if (!screenshotUrl) return '';
@@ -273,10 +274,10 @@ class GamesLoader {
         } else {
             // Use main game image as single slide
             if (highlightImage) {
-                const imageUrl = this.safeUrl(highlightGame.image, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/600x400/333/fff?text=No+Image';
+                const imageUrl = this.safeUrl(highlightGame.image, ['play-lh.googleusercontent.com']) || 'Assets/img/LogoMainraGames.png';
                 highlightImage.innerHTML = `
                     <div class="carousel-slide active">
-                        <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(displayTitle)}" width="768" height="480" fetchpriority="high" data-fallback-src="https://placehold.co/600x400/333/fff?text=No+Image">
+                        <img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(displayTitle)}" width="768" height="480" fetchpriority="high" data-fallback-src="Assets/img/LogoMainraGames.png">
                     </div>
                 `;
                 this.bindImageFallbacks(highlightImage);
@@ -348,13 +349,14 @@ class GamesLoader {
             
             // Jika masih tidak ada icon yang valid, gunakan fallback
             if (!gameIcon || gameIcon.length < 10) {
-                gameIcon = 'https://placehold.co/256x256/333/fff?text=Game';
+                gameIcon = 'Assets/img/LogoMainraGames.png';
             }
+            const safeGameIcon = this.safeUrl(gameIcon, ['play-lh.googleusercontent.com']) || 'Assets/img/LogoMainraGames.png';
             
             return `
             <div class="game-item">
                 <div class="game-image">
-                    <img src="${this.escapeHtml(this.safeUrl(gameIcon, ['play-lh.googleusercontent.com', 'placehold.co']) || 'https://placehold.co/256x256/333/fff?text=No+Image')}" alt="${this.escapeHtml(game.title)}" width="256" height="256" loading="lazy" decoding="async" data-fallback-src="https://placehold.co/256x256/333/fff?text=No+Image">
+                    <img src="${this.escapeHtml(safeGameIcon)}" alt="${this.escapeHtml(game.title)}" width="256" height="256" loading="lazy" decoding="async" data-fallback-src="Assets/img/LogoMainraGames.png">
                 </div>
                 <div class="game-content">
                     <h3 class="game-title">${this.escapeHtml(game.title)}</h3>
@@ -365,7 +367,7 @@ class GamesLoader {
                     <div class="game-actions">
                         ${playLink ?
                             `<a href="${this.escapeHtml(playLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-play">Play</a>` :
-                            `<span class="btn" style="opacity: 0.5; cursor: not-allowed;">Coming Soon</span>`
+                            `<span class="btn" aria-disabled="true">Coming Soon</span>`
                         }
                         <a href="#" class="btn btn-details">Details</a>
                     </div>
