@@ -40,18 +40,11 @@ jobs:
 
             echo "== 2. delete system ALIOS records (apex + wildcard) =="
             api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" > recs.json
-            python3 - <<'PY'
-            import json, os, subprocess
-            d=json.load(open('recs.json'))
-            for r in d.get('records',[]):
-                if r.get('type')=='ALIOS':
-                    rid=r['id']
-                    out=subprocess.run(['curl','-s','-o','/dev/null','-w','%{http_code}','-X','DELETE',
-                        '-H',f"Authorization: Bearer {os.environ['TOKEN']}",
-                        f"https://api.vercel.com/v4/domains/mainragames.com/records/{rid}?teamId={os.environ['TEAM']}"],
-                        capture_output=True,text=True).stdout
-                    print('delete ALIOS', rid, '->', out)
-            PY
+            for RID in $(jq -r '.records[] | select(.type=="ALIOS") | .id' recs.json); do
+              CODE=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "$H" \
+                "https://api.vercel.com/v4/domains/mainragames.com/records/$RID?teamId=$TEAM")
+              echo "delete $RID -> $CODE"
+            done
 
             echo "== 3. add GitHub Pages records =="
             for IP in 185.199.108.153 185.199.109.153 185.199.110.153 185.199.111.153; do
@@ -66,9 +59,7 @@ jobs:
             echo "CNAME www -> $CODE $(head -c 100 r.json)"
 
             echo "== 4. final records =="
-            api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" | python3 -c "
-          import sys,json
-          for r in json.load(sys.stdin).get('records',[]): print(r.get('type'), r.get('name') or '@', '->', r.get('value'))"
+            api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" | jq -r '.records[] | "\(.type) \(.name // "@") -> \(.value)"'
           fi
 
           if [ "$ACT" = "rollback-alias" ]; then
