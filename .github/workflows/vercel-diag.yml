@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'diag | dns-records | disable-challenge | remove-domain'
+        description: 'diag | dns-records | migrate | rollback-alias'
         required: true
         default: 'diag'
 
 env:
   TEAM: team_Yfsepduh4B0KfJ8HBnL77RBy
+  PROJ: mainrastudio-github-io
 
 jobs:
   run:
@@ -24,52 +25,44 @@ jobs:
           H="Authorization: Bearer $TOKEN"
           api() { curl -s -H "$H" "https://api.vercel.com$1"; }
 
-          echo "== all projects =="
-          api "/v9/projects?teamId=$TEAM&limit=20" > projs.json
-          python3 - <<'PY'
-          import json
-          d=json.load(open('projs.json'))
-          for p in d.get('projects',[]):
-              print(p['name'], '| id=', p['id'], '| latest=', (p.get('latestDeployments') or [{}])[0].get('url',''))
-          PY
-
-          echo "== find alias owner =="
-          api "/v4/aliases/mainragames.com?teamId=$TEAM" | head -c 600; echo
-          api "/v13/deployments/mainragames.com?teamId=$TEAM" 2>/dev/null | head -c 200; echo
-
-          echo "== domain config / aliases detail =="
-          api "/v4/domains/mainragames.com?teamId=$TEAM" > dom.json
-          python3 - <<'PY'
-          import json
-          d=json.load(open('dom.json'))['domain']
-          print('aliases:', [a['alias'] for a in d.get('aliases',[])])
-          print('cdnEnabled:', d.get('cdnEnabled'), '| zone:', d.get('zone'))
-          PY
-
-          if [ "$ACT" = "disable-challenge" ]; then
-            PID=$(python3 -c "
-          import json
-          d=json.load(open('projs.json'))
-          ps=d.get('projects',[])
-          print(ps[0]['name'] if ps else '')")
-            echo "== PATCH protections on project: $PID =="
-            CODE=$(curl -s -o resp.json -w '%{http_code}' -X PATCH -H "$H" -H 'Content-Type: application/json' \
-              -d '{"attackChallengeMode":false}' \
-              "https://api.vercel.com/v9/projects/$PID?teamId=$TEAM")
-            echo "PATCH: $CODE"; head -c 300 resp.json; echo
+          if [ "$ACT" = "dns-records" ]; then
+            echo "== current DNS records =="
+            api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" | head -c 3000; echo
           fi
 
-          if [ "$ACT" = "remove-domain" ]; then
-            PID=$(python3 -c "
-          import json
-          d=json.load(open('projs.json'))
-          ps=d.get('projects',[])
-          print(ps[0]['name'] if ps else '')")
-            echo "== remove domain from project $PID =="
-            CODE=$(curl -s -o resp.json -w '%{http_code}' -X DELETE -H "$H" \
-              "https://api.vercel.com/v9/projects/$PID/domains/mainragames.com?teamId=$TEAM")
-            echo "project removal: $CODE"; head -c 300 resp.json; echo
-            CODE2=$(curl -s -o resp2.json -w '%{http_code}' -X DELETE -H "$H" \
-              "https://api.vercel.com/v4/domains/mainragames.com?teamId=$TEAM")
-            echo "account removal: $CODE2"; head -c 300 resp2.json; echo
+          if [ "$ACT" = "migrate" ]; then
+            echo "== 1. detach domains from project $PROJ =="
+            for D in mainragames.com www.mainragames.com; do
+              CODE=$(curl -s -o r.json -w '%{http_code}' -X DELETE -H "$H" \
+                "https://api.vercel.com/v9/projects/$PROJ/domains/$D?teamId=$TEAM")
+              echo "$D -> $CODE $(head -c 150 r.json)"
+            done
+
+            echo "== 2. add GitHub Pages DNS records =="
+            for IP in 185.199.108.153 185.199.109.153 185.199.110.153 185.199.111.153; do
+              CODE=$(curl -s -o r.json -w '%{http_code}' -X POST -H "$H" -H 'Content-Type: application/json' \
+                -d "{\"type\":\"A\",\"name\":\"\",\"value\":\"$IP\",\"ttl\":3600}" \
+                "https://api.vercel.com/v4/domains/mainragames.com/records?teamId=$TEAM")
+              echo "A @ $IP -> $CODE $(head -c 120 r.json)"
+            done
+            CODE=$(curl -s -o r.json -w '%{http_code}' -X POST -H "$H" -H 'Content-Type: application/json' \
+              -d '{"type":"CNAME","name":"www","value":"mainragames.github.io","ttl":3600}' \
+              "https://api.vercel.com/v4/domains/mainragames.com/records?teamId=$TEAM")
+            echo "CNAME www -> $CODE $(head -c 120 r.json)"
+
+            echo "== 3. verify records =="
+            api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" | python3 -c "
+          import sys,json
+          d=json.load(sys.stdin)
+          for r in d.get('records',[]): print(r.get('type'), r.get('name') or '@', '->', r.get('value'))"
+          fi
+
+          if [ "$ACT" = "rollback-alias" ]; then
+            echo "== rollback: re-attach domains to $PROJ =="
+            for D in mainragames.com www.mainragames.com; do
+              CODE=$(curl -s -o r.json -w '%{http_code}' -X POST -H "$H" -H 'Content-Type: application/json' \
+                -d "{\"name\":\"$D\"}" \
+                "https://api.vercel.com/v13/deployments/dpl_5AGTRw5XZbzmsTWNJCAn1X43wRrA/aliases?teamId=$TEAM")
+              echo "$D -> $CODE $(head -c 200 r.json)"
+            done
           fi
