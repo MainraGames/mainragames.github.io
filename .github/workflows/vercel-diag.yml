@@ -38,27 +38,41 @@ jobs:
               echo "$D -> $CODE $(head -c 150 r.json)"
             done
 
-            echo "== 2. add GitHub Pages DNS records =="
+            echo "== 2. delete system ALIOS records (apex + wildcard) =="
+            api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" > recs.json
+            python3 - <<'PY'
+            import json, os, subprocess
+            d=json.load(open('recs.json'))
+            for r in d.get('records',[]):
+                if r.get('type')=='ALIOS':
+                    rid=r['id']
+                    out=subprocess.run(['curl','-s','-o','/dev/null','-w','%{http_code}','-X','DELETE',
+                        '-H',f"Authorization: Bearer {os.environ['TOKEN']}",
+                        f"https://api.vercel.com/v4/domains/mainragames.com/records/{rid}?teamId={os.environ['TEAM']}"],
+                        capture_output=True,text=True).stdout
+                    print('delete ALIOS', rid, '->', out)
+            PY
+
+            echo "== 3. add GitHub Pages records =="
             for IP in 185.199.108.153 185.199.109.153 185.199.110.153 185.199.111.153; do
               CODE=$(curl -s -o r.json -w '%{http_code}' -X POST -H "$H" -H 'Content-Type: application/json' \
                 -d "{\"type\":\"A\",\"name\":\"\",\"value\":\"$IP\",\"ttl\":3600}" \
                 "https://api.vercel.com/v4/domains/mainragames.com/records?teamId=$TEAM")
-              echo "A @ $IP -> $CODE $(head -c 120 r.json)"
+              echo "A @ $IP -> $CODE $(head -c 100 r.json)"
             done
             CODE=$(curl -s -o r.json -w '%{http_code}' -X POST -H "$H" -H 'Content-Type: application/json' \
               -d '{"type":"CNAME","name":"www","value":"mainragames.github.io","ttl":3600}' \
               "https://api.vercel.com/v4/domains/mainragames.com/records?teamId=$TEAM")
-            echo "CNAME www -> $CODE $(head -c 120 r.json)"
+            echo "CNAME www -> $CODE $(head -c 100 r.json)"
 
-            echo "== 3. verify records =="
+            echo "== 4. final records =="
             api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" | python3 -c "
           import sys,json
-          d=json.load(sys.stdin)
-          for r in d.get('records',[]): print(r.get('type'), r.get('name') or '@', '->', r.get('value'))"
+          for r in json.load(sys.stdin).get('records',[]): print(r.get('type'), r.get('name') or '@', '->', r.get('value'))"
           fi
 
           if [ "$ACT" = "rollback-alias" ]; then
-            echo "== rollback: re-attach domains to $PROJ =="
+            echo "== rollback: re-attach domains to deployment dpl_5AGTRw5XZbzmsTWNJCAn1X43wRrA =="
             for D in mainragames.com www.mainragames.com; do
               CODE=$(curl -s -o r.json -w '%{http_code}' -X POST -H "$H" -H 'Content-Type: application/json' \
                 -d "{\"name\":\"$D\"}" \
