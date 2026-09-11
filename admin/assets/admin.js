@@ -183,6 +183,18 @@
         } else {
             form.elements.id.readOnly = false;
         }
+        // load analytics + reviews panels (only for existing games)
+        var analyticsSection = document.getElementById('gmAnalyticsSection');
+        if (analyticsSection) analyticsSection.style.display = g ? '' : 'none';
+        if (g) {
+            $('#gmFetchReviewsBtn').dataset.gid = g.appId || g.id;
+            loadGameAnalytics(g.appId || g.id);
+            loadGameReviews(g.id);
+        } else {
+            $('#statDownloads').textContent = '--';
+            $('#statRating').textContent = '--';
+            $('#gameReviewsList').innerHTML = '<div class="card muted" style="margin:0">Save game first to view reviews.</div>';
+        }
         $('#gameModal').showModal();
     }
 
@@ -281,6 +293,84 @@
         URL.revokeObjectURL(a.href);
     }
 
+    /* ---------- game modal: analytics + per-game reviews ---------- */
+
+    async function loadGameAnalytics(appId) {
+        $('#statDownloads').textContent = '…';
+        $('#statRating').textContent = '…';
+        // Pull from our DB (sync-playstore keeps this up to date)
+        var res = await sb.from('games').select('rating,installs').eq('appId', appId).maybeSingle();
+        if (res.data) {
+            $('#statDownloads').textContent = res.data.installs || 'N/A';
+            $('#statRating').textContent = res.data.rating != null ? '★ ' + Number(res.data.rating).toFixed(1) : 'N/A';
+        } else {
+            // Fallback: read from existing games array in memory
+            var g = games.find(function (x) { return (x.appId || x.id) === appId; });
+            $('#statDownloads').textContent = (g && g.installs) || 'N/A';
+            $('#statRating').textContent = g && g.rating != null ? '★ ' + Number(g.rating).toFixed(1) : 'N/A';
+        }
+    }
+
+    async function loadGameReviews(gameId) {
+        var box = $('#gameReviewsList');
+        // Prevent layout shift/hiding while syncing unless explicitly called empty
+        if (!box.innerHTML.includes('review-item')) {
+            box.innerHTML = '<div class="muted" style="padding:.5rem">Loading…</div>';
+        }
+        var res = await sb.from('game_reviews')
+            .select('*')
+            .eq('game_id', gameId)
+            .order('review_timestamp', { ascending: false })
+            .limit(30);
+        if (res.error) { box.innerHTML = '<div class="muted">Could not load reviews: ' + esc(res.error.message) + '</div>'; return; }
+        var rows = res.data || [];
+        if (!rows.length) {
+            box.innerHTML = '<div class="card muted" style="margin:0">No reviews synced yet. Click "Sync Reviews for this game".</div>';
+            return;
+        }
+        box.innerHTML = rows.map(function (r, i) {
+            var answered = (r.reply_text || '').trim();
+            return '<div class="review-item" data-rvidx="' + i + '" style="border-bottom:1px solid var(--mainra-line);padding:.9rem 0">' +
+                '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap">' +
+                    '<span><strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
+                    ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
+                    (r.review_timestamp ? ' <span class="muted" style="font-size:.78rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
+                    (r.device ? ' <span class="muted" style="font-size:.78rem">· ' + esc(r.device) + (r.versionCode ? ' v' + esc(r.versionCode) : '') + '</span>' : '') +
+                    '</span>' +
+                    '<button class="btn-admin ghost" style="font-size:.75rem;padding:.2rem .6rem" data-reply-modal="' + i + '" type="button">' +
+                        (answered ? '✎ Edit reply' : '↩ Reply') +
+                    '</button>' +
+                '</div>' +
+                '<p style="margin:.5rem 0 0;font-size:.88rem">' + esc(r.content || '—') + '</p>' +
+                (answered ? '<p style="margin:.5rem 0 0;padding:.5rem .7rem;border-left:3px solid var(--mainra-success);background:rgba(127,209,161,.06);font-size:.83rem"><span class="muted" style="font-size:.75rem">Mainra replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
+            '</div>';
+        }).join('');
+        // bind inline reply buttons
+        var _rows = rows;
+        $$('[data-reply-modal]').forEach(function (btn) {
+            btn.addEventListener('click', function () { openReplyFromModal(_rows[Number(btn.dataset.replyModal)]); });
+        });
+    }
+
+    async function syncGameReviews(appId) {
+        var btn = $('#gmFetchReviewsBtn');
+        btn.disabled = true;
+        btn.textContent = 'Syncing…';
+        var res = await sb.functions.invoke('sync-reviews', { body: { appId: appId } });
+        btn.disabled = false;
+        btn.textContent = '↻ Sync Reviews for this game';
+        if (res.error) { toast('Sync failed: ' + String(res.error.message || res.error), true); return; }
+        var msg = (res.data && res.data.message) || 'Sync done';
+        toast(msg + ' ✓');
+        // reload the reviews list for this game
+        var gameId = (games.find(function (g) { return (g.appId || g.id) === appId; }) || {}).id || appId;
+        loadGameReviews(gameId);
+    }
+
+    function openReplyFromModal(row) {
+        openReply(row);
+    }
+
     /* ---------- reviews tab ---------- */
 
     function starStr(n) {
@@ -363,7 +453,13 @@
         replyingTo.reply_timestamp = patch.reply_timestamp;
         $('#replyModal').close();
         toast('Reply saved ✓');
-        renderReviews();
+        
+        // Refresh both lists to keep them in sync
+        var gameId = replyingTo.game_id;
+        loadReviews();
+        if (gameId && $('#gameModal').open) {
+            loadGameReviews(gameId);
+        }
     }
 
     /* ---------- sync actions (Edge Function, needs Google service account) ---------- */
@@ -418,6 +514,11 @@
         $('#rpClose').addEventListener('click', function () { $('#replyModal').close(); });
         $('#rpCancel').addEventListener('click', function () { $('#replyModal').close(); });
         $('#rpSave').addEventListener('click', saveReply);
+        $('#gmFetchReviewsBtn').addEventListener('click', function (e) { 
+            e.preventDefault(); 
+            var gid = $('#gmFetchReviewsBtn').dataset.gid; 
+            if(gid) syncGameReviews(gid); 
+        });
         $('#reviewGameFilter').addEventListener('change', renderReviews);
         $('#reviewStateFilter').addEventListener('change', renderReviews);
         $('#syncGamesBtn').addEventListener('click', function () { callFunction('sync-playstore'); });
