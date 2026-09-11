@@ -75,40 +75,13 @@
 
         <!-- FEATURED -->
         <section id="tab-featured" class="tab">
-            <div class="card" style="max-width:760px">
-                <h3>Featured game on the homepage</h3>
-                <div class="field-grid">
-                    <label class="span2">Game
-                        <select id="hlGame"></select>
-                    </label>
-                    <label class="span2">Custom title
-                        <input type="text" id="hlTitle" maxlength="120">
-                    </label>
-                    <label class="span2">Custom description
-                        <textarea id="hlDesc" rows="5"></textarea>
-                    </label>
-                    <label class="span2">Trailer YouTube URL (optional)
-                        <input type="url" id="hlYoutube" placeholder="https://www.youtube.com/watch?v=...">
-                    </label>
-                    <label>Gameplay stat
-                        <input type="text" id="stGameplay" placeholder="50+">
-                    </label>
-                    <label>Characters stat
-                        <input type="text" id="stCharacters" placeholder="25+">
-                    </label>
-                    <label>Worlds stat
-                        <input type="text" id="stWorlds" placeholder="5+">
-                    </label>
-                    <label>Show on homepage
-                        <select id="hlActive">
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
-                        </select>
-                    </label>
-                </div>
-                <div class="form-foot">
-                    <button type="button" class="btn-admin" id="saveHighlightBtn">Save</button>
-                </div>
+            <p class="muted" style="margin:0 0 1rem">Pick the game to feature on the homepage. Title, description, screenshots and rating are fetched automatically from the Play Store.</p>
+            <div class="admin-actions" style="margin-bottom:1rem">
+                <button type="button" class="btn-admin ghost" id="refreshStoreBtn">↻ Refresh from Play Store</button>
+                <button type="button" class="btn-admin ghost" id="hideFeaturedBtn">Hide featured section</button>
+            </div>
+            <div id="featuredGrid" class="featured-grid">
+                <div class="card muted">Loading…</div>
             </div>
         </section>
 

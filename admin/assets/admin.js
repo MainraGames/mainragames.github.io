@@ -91,13 +91,14 @@
         games = res.data || [];
         renderGamesTable();
         populateGameSelectors();
+        renderFeaturedGrid();
     }
 
     async function loadHighlight() {
         var res = await sb.from('site_settings').select('value').eq('key', 'highlight').maybeSingle();
         if (res.error) { toast('Load settings failed: ' + res.error.message, true); return; }
         highlight = (res.data && res.data.value) || {};
-        populateHighlightForm();
+        renderFeaturedGrid();
     }
 
     async function loadReviews() {
@@ -137,7 +138,6 @@
 
     function populateGameSelectors() {
         var opts = games.map(function (g) { return '<option value="' + esc(g.id) + '">' + esc(g.title) + '</option>'; }).join('');
-        $('#hlGame').innerHTML = '<option value="">— none —</option>' + opts;
         $('#reviewGameFilter').innerHTML = '<option value="">All games</option>' + opts;
     }
 
@@ -221,40 +221,54 @@
         loadHighlight();
     }
 
-    /* ---------- highlight tab ---------- */
+    /* ---------- featured tab (auto content from Play Store data) ---------- */
 
-    function populateHighlightForm() {
-        $('#hlGame').value = highlight.gameId || '';
-        $('#hlActive').value = highlight.active ? 'true' : 'false';
-        $('#hlTitle').value = highlight.customTitle || '';
-        $('#hlYoutube').value = highlight.youtubeUrl || '';
-        $('#hlDesc').value = highlight.customDescription || '';
-        var st = highlight.stats || {};
-        $('#stGameplay').value = st.gameplay || '';
-        $('#stCharacters').value = st.characters || '';
-        $('#stWorlds').value = st.worlds || '';
+    function renderFeaturedGrid() {
+        var box = $('#featuredGrid');
+        if (!games.length) {
+            box.innerHTML = '<div class="card muted">No games yet. Click “Refresh from Play Store”.</div>';
+            return;
+        }
+        var currentId = (highlight && highlight.gameId) || '';
+        var isActive = !!(highlight && highlight.active);
+        box.innerHTML = games.map(function (g, i) {
+            var picked = String(g.id) === String(currentId) && isActive;
+            return '<button type="button" class="feat-card' + (picked ? ' picked' : '') + '" data-feat="' + i + '">' +
+                '<img class="feat-icon" src="' + esc(icon256(g.image)) + '" alt="" loading="lazy" onerror="this.src=\'../Assets/img/LogoMainraGames.png\'">' +
+                '<span class="feat-name">' + esc(g.title) + '</span>' +
+                '<span class="feat-meta">' + esc(g.category || '') + (g.rating != null ? ' · ★ ' + esc(g.rating) : '') + '</span>' +
+                (picked ? '<span class="badge ok feat-badge">Featured</span>' : '') +
+            '</button>';
+        }).join('');
+        $$('[data-feat]').forEach(function (b) {
+            b.addEventListener('click', function () { pickFeatured(games[Number(b.dataset.feat)]); });
+        });
     }
 
-    async function saveHighlight() {
-        var st = {};
-        if ($('#stGameplay').value.trim()) st.gameplay = $('#stGameplay').value.trim();
-        if ($('#stCharacters').value.trim()) st.characters = $('#stCharacters').value.trim();
-        if ($('#stWorlds').value.trim()) st.worlds = $('#stWorlds').value.trim();
-        var yt = $('#hlYoutube').value.trim();
-        if (yt && !httpsOk(yt)) { toast('Trailer URL must be https', true); return; }
+    async function pickFeatured(g) {
+        if (!g) return;
         var next = {
-            gameId: $('#hlGame').value,
-            customTitle: $('#hlTitle').value.trim(),
-            customDescription: $('#hlDesc').value.trim(),
-            youtubeUrl: yt,
-            stats: st,
-            active: $('#hlActive').value === 'true',
+            gameId: g.id,
+            active: true,
             lastUpdated: new Date().toISOString()
         };
+        var btns = $$('[data-feat]');
+        btns.forEach(function (b) { b.disabled = true; });
+        var res = await sb.from('site_settings').upsert({ key: 'highlight', value: next }, { onConflict: 'key' });
+        btns.forEach(function (b) { b.disabled = false; });
+        if (res.error) { toast('Save failed: ' + res.error.message, true); return; }
+        highlight = next;
+        toast('“' + g.title + '” is now featured ✓');
+        renderFeaturedGrid();
+    }
+
+    async function hideFeatured() {
+        var next = Object.assign({}, highlight, { active: false, lastUpdated: new Date().toISOString() });
         var res = await sb.from('site_settings').upsert({ key: 'highlight', value: next }, { onConflict: 'key' });
         if (res.error) { toast('Save failed: ' + res.error.message, true); return; }
         highlight = next;
-        toast('Featured section saved ✓');
+        toast('Featured section hidden');
+        renderFeaturedGrid();
     }
 
     function exportJson() {
@@ -398,7 +412,8 @@
         $('#gmClose').addEventListener('click', function () { $('#gameModal').close(); });
         $('#gmCancel').addEventListener('click', function () { $('#gameModal').close(); });
         $('#gameForm').addEventListener('submit', saveGame);
-        $('#saveHighlightBtn').addEventListener('click', saveHighlight);
+        $('#refreshStoreBtn').addEventListener('click', function () { callFunction('sync-playstore'); });
+        $('#hideFeaturedBtn').addEventListener('click', hideFeatured);
         $('#exportJsonBtn').addEventListener('click', exportJson);
         $('#rpClose').addEventListener('click', function () { $('#replyModal').close(); });
         $('#rpCancel').addEventListener('click', function () { $('#replyModal').close(); });

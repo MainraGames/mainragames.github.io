@@ -127,6 +127,55 @@
 }
 .btn-admin.ghost:hover { border-color: var(--mainra-orange); color: var(--mainra-orange); }
 
+/* ---------- featured picker grid ---------- */
+.featured-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.feat-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .45rem;
+    padding: 1rem;
+    background: var(--mainra-panel);
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    text-align: left;
+    color: var(--mainra-ink);
+    font: inherit;
+    transition: border-color .15s ease, transform .15s ease;
+}
+
+.feat-card:hover { border-color: var(--mainra-line-strong); transform: translateY(-2px); }
+
+.feat-card.picked {
+    border-color: var(--mainra-orange);
+    box-shadow: 0 0 0 1px var(--mainra-orange);
+}
+
+.feat-card:disabled { opacity: .6; cursor: wait; }
+
+.feat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    background: var(--mainra-navy-deep);
+}
+
+.feat-name { font-weight: 600; line-height: 1.25; }
+
+.feat-meta { font-size: .78rem; color: var(--mainra-muted); }
+
+.feat-badge { position: absolute; top: .6rem; right: .6rem; }
+
+/* ---------- end featured picker ---------- */
+
 .btn.small, .filter-select {
     font-size: .8rem;
     padding: .35rem .7rem;
