@@ -38,6 +38,7 @@
         <nav class="admin-nav">
             <button type="button" data-tab="games">Games</button>
             <button type="button" data-tab="featured">Featured</button>
+            <button type="button" data-tab="analytics">Analytics</button>
             <button type="button" data-tab="reviews">Reviews</button>
         </nav>
         <div class="admin-user">
@@ -82,6 +83,39 @@
             </div>
             <div id="featuredGrid" class="featured-grid">
                 <div class="card muted">Loading…</div>
+            </div>
+        </section>
+
+        <!-- ANALYTICS -->
+        <section id="tab-analytics" class="tab">
+            <div class="admin-actions" style="margin-bottom:1rem">
+                <select id="analyticsGameFilter" class="filter-select"><option value="">All games</option></select>
+                <button type="button" class="btn-admin ghost" id="syncAnalyticsBtn">↻ Sync from Play Store</button>
+            </div>
+            
+            <div id="analyticsContent" style="display:none;">
+                <div class="field-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 2rem">
+                    <div class="stat-box" style="padding: 1.5rem; background: var(--mainra-navy-deep); border-radius: var(--radius-sm); border-left: 4px solid var(--mainra-orange)">
+                        <div style="font-size: 0.9rem; color: var(--mainra-muted); text-transform: uppercase; letter-spacing: 0.05em">Total Downloads</div>
+                        <div id="tabStatDownloads" style="font-size: 2.5rem; font-weight: 600; margin-top: 0.5rem">--</div>
+                    </div>
+                    <div class="stat-box" style="padding: 1.5rem; background: var(--mainra-navy-deep); border-radius: var(--radius-sm); border-left: 4px solid var(--mainra-gold)">
+                        <div style="font-size: 0.9rem; color: var(--mainra-muted); text-transform: uppercase; letter-spacing: 0.05em">Average Rating</div>
+                        <div id="tabStatRating" style="font-size: 2.5rem; font-weight: 600; margin-top: 0.5rem">--</div>
+                    </div>
+                </div>
+
+                <div class="card" style="padding: 0; overflow: hidden;">
+                    <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--mainra-line); background: rgba(0,0,0,0.2);">
+                        <h3 style="margin: 0; font-size: 1.1rem;">Recent Reviews</h3>
+                    </div>
+                    <div id="tabReviewsList" style="padding: 1.5rem;">
+                        <div class="muted">Loading reviews...</div>
+                    </div>
+                </div>
+            </div>
+            <div id="analyticsEmpty" class="card muted">
+                Select a game from the dropdown above to view its analytics and reviews.
             </div>
         </section>
 
