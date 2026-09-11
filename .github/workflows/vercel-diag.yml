@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'diag | dns-records | migrate | rollback-alias'
+        description: 'diag | dns-records | migrate | fix-alias | rollback-alias'
         required: true
         default: 'diag'
 
@@ -27,38 +27,18 @@ jobs:
 
           if [ "$ACT" = "dns-records" ]; then
             echo "== current DNS records =="
-            api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" | head -c 3000; echo
+            api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" | jq -r '.records[] | "\(.id) \(.type) \(.name // "@") -> \(.value)"'
           fi
 
-          if [ "$ACT" = "migrate" ]; then
-            echo "== 1. detach domains from project $PROJ =="
-            for D in mainragames.com www.mainragames.com; do
-              CODE=$(curl -s -o r.json -w '%{http_code}' -X DELETE -H "$H" \
-                "https://api.vercel.com/v9/projects/$PROJ/domains/$D?teamId=$TEAM")
-              echo "$D -> $CODE $(head -c 150 r.json)"
-            done
-
-            echo "== 2. delete system ALIOS records (apex + wildcard) =="
+          if [ "$ACT" = "fix-alias" ]; then
+            echo "== delete legacy ALIAS records (apex + wildcard) =="
             api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" > recs.json
-            for RID in $(jq -r '.records[] | select(.type=="ALIOS") | .id' recs.json); do
-              CODE=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "$H" \
+            for RID in $(jq -r '.records[] | select(.type=="ALIAS") | .id' recs.json); do
+              CODE=$(curl -s -o r.json -w '%{http_code}' -X DELETE -H "$H" \
                 "https://api.vercel.com/v4/domains/mainragames.com/records/$RID?teamId=$TEAM")
-              echo "delete $RID -> $CODE"
+              echo "delete $RID -> $CODE $(head -c 150 r.json)"
             done
-
-            echo "== 3. add GitHub Pages records =="
-            for IP in 185.199.108.153 185.199.109.153 185.199.110.153 185.199.111.153; do
-              CODE=$(curl -s -o r.json -w '%{http_code}' -X POST -H "$H" -H 'Content-Type: application/json' \
-                -d "{\"type\":\"A\",\"name\":\"\",\"value\":\"$IP\",\"ttl\":3600}" \
-                "https://api.vercel.com/v4/domains/mainragames.com/records?teamId=$TEAM")
-              echo "A @ $IP -> $CODE $(head -c 100 r.json)"
-            done
-            CODE=$(curl -s -o r.json -w '%{http_code}' -X POST -H "$H" -H 'Content-Type: application/json' \
-              -d '{"type":"CNAME","name":"www","value":"mainragames.github.io","ttl":3600}' \
-              "https://api.vercel.com/v4/domains/mainragames.com/records?teamId=$TEAM")
-            echo "CNAME www -> $CODE $(head -c 100 r.json)"
-
-            echo "== 4. final records =="
+            echo "== remaining records =="
             api "/v4/domains/mainragames.com/records?teamId=$TEAM&limit=50" | jq -r '.records[] | "\(.type) \(.name // "@") -> \(.value)"'
           fi
 
