@@ -161,33 +161,41 @@
                 </select>
             </label>
         </div>
-        <div class="card" style="margin-bottom: 2rem">
-            <h3>Analytics & Reviews</h3>
-            <div class="field-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem">
-                <div class="stat-box" style="padding: 1rem; background: var(--mainra-navy-deep); border-radius: var(--radius-sm); border-left: 3px solid var(--mainra-orange)">
-                    <div style="font-size: 0.8rem; color: var(--mainra-muted)">Total Downloads</div>
-                    <div id="statDownloads" style="font-size: 1.5rem; font-weight: 600">--</div>
-                </div>
-                <div class="stat-box" style="padding: 1rem; background: var(--mainra-navy-deep); border-radius: var(--radius-sm); border-left: 3px solid var(--mainra-gold)">
-                    <div style="font-size: 0.8rem; color: var(--mainra-muted)">Average Rating</div>
-                    <div id="statRating" style="font-size: 1.5rem; font-weight: 600">--</div>
-                </div>
-            </div>
-            
-            <h4 style="margin: 0 0 0.8rem; font-size: 0.95rem">Recent Reviews (Play Store)</h4>
-            <div id="gameReviewsList" style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem">
-                <div class="card muted" style="margin: 0">No reviews found for this game.</div>
-            </div>
-            <div class="form-foot" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--mainra-line)">
-                <button type="button" class="btn-admin ghost small" id="gmFetchReviewsBtn" data-gid="">↻ Sync Reviews for this game</button>
-            </div>
-        </div>
-
         <div class="form-foot">
             <button type="button" class="btn-admin ghost" id="gmCancel">Cancel</button>
             <button type="submit" class="btn-admin">Save game</button>
         </div>
     </form>
+</dialog>
+
+<!-- ANALYTICS MODAL -->
+<dialog id="analyticsModal" class="admin-modal" style="max-width: 600px;">
+    <div class="modal-head">
+        <h3 id="amTitle">Analytics & Reviews</h3>
+        <button type="button" class="btn-admin ghost" id="amClose">✕</button>
+    </div>
+    <div style="padding: 1.5rem">
+        <div class="field-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem">
+            <div class="stat-box" style="padding: 1rem; background: var(--mainra-navy-deep); border-radius: var(--radius-sm); border-left: 3px solid var(--mainra-orange)">
+                <div style="font-size: 0.8rem; color: var(--mainra-muted)">Total Downloads</div>
+                <div id="statDownloads" style="font-size: 1.5rem; font-weight: 600">--</div>
+            </div>
+            <div class="stat-box" style="padding: 1rem; background: var(--mainra-navy-deep); border-radius: var(--radius-sm); border-left: 3px solid var(--mainra-gold)">
+                <div style="font-size: 0.8rem; color: var(--mainra-muted)">Average Rating</div>
+                <div id="statRating" style="font-size: 1.5rem; font-weight: 600">--</div>
+            </div>
+        </div>
+        
+        <h4 style="margin: 0 0 0.8rem; font-size: 0.95rem">Recent Reviews (Play Store)</h4>
+        <div id="gameReviewsList" style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem; margin-bottom: 1.5rem;">
+            <div class="card muted" style="margin: 0">Loading…</div>
+        </div>
+        
+        <div class="form-foot" style="border-top: 1px solid var(--mainra-line); padding-top: 1rem; justify-content: space-between;">
+            <button type="button" class="btn-admin ghost small" id="amFetchReviewsBtn" data-gid="">↻ Sync from Play Store</button>
+            <button type="button" class="btn-admin ghost" id="amDoneBtn">Done</button>
+        </div>
+    </div>
 </dialog>
 
 <!-- REPLY MODAL -->
