@@ -24,44 +24,50 @@ jobs:
           H="Authorization: Bearer $TOKEN"
           api() { curl -s -H "$H" "https://api.vercel.com$1"; }
 
-          echo "== teams =="
-          api /v2/teams | python3 -c "import sys,json;[print(t['id'],t['slug']) for t in json.load(sys.stdin).get('teams',[])]" || true
+          echo "== all projects =="
+          api "/v9/projects?teamId=$TEAM&limit=20" > projs.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('projs.json'))
+          for p in d.get('projects',[]):
+              print(p['name'], '| id=', p['id'], '| latest=', (p.get('latestDeployments') or [{}])[0].get('url',''))
+          PY
 
-          echo "== domain (teamId) =="
-          api "/v4/domains/mainragames.com?teamId=$TEAM" | head -c 1200; echo
+          echo "== find alias owner =="
+          api "/v4/aliases/mainragames.com?teamId=$TEAM" | head -c 600; echo
+          api "/v13/deployments/mainragames.com?teamId=$TEAM" 2>/dev/null | head -c 200; echo
 
-          echo "== project domains =="
-          api "/v9/projects/mainragames.com/domains?teamId=$TEAM" | head -c 1500; echo
-
-          echo "== project config (protections) =="
-          api "/v9/projects/mainragames.com?teamId=$TEAM" | python3 -c "
-          import sys,json
-          d=json.load(sys.stdin)
-          keep={k:d.get(k) for k in ['name','id','framework','autoAssignCustomDomains','deploymentExpiration','gitForkProtection','ssoProtection','passwordProtection','trustedIps','productionBranch','serverlessFunctionRegion'] if k in d}
-          print(json.dumps(keep,indent=1))" || true
-
-          if [ "$ACT" = "dns-records" ]; then
-            echo "== DNS records =="
-            api "/v4/domains/mainragames.com/records?teamId=$TEAM" | head -c 2500; echo
-          fi
+          echo "== domain config / aliases detail =="
+          api "/v4/domains/mainragames.com?teamId=$TEAM" > dom.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open('dom.json'))['domain']
+          print('aliases:', [a['alias'] for a in d.get('aliases',[])])
+          print('cdnEnabled:', d.get('cdnEnabled'), '| zone:', d.get('zone'))
+          PY
 
           if [ "$ACT" = "disable-challenge" ]; then
-            echo "== disable attack challenge on project =="
+            PID=$(python3 -c "
+          import json
+          d=json.load(open('projs.json'))
+          ps=d.get('projects',[])
+          print(ps[0]['name'] if ps else '')")
+            echo "== PATCH protections on project: $PID =="
             CODE=$(curl -s -o resp.json -w '%{http_code}' -X PATCH -H "$H" -H 'Content-Type: application/json' \
-              -d '{"attackChallengeMode":false,"gitForkProtection":false}' \
-              "https://api.vercel.com/v9/projects/mainragames.com?teamId=$TEAM")
-            echo "PATCH project: $CODE"; cat resp.json | head -c 400; echo
-            echo "== latest production deployment =="
-            api "/v6/deployments?project=mainragames.com&target=production&limit=1&teamId=$TEAM" | python3 -c "
-          import sys,json
-          d=json.load(sys.stdin)
-          for x in d.get('deployments',[]): print(x['uid'], x.get('url'), 'attacks=', x.get('attacks'))"
+              -d '{"attackChallengeMode":false}' \
+              "https://api.vercel.com/v9/projects/$PID?teamId=$TEAM")
+            echo "PATCH: $CODE"; head -c 300 resp.json; echo
           fi
 
           if [ "$ACT" = "remove-domain" ]; then
-            echo "== REMOVE domain from project =="
+            PID=$(python3 -c "
+          import json
+          d=json.load(open('projs.json'))
+          ps=d.get('projects',[])
+          print(ps[0]['name'] if ps else '')")
+            echo "== remove domain from project $PID =="
             CODE=$(curl -s -o resp.json -w '%{http_code}' -X DELETE -H "$H" \
-              "https://api.vercel.com/v9/projects/mainragames.com/domains/mainragames.com?teamId=$TEAM")
+              "https://api.vercel.com/v9/projects/$PID/domains/mainragames.com?teamId=$TEAM")
             echo "project removal: $CODE"; head -c 300 resp.json; echo
             CODE2=$(curl -s -o resp2.json -w '%{http_code}' -X DELETE -H "$H" \
               "https://api.vercel.com/v4/domains/mainragames.com?teamId=$TEAM")
