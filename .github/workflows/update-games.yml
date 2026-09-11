@@ -35,6 +35,25 @@ jobs:
         run: |
           cd tools
           npm run update-games
+
+      - name: Mirror games data to Supabase CMS
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node tools/sync-supabase.js
+
+      - name: Rebuild games-data.json from Supabase (CMS is source of truth)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node tools/pull-supabase.js
+
+      - name: Sync Play Store reviews and post admin replies
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: node tools/sync-playstore-reviews.js
       
       - name: Check for changes
         id: verify-changed-files

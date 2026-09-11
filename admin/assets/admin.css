@@ -1,0 +1,286 @@
+/* Mainra Games — Admin dashboard styles (extends mainra.css design tokens). */
+
+.admin-body {
+    min-height: 100vh;
+    background: var(--mainra-navy-dark);
+    color: var(--mainra-ink);
+}
+
+/* ---------- login ---------- */
+.login-wrap {
+    display: grid;
+    min-height: 100vh;
+    place-items: center;
+    padding: 2rem 1rem;
+}
+
+.login-card {
+    width: min(420px, 100%);
+    background: var(--mainra-panel-solid);
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    display: grid;
+    gap: 1rem;
+}
+.login-logo { width: 64px; height: 64px; object-fit: contain; }
+.login-card h1 { margin: 0; font-size: 1.4rem; }
+.login-card label { display: grid; gap: .35rem; font-size: .85rem; color: var(--mainra-muted); }
+.login-card input {
+    background: var(--mainra-navy-dark);
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-md);
+    color: var(--mainra-ink);
+    padding: .65rem .8rem;
+    font: inherit;
+}
+.login-card input:focus { outline: 2px solid var(--mainra-orange); outline-offset: 1px; }
+
+.form-error {
+    background: rgba(245, 107, 67, .12);
+    border: 1px solid var(--mainra-orange-deep);
+    color: var(--mainra-orange);
+    border-radius: var(--radius-md);
+    padding: .6rem .8rem;
+    font-size: .85rem;
+}
+.hidden { display: none !important; }
+.muted { color: var(--mainra-muted); }
+.small { font-size: .8rem; }
+
+/* ---------- shell ---------- */
+.admin-shell { display: none; min-height: 100vh; }
+.admin-shell.is-on { display: grid; grid-template-columns: 240px 1fr; }
+
+.admin-side {
+    background: var(--mainra-navy-deep);
+    border-right: 1px solid var(--mainra-line);
+    display: flex;
+    flex-direction: column;
+    padding: 1.2rem 1rem;
+    gap: 1.4rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+.admin-brand { display: flex; align-items: center; gap: .6rem; font-weight: 700; }
+.admin-brand img { width: 34px; height: 34px; object-fit: contain; }
+
+.admin-nav { display: grid; gap: .3rem; }
+.admin-nav button {
+    text-align: left;
+    background: none;
+    border: 0;
+    border-left: 3px solid transparent;
+    color: var(--mainra-muted);
+    font: inherit;
+    padding: .6rem .8rem;
+    cursor: pointer;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.admin-nav button:hover { color: var(--mainra-ink); background: rgba(255,255,255,.04); }
+.admin-nav button.active {
+    color: var(--mainra-white);
+    border-left-color: var(--mainra-orange);
+    background: rgba(245, 107, 67, .1);
+}
+
+.admin-user {
+    margin-top: auto;
+    display: grid;
+    gap: .5rem;
+    font-size: .8rem;
+    word-break: break-all;
+}
+
+.admin-main { padding: 1.6rem 2rem 3rem; min-width: 0; }
+.admin-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+}
+.admin-topbar h2 { margin: 0; font-size: 1.3rem; }
+
+.tab { display: none; }
+.tab.active { display: block; }
+
+/* ---------- controls ---------- */
+.btn-admin {
+    background: var(--mainra-orange);
+    border: 1px solid var(--mainra-orange);
+    color: #1a0e08;
+    font: inherit;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    padding: .55rem 1.1rem;
+    cursor: pointer;
+}
+.btn-admin:hover { background: var(--mainra-orange-deep); border-color: var(--mainra-orange-deep); }
+.btn-admin:disabled { opacity: .5; cursor: wait; }
+.btn-admin.ghost {
+    background: transparent;
+    color: var(--mainra-ink);
+    border-color: var(--mainra-line-strong);
+    font-weight: 500;
+}
+.btn-admin.ghost:hover { border-color: var(--mainra-orange); color: var(--mainra-orange); }
+
+.btn.small, .filter-select {
+    font-size: .8rem;
+    padding: .35rem .7rem;
+}
+
+/* small action buttons rendered inside tables/cards */
+button.btn {
+    font: inherit;
+    background: var(--mainra-orange);
+    color: #1a0e08;
+    border: 1px solid var(--mainra-orange);
+    border-radius: var(--radius-sm);
+    padding: .35rem .8rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+button.btn.ghost {
+    background: transparent;
+    color: var(--mainra-ink);
+    border-color: var(--mainra-line-strong);
+    font-weight: 500;
+}
+button.btn.ghost:hover { color: var(--mainra-orange); }
+button.btn.danger {
+    background: transparent;
+    color: #ff9d8a;
+    border-color: rgba(245, 107, 67, .45);
+    font-weight: 500;
+}
+button.btn.danger:hover { background: rgba(245, 107, 67, .12); }
+.filter-select {
+    background: var(--mainra-navy-deep);
+    color: var(--mainra-ink);
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-md);
+}
+
+.admin-actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+
+.card {
+    background: var(--mainra-panel-solid);
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.2rem;
+    margin-bottom: .9rem;
+}
+.card h3 { margin: 0 0 1rem; font-size: 1.05rem; }
+
+table.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.admin-table th {
+    text-align: left;
+    color: var(--mainra-muted);
+    font-weight: 600;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: .5rem .7rem;
+    border-bottom: 1px solid var(--mainra-line);
+}
+.admin-table td { padding: .65rem .7rem; border-bottom: 1px solid var(--mainra-line); vertical-align: middle; }
+.admin-table tr:last-child td { border-bottom: 0; }
+
+.thumb { width: 44px; height: 44px; border-radius: var(--radius-md); object-fit: cover; display: block; }
+
+.badge {
+    display: inline-block;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 700;
+    padding: .18rem .6rem;
+    border: 1px solid var(--mainra-line);
+    color: var(--mainra-muted);
+}
+.badge.ok { color: var(--mainra-success); border-color: rgba(127,209,161,.4); background: rgba(127,209,161,.08); }
+.badge.warn { color: var(--mainra-gold); border-color: rgba(239,189,99,.4); background: rgba(239,189,99,.08); }
+
+/* ---------- forms ---------- */
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem 1.2rem; }
+.field-grid .span2 { grid-column: span 2; }
+.field-grid label {
+    display: grid;
+    gap: .3rem;
+    font-size: .8rem;
+    color: var(--mainra-muted);
+    align-content: start;
+}
+.field-grid input, .field-grid select, .field-grid textarea,
+#replyModal textarea {
+    background: var(--mainra-navy-dark);
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-md);
+    color: var(--mainra-ink);
+    font: inherit;
+    padding: .55rem .7rem;
+    width: 100%;
+}
+.field-grid textarea { resize: vertical; }
+.field-grid input:focus, .field-grid select:focus, .field-grid textarea:focus {
+    outline: 2px solid var(--mainra-orange);
+    outline-offset: 1px;
+}
+
+.form-foot { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.3rem; }
+
+/* ---------- modals ---------- */
+.admin-modal {
+    width: min(680px, calc(100vw - 2rem));
+    background: var(--mainra-panel-solid);
+    color: var(--mainra-ink);
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-lg);
+    padding: 1.4rem 1.5rem;
+}
+.admin-modal::backdrop { background: rgba(8, 12, 20, .72); backdrop-filter: blur(3px); }
+.modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.modal-head h3 { margin: 0; }
+
+/* ---------- toast ---------- */
+.toast {
+    display: none;
+    position: fixed;
+    left: 50%;
+    bottom: 1.6rem;
+    transform: translateX(-50%);
+    background: var(--mainra-orange);
+    color: #1a0e08;
+    font-weight: 600;
+    padding: .7rem 1.3rem;
+    border-radius: 999px;
+    z-index: 60;
+    max-width: min(560px, 90vw);
+    box-shadow: 0 8px 28px rgba(0,0,0,.45);
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 860px) {
+    .admin-shell.is-on { grid-template-columns: 1fr; }
+    .admin-side {
+        position: static;
+        height: auto;
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: wrap;
+        border-right: 0;
+        border-bottom: 1px solid var(--mainra-line);
+    }
+    .admin-nav { grid-auto-flow: column; }
+    .admin-user { margin-top: 0; margin-left: auto; display: flex; align-items: center; gap: .8rem; }
+    .field-grid { grid-template-columns: 1fr; }
+    .field-grid .span2 { grid-column: span 1; }
+    .admin-main { padding: 1.2rem 1rem 2.5rem; }
+    .card-table, .card { overflow-x: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,4 @@
+-- Dashboard admin access control lives in public.admin_users (RLS uses public.is_admin()).
+-- To grant access to another Supabase user:
+--   insert into public.admin_users (user_id, email)
+--   select id, email from auth.users where email = 'someone@example.com';

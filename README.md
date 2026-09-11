@@ -1,29 +1,52 @@
 # Mainra Games
 
 ## Deskripsi
-Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini bersifat statis dan mengambil data dari file `games-data.json`.
+Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini statis, datanya dikelola melalui **Supabase CMS** dan di-cache di file `games-data.json`.
 
 ## Fitur
 - ✅ Menampilkan game unggulan (Highlight)
 - ✅ Daftar game yang responsif
 - ✅ Desain modern untuk desktop dan mobile
-- ✅ Data game dinamis dari JSON
+- ✅ Data game dinamis dari Supabase (fallback ke JSON lokal)
+- ✅ Dashboard admin di `/admin/` untuk kelola game, highlight, dan balasan review
 
 ## Struktur File
 - `index.html` — Halaman utama menampilkan highlight dan 3 game terbaru.
 - `games.html` — Daftar lengkap game dan highlight.
-- `Assets/data/games-data.json` — Sumber data game.
-- `Assets/js/games-loader.js` — Logika untuk memuat dan merender data game ke halaman.
+- `Assets/data/games-data.json` — Cache data game (dihasilkan dari Supabase oleh GitHub Actions).
+- `Assets/js/games-loader.js` — Logika untuk memuat data game (Supabase → fallback JSON) dan merendernya.
+- `Assets/js/supabase-config.js` — URL project + publishable key Supabase (nilai publik, aman untuk browser).
+- `Assets/js/supabase-client.js` — Inisialisasi `window.supabaseClient`.
+- `admin/index.html` + `admin/assets/admin.js|admin.css` — Dashboard admin (login Supabase Auth, RLS gated).
 - `Assets/js/nav.js` — Kontrol navigasi dan menu mobile.
 - `Assets/css/mainra.css` — Gaya visual website.
 - `Assets/img/` — Folder berisi gambar dan ikon website.
+- `supabase/` — Migration SQL, seed, dan Edge Functions (`sync-playstore`, `sync-reviews`).
+- `tools/sync-supabase.js` — Mirror JSON → Supabase (insert-only, aman untuk edit admin).
+- `tools/pull-supabase.js` — Bangun ulang `games-data.json` dari Supabase.
+- `tools/sync-playstore-reviews.js` — Tarik review Play Store & posting balasan admin (butuh Play Developer API).
 - `app-ads.txt` — Daftar authorized seller untuk inventory aplikasi di Google AdMob.
 - `sellers.json` — Referensi seller lokal dengan publisher ID AdMob.
 
-## Cara Kerja
-1. Data game dikelola melalui file `Assets/data/games-data.json`.
-2. Halaman web membaca file JSON tersebut saat dimuat.
-3. Konten dirender secara dinamis ke dalam elemen-elemen HTML yang sesuai.
+## Cara Kerja (CMS)
+1. **Sumber kebenaran data game adalah Supabase** (project `mainragames.com`, table `games`, `game_reviews`, `site_settings`, `admin_users`).
+2. Halaman publik membaca langsung dari Supabase via publishable key; bila gagal/offline, fallback ke `Assets/data/games-data.json`.
+3. GitHub Actions harian (`update-games.yml`): scrape Play Store → mirror game baru ke Supabase (insert-only) → tarik konten terbaru dari Supabase untuk membangun ulang `games-data.json` → commit bila berubah.
+4. Dashboard admin (`/admin/`) dipakai untuk edit game, atur featured/highlight, dan membalas review. akses dibatasi RLS: hanya user yang terdaftar di `public.admin_users`.
+5. Balasan review untuk game Play Store disimpan sebagai draft di `game_reviews.reply_text`; job sync (Actions atau tombol Fetch) mem-posting-nya ke Google Play via Play Developer API bila `GOOGLE_SERVICE_ACCOUNT_JSON` diset.
+
+## Setup Admin & Supabase
+1. **Grant admin**: login Supabase → Authentication → tambahkan user, lalu jalankan:
+   ```sql
+   insert into public.admin_users (user_id, email)
+   select id, email from auth.users where email = 'email-anda@example.com';
+   ```
+2. **Secrets GitHub Actions** (Settings → Secrets and variables → Actions):
+   - `SUPABASE_URL` = `https://mjuzjvyatunjmgaiqtdv.supabase.co`
+   - `SUPABASE_SECRET_KEY` = service role key (`sb_secret_…` / legacy `service_role`) — **jangan pernah** ditulis ke file repo.
+   - `GOOGLE_SERVICE_ACCOUNT_JSON` (opsional, untuk auto-post reply): JSON service account dari Google Cloud yang di-invite di Play Console dengan permission "Reply to reviews" lalu: `supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON=...` untuk Edge Function juga.
+3. Deploy ulang Edge Functions bila diubah: `supabase functions deploy sync-playstore --no-verify-jwt && supabase functions deploy sync-reviews --no-verify-jwt`.
+4. Dashboard: buka `https://mainragames.github.io/admin/` (atau `https://mainragames.com/admin/` setelah deploy) dan login.
 
 ## AdMob sellers.json dan app-ads.txt
 

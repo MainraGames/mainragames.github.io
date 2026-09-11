@@ -6,7 +6,10 @@
   "scripts": {
     "update-games": "node update-games-from-playstore.js",
     "update-games:puppeteer": "node update-games-playstore-puppeteer.js",
-    "update-games:alternative": "node update-games-alternative.js"
+    "update-games:alternative": "node update-games-alternative.js",
+    "sync-supabase": "node sync-supabase.js",
+    "pull-supabase": "node pull-supabase.js",
+    "sync-reviews": "node sync-playstore-reviews.js"
   },
   "keywords": [
     "google-play-store",

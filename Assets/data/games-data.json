@@ -73,16 +73,16 @@
     }
   ],
   "highlight": {
-    "gameId": "com.MainraGames.Popit3DFidget",
-    "customTitle": "Pop It 3D Fidget: Multiplayer",
-    "customDescription": "Experience Pop It in a new format with Pop It 3D Fidget: A Two-Player Game with AI! You don't have to look for opponents, the intelligent AI is ready to challenge you in every level. Enjoy the relaxing bubble burst gameplay in 3D graphics, while practicing strategies against the AI that is always ready to provide challenges.Key Features:🧠 Challenge the Intelligent AI: Play against a responsive AI that can customize your abilities.🎮 Exciting 3D Explosions: Experience the satisfaction of bursting bubbles in a colorful 3D world.🌟 Relaxing Gameplay: Perfect for de-stressing—pop bubbles anytime, anywhere.🏅 Daily Challenges: Complete daily challenges to earn rewards and unlock new items.🔥 Unique Pop It Shapes: Discover and unlock a variety of interesting 3D Pop It designs.Start playing now with Pop It 3D Fidget-a game suitable for all ages, whenever you want to relax or hone your AI-fighting skills!",
-    "youtubeUrl": "",
     "stats": {
+      "worlds": "5+",
       "gameplay": "50+",
-      "characters": "25+",
-      "worlds": "5+"
+      "characters": "25+"
     },
     "active": true,
-    "lastUpdated": "2026-09-11T02:17:21.059Z"
+    "gameId": "com.MainraGames.Popit3DFidget",
+    "youtubeUrl": "",
+    "customTitle": "Pop It 3D Fidget: Multiplayer",
+    "lastUpdated": "2026-09-11T02:17:21.059Z",
+    "customDescription": "Experience Pop It in a new format with Pop It 3D Fidget: A Two-Player Game with AI! You don't have to look for opponents, the intelligent AI is ready to challenge you in every level. Enjoy the relaxing bubble burst gameplay in 3D graphics, while practicing strategies against the AI that is always ready to provide challenges.Key Features:🧠 Challenge the Intelligent AI: Play against a responsive AI that can customize your abilities.🎮 Exciting 3D Explosions: Experience the satisfaction of bursting bubbles in a colorful 3D world.🌟 Relaxing Gameplay: Perfect for de-stressing—pop bubbles anytime, anywhere.🏅 Daily Challenges: Complete daily challenges to earn rewards and unlock new items.🔥 Unique Pop It Shapes: Discover and unlock a variety of interesting 3D Pop It designs.Start playing now with Pop It 3D Fidget-a game suitable for all ages, whenever you want to relax or hone your AI-fighting skills!"
   }
 }

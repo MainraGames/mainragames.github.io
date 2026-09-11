@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Admin — Mainra Games</title>
+<link rel="icon" type="image/png" href="../Assets/img/LogoMainraGames.png">
+<link rel="stylesheet" href="../Assets/css/mainra.css?v=3.4">
+<link rel="stylesheet" href="assets/admin.css?v=1.1">
+</head>
+<body class="admin-body">
+
+<!-- LOGIN -->
+<div id="loginView" class="login-wrap">
+    <form id="loginForm" class="login-card" novalidate>
+        <img src="../Assets/img/LogoMainraGames.png" alt="Mainra Games" class="login-logo">
+        <h1>Mainra Games Admin</h1>
+        <p class="muted">Sign in with an account that has admin access.</p>
+        <label>Email
+            <input type="email" id="loginEmail" autocomplete="username" required>
+        </label>
+        <label>Password
+            <input type="password" id="loginPassword" autocomplete="current-password" required>
+        </label>
+        <div id="loginError" class="form-error hidden" role="alert"></div>
+        <button type="submit" class="btn-admin" id="loginBtn" style="width:100%">Sign in</button>
+    </form>
+</div>
+
+<!-- ADMIN SHELL -->
+<div id="adminShell" class="admin-shell">
+    <aside class="admin-side">
+        <div class="admin-brand">
+            <img src="../Assets/img/LogoMainraGames.png" alt="">
+            <span>Mainra Admin</span>
+        </div>
+        <nav class="admin-nav">
+            <button type="button" data-tab="games">Games</button>
+            <button type="button" data-tab="featured">Featured</button>
+            <button type="button" data-tab="reviews">Reviews</button>
+        </nav>
+        <div class="admin-user">
+            <span id="who" class="muted"></span>
+            <button type="button" id="logoutBtn" class="btn-admin ghost">Sign out</button>
+        </div>
+    </aside>
+
+    <main class="admin-main">
+        <header class="admin-topbar">
+            <h2 id="tabTitle">Games</h2>
+            <div class="admin-actions" id="tabActions"></div>
+        </header>
+
+        <!-- GAMES -->
+        <section id="tab-games" class="tab">
+            <div class="admin-actions" style="margin-bottom:1rem">
+                <button type="button" class="btn-admin" id="newGameBtn">+ Add Game</button>
+                <button type="button" class="btn-admin ghost" id="syncGamesBtn">↻ Sync from Play Store</button>
+                <button type="button" class="btn-admin ghost" id="exportJsonBtn">⤓ Export games-data.json</button>
+            </div>
+            <div class="card">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Icon</th><th>Title</th><th>Category</th><th>Status</th><th>Rating</th><th>Featured</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="gamesTbody">
+                        <tr><td colspan="7" class="muted">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- FEATURED -->
+        <section id="tab-featured" class="tab">
+            <div class="card" style="max-width:760px">
+                <h3>Featured game on the homepage</h3>
+                <div class="field-grid">
+                    <label class="span2">Game
+                        <select id="hlGame"></select>
+                    </label>
+                    <label class="span2">Custom title
+                        <input type="text" id="hlTitle" maxlength="120">
+                    </label>
+                    <label class="span2">Custom description
+                        <textarea id="hlDesc" rows="5"></textarea>
+                    </label>
+                    <label class="span2">Trailer YouTube URL (optional)
+                        <input type="url" id="hlYoutube" placeholder="https://www.youtube.com/watch?v=...">
+                    </label>
+                    <label>Gameplay stat
+                        <input type="text" id="stGameplay" placeholder="50+">
+                    </label>
+                    <label>Characters stat
+                        <input type="text" id="stCharacters" placeholder="25+">
+                    </label>
+                    <label>Worlds stat
+                        <input type="text" id="stWorlds" placeholder="5+">
+                    </label>
+                    <label>Show on homepage
+                        <select id="hlActive">
+                            <option value="true">Yes</option>
+                            <option value="false">No</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="form-foot">
+                    <button type="button" class="btn-admin" id="saveHighlightBtn">Save</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- REVIEWS -->
+        <section id="tab-reviews" class="tab">
+            <div class="admin-actions" style="margin-bottom:1rem">
+                <select id="reviewGameFilter" class="filter-select"><option value="">All games</option></select>
+                <select id="reviewStateFilter" class="filter-select">
+                    <option value="">All statuses</option>
+                    <option value="unanswered">Needs reply</option>
+                    <option value="answered">Replied</option>
+                </select>
+                <button type="button" class="btn-admin ghost" id="syncReviewsBtn">↻ Fetch new reviews</button>
+            </div>
+            <div id="reviewsList">
+                <div class="card muted">Loading…</div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- EDIT GAME MODAL -->
+<dialog id="gameModal" class="admin-modal">
+    <form id="gameForm">
+        <div class="modal-head">
+            <h3 id="gmTitle">Edit Game</h3>
+            <button type="button" class="btn-admin ghost" id="gmClose">✕</button>
+        </div>
+        <div class="field-grid">
+            <label class="span2">Play Store app id (used as game id)
+                <input type="text" name="id" placeholder="com.MainraGames.MyGame" required>
+            </label>
+            <label class="span2">Title
+                <input type="text" name="title" required maxlength="120">
+            </label>
+            <label class="span2">Description
+                <textarea name="description" rows="3" maxlength="3000"></textarea>
+            </label>
+            <label>Category
+                <input type="text" name="category" placeholder="Casual">
+            </label>
+            <label>Status
+                <select name="status">
+                    <option>Released</option>
+                    <option>Early Access</option>
+                    <option>Upcoming</option>
+                    <option>Deprecated</option>
+                </select>
+            </label>
+            <label class="span2">Icon URL
+                <input type="url" name="image">
+            </label>
+            <label class="span2">Play Store link
+                <input type="url" name="playLink">
+            </label>
+            <label class="span2">Screenshot URLs (one per line)
+                <textarea name="screenshots" rows="4"></textarea>
+            </label>
+            <label>Release date
+                <input type="date" name="releaseDate">
+            </label>
+            <label>Platform
+                <select name="platform">
+                    <option>Android</option>
+                    <option>iOS</option>
+                    <option>PC</option>
+                    <option>Web</option>
+                </select>
+            </label>
+            <label>Rating (0–5)
+                <input type="number" name="rating" min="0" max="5" step="0.1">
+            </label>
+            <label>Featured
+                <select name="featured">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </label>
+        </div>
+        <div class="form-foot">
+            <button type="button" class="btn-admin ghost" id="gmCancel">Cancel</button>
+            <button type="submit" class="btn-admin">Save game</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- REPLY MODAL -->
+<dialog id="replyModal" class="admin-modal">
+    <div class="modal-head">
+        <h3>Reply to review</h3>
+        <button type="button" class="btn-admin ghost" id="rpClose">✕</button>
+    </div>
+    <div id="rpContext"></div>
+    <label style="display:block;margin-top:1rem">Reply
+        <textarea id="rpText" rows="4" maxlength="350"></textarea>
+    </label>
+    <div class="admin-actions" id="rpPresets" style="margin-top:.6rem"></div>
+    <p class="muted small" id="rpNote" style="margin-top:.6rem"></p>
+    <div class="form-foot">
+        <button type="button" class="btn-admin ghost" id="rpCancel">Cancel</button>
+        <button type="button" class="btn-admin" id="rpSave">Save reply</button>
+    </div>
+</dialog>
+
+<div id="toast" class="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="../Assets/js/supabase-config.js"></script>
+<script src="../Assets/js/supabase-client.js"></script>
+<script src="assets/admin.js"></script>
+</body>
+</html>

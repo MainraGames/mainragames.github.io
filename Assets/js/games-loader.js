@@ -16,6 +16,24 @@ class GamesLoader {
     }
 
     async loadGames() {
+        // Primary source: Supabase CMS data (when client is configured), fallback: static JSON.
+        try {
+            if (window.supabaseClient) {
+                const [gamesRes, settingsRes] = await Promise.all([
+                    window.supabaseClient.from('games').select('*').order('sort_order', { ascending: true }).order('title'),
+                    window.supabaseClient.from('site_settings').select('value').eq('key', 'highlight').maybeSingle()
+                ]);
+                if (!gamesRes.error && Array.isArray(gamesRes.data) && gamesRes.data.length > 0) {
+                    this.games = gamesRes.data;
+                    this.highlight = (settingsRes && !settingsRes.error && settingsRes.data && settingsRes.data.value) || null;
+                    return;
+                }
+                if (gamesRes.error) console.warn('Supabase games unavailable, falling back to JSON:', gamesRes.error.message);
+            }
+        } catch (error) {
+            console.warn('Supabase load failed, falling back to JSON:', error);
+        }
+
         // Fallback ke file JSON
         try {
             const response = await fetch('Assets/data/games-data.json');
