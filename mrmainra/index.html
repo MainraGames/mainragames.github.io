@@ -9,7 +9,7 @@
 <title>Admin — Mainra Games</title>
 <link rel="icon" type="image/png" href="../Assets/img/LogoMainraGames.png">
 <link rel="stylesheet" href="../Assets/css/mainra.css?v=3.4">
-<link rel="stylesheet" href="assets/admin.css?v=2.3">
+<link rel="stylesheet" href="assets/admin.css?v=2.4">
 </head>
 <body class="admin-body">
 
@@ -90,13 +90,19 @@
 
         <!-- ANALYTICS OVERVIEW -->
         <section id="tab-analytics" class="tab">
-            <div class="admin-actions" style="margin-bottom:1.5rem; justify-content: space-between;">
-                <div style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
-                    <select id="analyticsGameFilter" class="filter-select" style="min-width: 220px;">
-                        <option value="">📊 Overview (All Games)</option>
-                    </select>
+            <div class="admin-actions" style="margin-bottom:1.4rem; justify-content: space-between; align-items:center; gap:1rem; flex-wrap:wrap">
+                <!-- High-End Segmented Navigation Filter (replaces clumsy native dropdown) -->
+                <div class="analytics-scope-bar" id="analyticsScopeBar" role="tablist" aria-label="Analytics Scope">
+                    <button type="button" class="scope-pill active" data-scope="" role="tab" aria-selected="true">
+                        <span class="scope-icon">📊</span>
+                        <span>Studio Overview</span>
+                        <span class="scope-badge" id="scopeAllBadge">All</span>
+                    </button>
+                    <!-- Game pills injected dynamically -->
                 </div>
-                <button type="button" class="btn-admin ghost" id="syncAnalyticsBtn">↻ Sync from Play Store</button>
+                <input type="hidden" id="analyticsGameFilter" value="">
+
+                <button type="button" class="btn-admin ghost" id="syncAnalyticsBtn" style="white-space:nowrap; flex-shrink:0">↻ Sync from Play Store</button>
             </div>
 
             <!-- Overview Section (shown when no specific game selected) -->

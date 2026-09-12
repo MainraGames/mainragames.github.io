@@ -143,7 +143,44 @@
     function populateGameSelectors() {
         var opts = games.map(function (g) { return '<option value="' + esc(g.id) + '">' + esc(g.title) + '</option>'; }).join('');
         $('#reviewGameFilter').innerHTML = '<option value="">All games</option>' + opts;
-        $('#analyticsGameFilter').innerHTML = '<option value="">-- Select Game --</option>' + opts;
+
+        // Render modern segmented pill bar for Analytics
+        var scopeBar = $('#analyticsScopeBar');
+        if (scopeBar) {
+            var currentVal = $('#analyticsGameFilter').value || '';
+            var pillsHtml = '<button type="button" class="scope-pill ' + (!currentVal ? 'active' : '') + '" data-scope="" role="tab" aria-selected="' + (!currentVal) + '">' +
+                '<span class="scope-icon">📊</span>' +
+                '<span>Studio Overview</span>' +
+                '<span class="scope-badge" id="scopeAllBadge">' + games.length + ' Games</span>' +
+            '</button>';
+
+            pillsHtml += games.map(function (g) {
+                var isActive = currentVal === g.id;
+                var shortTitle = g.title.split(':')[0].trim();
+                var gReviews = reviews.filter(function (r) { return String(r.game_id) === String(g.id); });
+                var badgeText = gReviews.length ? gReviews.length : (g.rating != null ? '★' + g.rating : '—');
+                return '<button type="button" class="scope-pill ' + (isActive ? 'active' : '') + '" data-scope="' + esc(g.id) + '" role="tab" aria-selected="' + isActive + '" title="' + esc(g.title) + '">' +
+                    '<img class="scope-thumb" src="' + esc(icon256(g.image)) + '" alt="" onerror="this.src=\'../Assets/img/LogoMainraGames.png\'">' +
+                    '<span>' + esc(shortTitle) + '</span>' +
+                    '<span class="scope-badge">' + esc(badgeText) + '</span>' +
+                '</button>';
+            }).join('');
+
+            scopeBar.innerHTML = pillsHtml;
+
+            $$('[data-scope]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var scopeId = btn.dataset.scope || '';
+                    $('#analyticsGameFilter').value = scopeId;
+                    $$('.scope-pill').forEach(function (p) {
+                        var active = (p.dataset.scope || '') === scopeId;
+                        p.classList.toggle('active', active);
+                        p.setAttribute('aria-selected', active);
+                    });
+                    renderAnalyticsTab();
+                });
+            });
+        }
     }
 
     function formToGame(fd) {
@@ -305,8 +342,12 @@
 
     function openAnalyticsTab(id) {
         selectTab('analytics');
-        var select = $('#analyticsGameFilter');
-        select.value = id || '';
+        $('#analyticsGameFilter').value = id || '';
+        $$('.scope-pill').forEach(function (p) {
+            var active = (p.dataset.scope || '') === (id || '');
+            p.classList.toggle('active', active);
+            p.setAttribute('aria-selected', active);
+        });
         renderAnalyticsTab();
         window.scrollTo({ top: 0, behavior: 'auto' });
     }
@@ -495,7 +536,13 @@
 
             $$('[data-drilldown]').forEach(function (b) {
                 b.addEventListener('click', function () {
-                    $('#analyticsGameFilter').value = b.dataset.drilldown;
+                    var targetId = b.dataset.drilldown;
+                    $('#analyticsGameFilter').value = targetId;
+                    $$('.scope-pill').forEach(function (p) {
+                        var active = (p.dataset.scope || '') === targetId;
+                        p.classList.toggle('active', active);
+                        p.setAttribute('aria-selected', active);
+                    });
                     renderAnalyticsTab();
                 });
             });
@@ -1025,6 +1072,11 @@
         if (backBtn) {
             backBtn.addEventListener('click', function () {
                 $('#analyticsGameFilter').value = '';
+                $$('.scope-pill').forEach(function (p) {
+                    var active = (p.dataset.scope || '') === '';
+                    p.classList.toggle('active', active);
+                    p.setAttribute('aria-selected', active);
+                });
                 renderAnalyticsTab();
             });
         }
