@@ -7,7 +7,7 @@
 <title>Admin — Mainra Games</title>
 <link rel="icon" type="image/png" href="../Assets/img/LogoMainraGames.png">
 <link rel="stylesheet" href="../Assets/css/mainra.css?v=3.4">
-<link rel="stylesheet" href="assets/admin.css?v=1.2">
+<link rel="stylesheet" href="assets/admin.css?v=1.3">
 </head>
 <body class="admin-body">
 
@@ -86,36 +86,138 @@
             </div>
         </section>
 
-        <!-- ANALYTICS -->
+        <!-- ANALYTICS OVERVIEW -->
         <section id="tab-analytics" class="tab">
-            <div class="admin-actions" style="margin-bottom:1rem">
-                <select id="analyticsGameFilter" class="filter-select"><option value="">All games</option></select>
+            <div class="admin-actions" style="margin-bottom:1.5rem; justify-content: space-between;">
+                <div style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
+                    <select id="analyticsGameFilter" class="filter-select" style="min-width: 220px;">
+                        <option value="">📊 Overview (All Games)</option>
+                    </select>
+                </div>
                 <button type="button" class="btn-admin ghost" id="syncAnalyticsBtn">↻ Sync from Play Store</button>
             </div>
-            
-            <div id="analyticsContent" style="display:none;">
-                <div class="field-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 2rem">
-                    <div class="stat-box" style="padding: 1.5rem; background: var(--mainra-navy-deep); border-radius: var(--radius-sm); border-left: 4px solid var(--mainra-orange)">
-                        <div style="font-size: 0.9rem; color: var(--mainra-muted); text-transform: uppercase; letter-spacing: 0.05em">Total Downloads</div>
-                        <div id="tabStatDownloads" style="font-size: 2.5rem; font-weight: 600; margin-top: 0.5rem">--</div>
+
+            <!-- Overview Section (shown when no specific game selected) -->
+            <div id="analyticsOverview">
+                <!-- Summary KPI Cards -->
+                <div class="analytics-kpi-grid">
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:var(--mainra-orange)">🎮</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Total Live Games</div>
+                            <div id="kpiTotalGames" class="kpi-val">--</div>
+                            <div class="kpi-sub" id="kpiCategories">--</div>
+                        </div>
                     </div>
-                    <div class="stat-box" style="padding: 1.5rem; background: var(--mainra-navy-deep); border-radius: var(--radius-sm); border-left: 4px solid var(--mainra-gold)">
-                        <div style="font-size: 0.9rem; color: var(--mainra-muted); text-transform: uppercase; letter-spacing: 0.05em">Average Rating</div>
-                        <div id="tabStatRating" style="font-size: 2.5rem; font-weight: 600; margin-top: 0.5rem">--</div>
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:var(--mainra-success)">📥</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Estimated Installs</div>
+                            <div id="kpiTotalDownloads" class="kpi-val">--</div>
+                            <div class="kpi-sub">Across Google Play</div>
+                        </div>
+                    </div>
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:var(--mainra-gold)">★</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Average Studio Rating</div>
+                            <div id="kpiAvgRating" class="kpi-val">--</div>
+                            <div class="kpi-sub" id="kpiRatedCount">From rated titles</div>
+                        </div>
+                    </div>
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:#60a5fa">💬</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Total Reviews</div>
+                            <div id="kpiTotalReviews" class="kpi-val">--</div>
+                            <div class="kpi-sub" id="kpiPendingReplies">-- pending replies</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Per-Game Performance Comparison Table -->
+                <div class="card" style="margin-bottom:1.5rem; padding:0; overflow:hidden;">
+                    <div style="padding:1rem 1.4rem; border-bottom:1px solid var(--mainra-line); display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0; font-size:1.05rem;">Game Performance Breakdown</h3>
+                        <span class="muted" style="font-size:.8rem;">Click a game to view deep dive</span>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Game</th>
+                                    <th>Category</th>
+                                    <th>Installs</th>
+                                    <th>Rating</th>
+                                    <th>Reviews</th>
+                                    <th>Needs Reply</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="overviewBreakdownTbody">
+                                <tr><td colspan="7" class="muted">Loading game breakdown…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div class="card" style="padding:0; overflow:hidden;">
+                    <div style="padding:1rem 1.4rem; border-bottom:1px solid var(--mainra-line);">
+                        <h3 style="margin:0; font-size:1.05rem;">Latest Player Feedback Across All Games</h3>
+                    </div>
+                    <div id="overviewLatestReviews" style="padding:1.2rem;">
+                        <div class="muted">Loading feedback…</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Single Game Deep Dive Section (shown when a specific game is selected) -->
+            <div id="analyticsSingleGame" style="display:none;">
+                <div class="analytics-kpi-grid" style="margin-bottom:1.5rem;">
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:var(--mainra-orange)">📥</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Total Downloads</div>
+                            <div id="tabStatDownloads" class="kpi-val">--</div>
+                            <div class="kpi-sub">Google Play Store</div>
+                        </div>
+                    </div>
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:var(--mainra-gold)">★</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Average Rating</div>
+                            <div id="tabStatRating" class="kpi-val">--</div>
+                            <div class="kpi-sub" id="tabStatRatingSub">Public score</div>
+                        </div>
+                    </div>
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:#60a5fa">💬</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Reviews Count</div>
+                            <div id="tabStatReviewsCount" class="kpi-val">--</div>
+                            <div class="kpi-sub" id="tabStatUnreplied">--</div>
+                        </div>
+                    </div>
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:var(--mainra-success)">🎯</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Response Rate</div>
+                            <div id="tabStatResponseRate" class="kpi-val">--</div>
+                            <div class="kpi-sub">Reviews answered</div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="card" style="padding: 0; overflow: hidden;">
-                    <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--mainra-line); background: rgba(0,0,0,0.2);">
-                        <h3 style="margin: 0; font-size: 1.1rem;">Recent Reviews</h3>
+                    <div style="padding: 1rem 1.4rem; border-bottom: 1px solid var(--mainra-line); display:flex; justify-content:space-between; align-items:center;">
+                        <h3 id="singleGameReviewTitle" style="margin: 0; font-size: 1.05rem;">Reviews & Feedback</h3>
+                        <button type="button" class="btn-admin ghost small" id="backToOverviewBtn">← Back to Overview</button>
                     </div>
-                    <div id="tabReviewsList" style="padding: 1.5rem;">
+                    <div id="tabReviewsList" style="padding: 1.4rem;">
                         <div class="muted">Loading reviews...</div>
                     </div>
                 </div>
-            </div>
-            <div id="analyticsEmpty" class="card muted">
-                Select a game from the dropdown above to view its analytics and reviews.
             </div>
         </section>
 

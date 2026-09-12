@@ -191,6 +191,50 @@
 
 /* ---------- end featured picker ---------- */
 
+/* ---------- analytics overview kpi cards ---------- */
+.analytics-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+.kpi-card {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+    padding: 1.25rem 1.4rem;
+    background: var(--mainra-panel-solid);
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 18px rgba(0,0,0,.25);
+    transition: transform .15s ease, border-color .15s ease;
+}
+.kpi-card:hover {
+    border-color: var(--mainra-line-strong);
+    transform: translateY(-2px);
+}
+
+.kpi-icon {
+    font-size: 2.2rem;
+    line-height: 1;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,.04);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+}
+
+.kpi-body { min-width: 0; flex: 1; }
+.kpi-label { font-size: .8rem; color: var(--mainra-muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+.kpi-val { font-size: 2rem; font-weight: 700; color: var(--mainra-ink); line-height: 1.2; margin: .15rem 0 .2rem; }
+.kpi-sub { font-size: .78rem; color: var(--mainra-muted); }
+
+/* ---------- end analytics cards ---------- */
+
 .btn.small, .filter-select {
     font-size: .8rem;
     padding: .35rem .7rem;
