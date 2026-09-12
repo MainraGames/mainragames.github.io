@@ -1135,7 +1135,7 @@
 
     /* ---------- tabs ---------- */
 
-    var TITLES = { games: 'Games', featured: 'Featured & Site', analytics: 'Analytics Overview', reviews: 'Reviews', admins: 'Kelola Admin' };
+    var TITLES = { games: 'Games', featured: 'Featured & Site', analytics: 'Analytics Overview', reviews: 'Reviews', admins: 'Admins' };
     function selectTab(name) {
         $$('.admin-nav button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
         $$('.tab').forEach(function (t) { t.classList.toggle('active', t.id === 'tab-' + name); });
@@ -1156,53 +1156,74 @@
     async function loadAdmins() {
         var tbody = $('#adminsTbody');
         if (!tbody) return;
-        tbody.innerHTML = '<tr><td colspan="5" class="muted">Memuat daftar akun admin…</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:2rem"><span style="display:inline-block;animation:spin 1s linear infinite;margin-right:.5rem">↻</span> Memuat daftar akun admin…</td></tr>';
 
-        var res = await sb.functions.invoke('manage-admins', {
-            body: { action: 'list' }
-        });
+        try {
+            // First attempt via direct database query (instant & guaranteed by RLS)
+            var dbRes = await sb.from('admin_users').select('*').order('created_at', { ascending: true });
+            
+            // Try calling Edge Function for enriched auth metadata (last_sign_in_at)
+            var fnRes = await sb.functions.invoke('manage-admins', {
+                body: { action: 'list' }
+            }).catch(function (e) { return { error: e }; });
 
-        if (res.error) {
-            tbody.innerHTML = '<tr><td colspan="5" class="error">Gagal memuat admin: ' + esc(res.error.message || res.error) + '</td></tr>';
-            return;
-        }
+            if (fnRes && !fnRes.error && fnRes.data && fnRes.data.admins) {
+                adminList = fnRes.data.admins;
+            } else if (dbRes && !dbRes.error && dbRes.data) {
+                // Fallback to direct DB records if Edge Function had network/cold-start delay
+                var sessionUser = (await sb.auth.getUser()).data.user;
+                adminList = dbRes.data.map(function (row) {
+                    return {
+                        user_id: row.user_id,
+                        email: row.email,
+                        created_at: row.created_at,
+                        last_sign_in_at: null,
+                        is_current_user: sessionUser ? row.user_id === sessionUser.id : false
+                    };
+                });
+            } else {
+                var errText = (fnRes && fnRes.error && (fnRes.error.message || fnRes.error)) ||
+                              (dbRes && dbRes.error && dbRes.error.message) || 'Unknown error';
+                tbody.innerHTML = '<tr><td colspan="5" class="error" style="text-align:center;padding:1.5rem">Gagal memuat admin: ' + esc(errText) + '</td></tr>';
+                return;
+            }
 
-        var data = res.data || {};
-        adminList = data.admins || [];
+            if (!adminList.length) {
+                tbody.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:1.5rem">Belum ada akun admin terdaftar.</td></tr>';
+                return;
+            }
 
-        if (!adminList.length) {
-            tbody.innerHTML = '<tr><td colspan="5" class="muted">Belum ada data admin.</td></tr>';
-            return;
-        }
+            tbody.innerHTML = adminList.map(function (adm, idx) {
+                var isMe = adm.is_current_user;
+                var createdDate = adm.created_at ? new Date(adm.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+                var lastSignIn = adm.last_sign_in_at ? new Date(adm.last_sign_in_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
-        tbody.innerHTML = adminList.map(function (adm, idx) {
-            var isMe = adm.is_current_user;
-            var createdDate = adm.created_at ? new Date(adm.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
-            var lastSignIn = adm.last_sign_in_at ? new Date(adm.last_sign_in_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Belum pernah';
+                return '<tr>' +
+                    '<td>' +
+                        '<strong>' + esc(adm.email) + '</strong>' +
+                        (isMe ? ' <span class="badge ok" style="margin-left:.4rem;font-size:.72rem">Anda (Saat ini)</span>' : '') +
+                    '</td>' +
+                    '<td><span class="badge ok">Full Access</span></td>' +
+                    '<td class="muted" style="font-size:.85rem">' + esc(lastSignIn) + '</td>' +
+                    '<td class="muted" style="font-size:.85rem">' + esc(createdDate) + '</td>' +
+                    '<td style="text-align:right">' +
+                        (isMe ? 
+                            '<span class="muted small" style="font-size:.8rem">—</span>' :
+                            '<button type="button" class="btn-admin ghost danger small" data-del-admin="' + idx + '" style="font-size:.78rem;padding:.25rem .6rem;color:#f87171;border-color:rgba(239,68,68,.3)">Hapus Akses</button>') +
+                    '</td>' +
+                '</tr>';
+            }).join('');
 
-            return '<tr>' +
-                '<td>' +
-                    '<strong>' + esc(adm.email) + '</strong>' +
-                    (isMe ? ' <span class="badge ok" style="margin-left:.4rem;font-size:.72rem">Anda (Saat ini)</span>' : '') +
-                '</td>' +
-                '<td><span class="badge ok">Full Access</span></td>' +
-                '<td class="muted" style="font-size:.85rem">' + esc(lastSignIn) + '</td>' +
-                '<td class="muted" style="font-size:.85rem">' + esc(createdDate) + '</td>' +
-                '<td style="text-align:right">' +
-                    (isMe ? 
-                        '<span class="muted small" style="font-size:.8rem">—</span>' :
-                        '<button type="button" class="btn-admin ghost danger small" data-del-admin="' + idx + '" style="font-size:.78rem;padding:.25rem .6rem;color:#f87171;border-color:rgba(239,68,68,.3)">Hapus Akses</button>') +
-                '</td>' +
-            '</tr>';
-        }).join('');
-
-        $$('[data-del-admin]').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var target = adminList[Number(btn.dataset.delAdmin)];
-                if (!target) return;
-                deleteAdminUser(target);
+            $$('[data-del-admin]').forEach(function (btn) {
+                btn.onclick = function () {
+                    var target = adminList[Number(btn.dataset.delAdmin)];
+                    if (!target) return;
+                    deleteAdminUser(target);
+                };
             });
-        });
+        } catch (e) {
+            tbody.innerHTML = '<tr><td colspan="5" class="error" style="text-align:center;padding:1.5rem">Terjadi kesalahan: ' + esc(e.message) + '</td></tr>';
+        }
     }
 
     async function deleteAdminUser(target) {
