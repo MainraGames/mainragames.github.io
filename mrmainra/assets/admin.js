@@ -1748,9 +1748,20 @@
                 }
 
                 if (res.data && res.data.caption) {
-                    contentInput.value = res.data.caption;
+                    var cleanedCap = res.data.caption;
+                    // Extra frontend guard against any JSON bracket debris
+                    if (cleanedCap.startsWith('{') && cleanedCap.includes('"caption"')) {
+                        try {
+                            var p = JSON.parse(cleanedCap);
+                            if (p.caption) cleanedCap = p.caption;
+                        } catch (_) {
+                            var m = cleanedCap.match(/"caption"\s*:\s*"([\s\S]+)/i);
+                            if (m) cleanedCap = m[1].replace(/"\s*\}?\s*$/, '').replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                        }
+                    }
+                    contentInput.value = cleanedCap.trim();
                     wireLivePreview();
-                    toast('Caption dipadatkan menjadi ' + res.data.caption.length + ' karakter untuk ' + targetPlatform + '! ✓');
+                    toast('Caption dipadatkan menjadi ' + contentInput.value.length + ' karakter untuk ' + targetPlatform + '! ✓');
                 }
             };
         }

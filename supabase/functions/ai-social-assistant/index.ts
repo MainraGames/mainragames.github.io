@@ -1,6 +1,7 @@
 // supabase/functions/ai-social-assistant/index.ts
-// AI assistant for social media posts powered by Google Gemini API.
-// Robust JSON response parsing with responseSchema, responseMimeType, and heuristic regex recovery.
+// Robust AI assistant for social media posts powered by Google Gemini API.
+// Features: Thinking Budget Control (thinkingBudget: 0 to prevent thought token exhaustion),
+// Pure Text Truncation and Adaptation without leaking JSON tokens.
 // @ts-nocheck
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -36,6 +37,46 @@ async function requireAdmin(req: Request) {
   return { admin, user: data.user, message: "" };
 }
 
+// Clean any JSON debris if returned
+function cleanCaptionText(raw: string): string {
+  if (!raw) return "";
+  let s = raw.trim();
+
+  // Strip markdown fences
+  s = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+
+  // If starts with { and has "caption"
+  if (s.startsWith("{") && s.includes('"caption"')) {
+    try {
+      const parsed = JSON.parse(s);
+      if (parsed.caption) return String(parsed.caption).trim();
+    } catch (_) {
+      // regex fallback
+      const m = s.match(/"caption"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+      if (m) {
+        try {
+          return JSON.parse('"' + m[1] + '"').trim();
+        } catch (_) {
+          return m[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').trim();
+        }
+      }
+      // If incomplete JSON like {"caption": " ...
+      const incomplete = s.match(/"caption"\s*:\s*"([\s\S]+)/i);
+      if (incomplete) {
+        let val = incomplete[1].replace(/"\s*\}?\s*$/, "");
+        return val.replace(/\\n/g, "\n").replace(/\\"/g, '"').trim();
+      }
+    }
+  }
+
+  // Remove leading / trailing quotes if left
+  if (s.startsWith('"') && s.endsWith('"') && s.length > 2) {
+    s = s.slice(1, -1).trim();
+  }
+
+  return s;
+}
+
 // Resilient parsing to guarantee clean { title, caption, hashtags }
 function extractStructuredPost(rawText: string, defaultGameTitle: string) {
   if (!rawText) {
@@ -60,14 +101,13 @@ function extractStructuredPost(rawText: string, defaultGameTitle: string) {
       let caption = (parsed.caption || "").trim();
       let hashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
 
-      // If caption somehow is empty but text or body exists
       if (!caption && parsed.text) caption = String(parsed.text).trim();
       if (!caption && parsed.body) caption = String(parsed.body).trim();
 
       if (title || caption) {
         return {
           title: title || `Update Seru ${defaultGameTitle || "Mainra Games"}`,
-          caption: caption || rawText.trim(),
+          caption: cleanCaptionText(caption || rawText.trim()),
           hashtags,
         };
       }
@@ -84,52 +124,37 @@ function extractStructuredPost(rawText: string, defaultGameTitle: string) {
       if (parsed && (parsed.title || parsed.caption)) {
         return {
           title: (parsed.title || `Update Seru ${defaultGameTitle || "Mainra Games"}`).trim(),
-          caption: (parsed.caption || "").trim(),
+          caption: cleanCaptionText(parsed.caption || ""),
           hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags : [],
         };
       }
     } catch (_e2) {
-      // If incomplete or unclosed JSON string (cut off by token limit)
-      // Extract "title": "..." and "caption": "..." manually
       const titleMatch = cleaned.match(/"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
       const captionMatch = cleaned.match(/"caption"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
 
       if (titleMatch || captionMatch) {
-        const unescape = (str: string) => {
-          try {
-            return JSON.parse(`"${str}"`);
-          } catch {
-            return str.replace(/\\n/g, "\n").replace(/\\"/g, '"');
-          }
-        };
+        let extractedTitle = defaultGameTitle ? `Update Seru ${defaultGameTitle}` : "Update Seru Mainra Games";
+        let extractedCaption = "";
 
-        const extractedTitle = titleMatch ? unescape(titleMatch[1]) : `Update Seru ${defaultGameTitle || "Mainra Games"}`;
-        const extractedCaption = captionMatch ? unescape(captionMatch[1]) : "";
-
-        if (extractedCaption) {
-          return {
-            title: extractedTitle.trim(),
-            caption: extractedCaption.trim(),
-            hashtags: ["#MainraGames", "#IndieGame"],
-          };
+        if (titleMatch) {
+          try { extractedTitle = JSON.parse('"' + titleMatch[1] + '"'); } catch { extractedTitle = titleMatch[1]; }
         }
+        if (captionMatch) {
+          try { extractedCaption = JSON.parse('"' + captionMatch[1] + '"'); } catch { extractedCaption = captionMatch[1]; }
+        }
+
+        return {
+          title: extractedTitle.trim(),
+          caption: cleanCaptionText(extractedCaption.trim()),
+          hashtags: ["#MainraGames", "#IndieGame"],
+        };
       }
     }
   }
 
-  // 4. Ultimate fallback if model purely returned freeform text without JSON
-  const lines = rawText.trim().split("\n").filter((l) => l.trim().length > 0);
-  let fallbackTitle = `Update Seru ${defaultGameTitle || "Mainra Games"}`;
-  let fallbackCaption = rawText.trim();
-
-  if (lines.length > 1 && lines[0].length < 120) {
-    fallbackTitle = lines[0].replace(/^[#*>\s]+/, "").trim();
-    fallbackCaption = lines.slice(1).join("\n\n").trim();
-  }
-
   return {
-    title: fallbackTitle,
-    caption: fallbackCaption,
+    title: `Update Seru ${defaultGameTitle || "Mainra Games"}`,
+    caption: cleanCaptionText(cleaned),
     hashtags: ["#MainraGames", "#IndieGame"],
   };
 }
@@ -146,8 +171,15 @@ Deno.serve(async (req: Request) => {
     const payload = await req.json().catch(() => ({}));
     const action = payload.action || "generate";
 
-    // Retrieve Gemini API Key with priority:
-    let geminiKey = (payload.client_gemini_key || payload.client_token || payload.geminiKey || payload.clientApiKey || payload.apiKey || "").trim();
+    // Priority for Gemini key: payload -> site_settings -> env
+    let geminiKey = (
+      payload.client_gemini_key ||
+      payload.client_token ||
+      payload.geminiKey ||
+      payload.clientApiKey ||
+      payload.apiKey ||
+      ""
+    ).trim();
 
     if (!geminiKey) {
       const { data: settingRow } = await admin
@@ -164,11 +196,11 @@ Deno.serve(async (req: Request) => {
       geminiKey = (Deno.env.get("GEMINI_API_KEY") || "").trim();
     }
 
-    // Action: Save API key to site_settings
+    // Action: Save API key
     if (action === "save_key") {
       const newKey = (payload.newKey || "").trim();
       if (!newKey) {
-        return json(400, { message: "API key tidak boleh kosong." });
+        return json(200, { success: false, error: true, message: "API key tidak boleh kosong." });
       }
       const { error: upsertErr } = await admin.from("site_settings").upsert({
         key: "gemini_api_key",
@@ -176,14 +208,14 @@ Deno.serve(async (req: Request) => {
         updated_at: new Date().toISOString(),
       }, { onConflict: "key" });
 
-      if (upsertErr) return json(500, { message: upsertErr.message });
-      return json(200, { message: "Gemini API Key berhasil disimpan ke sistem! ✓" });
+      if (upsertErr) return json(200, { success: false, error: true, message: upsertErr.message });
+      return json(200, { success: true, message: "Gemini API Key berhasil disimpan ke sistem! ✓" });
     }
 
-    // Action: List supported text-generation models from Google API
+    // Action: List supported Gemini models dynamically
     if (action === "list_models") {
       if (!geminiKey) {
-        return json(400, { message: "API key belum diisi. Masukkan API key untuk mengambil daftar model." });
+        return json(200, { success: false, error: true, models: [], message: "API key belum diisi." });
       }
 
       const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}&pageSize=100`;
@@ -202,7 +234,6 @@ Deno.serve(async (req: Request) => {
       const listData = await res.json();
       const rawModels = listData.models || [];
 
-      // Filter models that support generateContent
       const textModels = rawModels
         .filter((m: any) => {
           const methods = m.supportedGenerationMethods || [];
@@ -220,29 +251,25 @@ Deno.serve(async (req: Request) => {
           };
         });
 
-      // Priority ranking: Gemini 3.8/3.7/3.5/2.5/2.0
+      // Priority ranking: 2.5-flash / 3.x / 1.5-flash
       textModels.sort((a: any, b: any) => {
         const getScore = (id: string) => {
-          if (id === "gemini-3.8-flash") return 150;
-          if (id === "gemini-3.7-flash") return 140;
+          if (id === "gemini-2.5-flash") return 150;
+          if (id === "gemini-2.5-pro") return 140;
           if (id === "gemini-3.6-flash") return 135;
           if (id === "gemini-3.5-flash") return 130;
-          if (id === "gemini-3.1-pro-preview" || id === "gemini-3.1-pro") return 120;
-          if (id === "gemini-3-flash-preview") return 115;
-          if (id.includes("3.")) return 110;
-          if (id === "gemini-2.5-flash") return 100;
-          if (id === "gemini-2.5-pro") return 95;
-          if (id === "gemini-2.0-flash") return 90;
-          if (id === "gemini-2.0-flash-lite") return 85;
+          if (id === "gemini-3.8-flash") return 125;
+          if (id === "gemini-1.5-flash") return 100;
+          if (id === "gemini-1.5-pro") return 90;
           if (id.includes("2.5")) return 80;
-          if (id.includes("2.0")) return 70;
-          if (id.includes("1.5")) return 50;
+          if (id.includes("3.")) return 70;
           return 10;
         };
         return getScore(b.id) - getScore(a.id);
       });
 
       return json(200, {
+        success: true,
         models: textModels,
         total: textModels.length,
       });
@@ -251,10 +278,10 @@ Deno.serve(async (req: Request) => {
     // Action: Test Model Connection
     if (action === "test") {
       if (!geminiKey) {
-        return json(400, { message: "Gemini API Key belum diisi. Masukkan API key terlebih dahulu." });
+        return json(200, { success: false, error: true, message: "Gemini API Key belum diisi." });
       }
 
-      let modelName = (payload.model || "gemini-3.8-flash").replace(/^models\//, "");
+      let modelName = (payload.model || "gemini-2.5-flash").replace(/^models\//, "");
       const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
 
       const res = await fetch(testUrl, {
@@ -262,6 +289,10 @@ Deno.serve(async (req: Request) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ parts: [{ text: "Ketik 'OK' jika koneksi berhasil." }] }],
+          generationConfig: {
+            maxOutputTokens: 100,
+            thinkingConfig: { thinkingBudget: 0 },
+          },
         }),
       });
 
@@ -278,6 +309,7 @@ Deno.serve(async (req: Request) => {
       const reply = testData?.candidates?.[0]?.content?.parts?.[0]?.text || "OK";
 
       return json(200, {
+        success: true,
         message: `Koneksi ke model ${modelName} berhasil! Respon: "${reply.trim()}"`,
         model: modelName,
       });
@@ -286,13 +318,15 @@ Deno.serve(async (req: Request) => {
     // Action: Generate Post Content
     if (action === "generate") {
       if (!geminiKey) {
-        return json(400, {
-          message: "Gemini API Key belum dikonfigurasi. Masukkan API key Anda di panel pengaturan AI.",
+        return json(200, {
+          success: false,
+          error: true,
+          message: "Gemini API Key belum dikonfigurasi.",
         });
       }
 
       const { gameTitle, topic, tone, targetLink, customPrompt } = payload;
-      let modelName = (payload.model || "gemini-3.8-flash").replace(/^models\//, "");
+      let modelName = (payload.model || "gemini-2.5-flash").replace(/^models\//, "");
 
       const systemInstruction = `Kamu adalah Social Media Manager & Copywriter profesional untuk studio game indie "Mainra Games".
 Tugasmu adalah menulis postingan media sosial yang menarik, kreatif, dan mengundang interaksi pemain (engagement) untuk Facebook, Twitter/X, Instagram, Threads, dan TikTok.
@@ -314,7 +348,6 @@ Keluarkan HANYA dokumen JSON dengan schema berikut:
 
       const genUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
 
-      // Enforce responseMimeType: "application/json" and schema for guaranteed structured output
       const requestBody: any = {
         contents: [
           {
@@ -324,7 +357,8 @@ Keluarkan HANYA dokumen JSON dengan schema berikut:
         ],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1200,
+          maxOutputTokens: 2500,
+          thinkingConfig: { thinkingBudget: 0 },
           responseMimeType: "application/json",
           responseSchema: {
             type: "OBJECT",
@@ -347,9 +381,9 @@ Keluarkan HANYA dokumen JSON dengan schema berikut:
         body: JSON.stringify(requestBody),
       });
 
-      // If model does not support responseSchema (some experimental models), retry without responseSchema but keep responseMimeType
       if (!res.ok && res.status === 400) {
         delete requestBody.generationConfig.responseSchema;
+        delete requestBody.generationConfig.thinkingConfig;
         res = await fetch(genUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -368,8 +402,6 @@ Keluarkan HANYA dokumen JSON dengan schema berikut:
 
       const genData = await res.json();
       const rawOutput = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-      // Bulletproof extraction guaranteeing title and caption are cleanly separated
       const finalResult = extractStructuredPost(rawOutput, gameTitle);
 
       return json(200, {
@@ -382,50 +414,37 @@ Keluarkan HANYA dokumen JSON dengan schema berikut:
     // Action: AI Auto-Fit / Adapt Text for Specific Social Media Character Limits
     if (action === "adapt_limits") {
       if (!geminiKey) {
-        return json(400, { message: "Gemini API Key belum dikonfigurasi." });
+        return json(200, { success: false, error: true, message: "Gemini API Key belum dikonfigurasi." });
       }
 
       const { text, targetLimit, platform } = payload;
       if (!text || !text.trim()) {
-        return json(400, { message: "Teks tidak boleh kosong." });
+        return json(200, { success: false, error: true, message: "Teks tidak boleh kosong." });
       }
 
       const limit = Number(targetLimit) || 280;
-      let modelName = (payload.model || "gemini-3.8-flash").replace(/^models\//, "");
+      let modelName = (payload.model || "gemini-2.5-flash").replace(/^models\//, "");
 
+      // PURE TEXT instruction without JSON schema: guarantees no JSON leaking or mid-string truncation
       const adaptPrompt = `Kamu adalah Social Media Editor profesional.
-Tugasmu adalah memadatkan dan menulis ulang postingan berikut agar panjangnya MAKSIMAL ${limit} KARAKTER untuk platform ${platform || "Twitter/X dan Threads"}.
+Tugasmu adalah meringkas dan menulis ulang teks postingan berikut agar panjang totalnya TEPAT ATAU KURANG DARI ${limit} KARAKTER untuk platform ${platform || "Twitter / Threads"}.
 
 Syarat WAJIB:
-1. Total panjang caption akhir HARUS KURANG DARI ATAU SAMA DENGAN ${limit} karakter (sangat ketat!).
-2. Pertahankan pesan inti, antusiasme, link, dan minimal 1 hashtag penting (#MainraGames).
-3. Buang kata-kata bertele-tele dan gunakan emoji secara efisien.
+1. Output WAJIB HANYA berupa teks caption siap posting (JANGAN sertakan format JSON, tanda kurung kurawal {}, atau kutip JSON).
+2. Panjang total teks hasil ringkasan TIDAK BOLEH lebih dari ${limit} karakter.
+3. Pertahankan nama game, pesan penting, link jika ada, dan minimal hashtag #MainraGames.
 
-Teks Asli:
-"""${text.trim()}"""
-
-Keluarkan HANYA JSON murni dengan format:
-{
-  "caption": "Teks hasil pemadatan di bawah ${limit} karakter",
-  "charCount": 123
-}`;
+Teks yang diringkas:
+${text.trim()}`;
 
       const genUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
 
       const reqBody: any = {
         contents: [{ role: "user", parts: [{ text: adaptPrompt }] }],
         generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 600,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "OBJECT",
-            properties: {
-              caption: { type: "STRING" },
-              charCount: { type: "INTEGER" },
-            },
-            required: ["caption"],
-          },
+          temperature: 0.3,
+          maxOutputTokens: 1500,
+          thinkingConfig: { thinkingBudget: 0 },
         },
       };
 
@@ -436,7 +455,7 @@ Keluarkan HANYA JSON murni dengan format:
       });
 
       if (!res.ok && res.status === 400) {
-        delete reqBody.generationConfig.responseSchema;
+        delete reqBody.generationConfig.thinkingConfig;
         res = await fetch(genUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -455,12 +474,24 @@ Keluarkan HANYA JSON murni dengan format:
 
       const data = await res.json();
       const rawRes = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      let adaptedCaption = text;
-      try {
-        const p = JSON.parse(rawRes.replace(/^```json\s*/i, "").replace(/```$/i, "").trim());
-        if (p.caption) adaptedCaption = p.caption.trim();
-      } catch {
-        adaptedCaption = rawRes.trim();
+      let adaptedCaption = cleanCaptionText(rawRes);
+
+      // If still slightly over limit due to LLM character miscount, mechanically trim cleanly
+      if (adaptedCaption.length > limit) {
+        // Find safe truncation point
+        const parts = adaptedCaption.split("http");
+        if (parts.length > 1) {
+          const mainText = parts[0];
+          const linkAndTag = "http" + parts.slice(1).join("http");
+          const allowedMain = limit - linkAndTag.length - 2;
+          if (allowedMain > 10) {
+            adaptedCaption = mainText.slice(0, allowedMain).trim() + "… " + linkAndTag;
+          } else {
+            adaptedCaption = adaptedCaption.slice(0, limit - 1).trim() + "…";
+          }
+        } else {
+          adaptedCaption = adaptedCaption.slice(0, limit - 1).trim() + "…";
+        }
       }
 
       return json(200, {
@@ -471,8 +502,8 @@ Keluarkan HANYA JSON murni dengan format:
       });
     }
 
-    return json(400, { message: `Aksi '${action}' tidak dikenali.` });
+    return json(200, { success: false, error: true, message: `Aksi '${action}' tidak dikenali.` });
   } catch (err: any) {
-    return json(500, { message: `Internal server error: ${err.message}` });
+    return json(200, { success: false, error: true, message: `Internal server error: ${err.message}` });
   }
 });
