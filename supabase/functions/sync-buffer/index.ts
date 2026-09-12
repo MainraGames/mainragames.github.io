@@ -238,14 +238,29 @@ Deno.serve(async (req: Request) => {
             postInput.assets = [{ image: { url: imageUrl.trim() } }];
           }
 
-          // Rule: Instagram requires metadata: { instagram: { type: post, shouldShareToFeed: true } }
-          if (service === "instagram") {
-            postInput.metadata = {
-              instagram: {
-                type: "post",
-                shouldShareToFeed: true,
-              },
+          // Strict platform metadata requirements enforced by Buffer GraphQL API:
+          postInput.metadata = {};
+
+          if (service === "facebook") {
+            // Buffer API rule: "Facebook posts require a type (post, story, or reel)."
+            postInput.metadata.facebook = {
+              type: "post",
             };
+          } else if (service === "instagram") {
+            // Buffer API rule: Instagram requires type (post) and shouldShareToFeed
+            postInput.metadata.instagram = {
+              type: "post",
+              shouldShareToFeed: true,
+            };
+          } else if (service === "threads") {
+            postInput.metadata.threads = {
+              type: "post",
+            };
+          }
+
+          // Clean empty metadata object if none applied
+          if (Object.keys(postInput.metadata).length === 0) {
+            delete postInput.metadata;
           }
 
           const mutation = `mutation CreatePost($input: CreatePostInput!) {
