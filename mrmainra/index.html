@@ -56,6 +56,10 @@
             <button type="button" data-tab="social">
                 <span>📢</span> <span>Social Broadcast</span>
             </button>
+            <button type="button" data-tab="inbox">
+                <span>📥</span> <span>Pesan Masuk</span>
+                <span id="inboxUnreadBadge" style="display:none; margin-left:auto; background:var(--mainra-orange); color:#fff; font-size:.7rem; font-weight:700; padding:1px 6px; border-radius:999px;"></span>
+            </button>
             <button type="button" data-tab="admins">
                 <span>👥</span> <span>Admins</span>
             </button>
@@ -623,6 +627,38 @@
                 </table>
             </div>
         </section>
+
+        <!-- CONTACT INBOX -->
+        <section id="tab-inbox" class="tab">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:.8rem;">
+                <div style="display:flex; align-items:center; gap:.5rem;">
+                    <button type="button" class="scope-pill active" id="inboxFilterAll" onclick="setInboxFilter('all')">Semua Pesan</button>
+                    <button type="button" class="scope-pill" id="inboxFilterUnread" onclick="setInboxFilter('unread')">Belum Dibaca</button>
+                    <button type="button" class="scope-pill" id="inboxFilterRead" onclick="setInboxFilter('read')">Sudah Dibaca</button>
+                    <button type="button" class="scope-pill" id="inboxFilterReplied" onclick="setInboxFilter('replied')">Sudah Dibalas</button>
+                </div>
+                <button type="button" class="btn-admin ghost" onclick="loadInboxMessages()">🔄 Segarkan Inbox</button>
+            </div>
+
+            <div class="card" style="padding:0; overflow:hidden;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th style="width:180px">Pengirim & Email</th>
+                            <th>Subjek & Pesan</th>
+                            <th style="width:130px">Status</th>
+                            <th style="width:140px">Waktu Masuk</th>
+                            <th style="text-align:right; width:160px">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inboxTbody">
+                        <tr><td colspan="5" class="muted" style="text-align:center;padding:2rem">
+                            <span style="display:inline-block;animation:spin 1s linear infinite;margin-right:.5rem">↻</span> Memuat pesan masuk…
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </main>
 </div>
 
@@ -759,11 +795,52 @@
     </form>
 </dialog>
 
+<!-- INBOX MESSAGE DETAIL MODAL -->
+<dialog id="inboxModal" class="admin-modal" style="max-width:600px;padding:1.4rem 1.6rem">
+    <div class="modal-head" style="margin-bottom:1rem">
+        <h3 id="inboxModalSubject" style="margin:0;font-size:1.15rem">Detail Pesan</h3>
+        <button type="button" class="btn-admin ghost" id="inboxModalClose" title="Close" style="padding:.25rem .55rem">✕</button>
+    </div>
+    <div style="background:rgba(255,255,255,0.02); border:1px solid var(--admin-border-subtle); border-radius:var(--radius-sm); padding:.9rem 1.1rem; margin-bottom:1.1rem;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.6rem; flex-wrap:wrap; gap:.5rem;">
+            <div>
+                <strong id="inboxModalSender" style="font-size:1rem; color:var(--admin-text-main); display:block;"></strong>
+                <a id="inboxModalEmailLink" href="#" style="font-size:.85rem; color:var(--mainra-orange); text-decoration:none;"></a>
+            </div>
+            <div style="text-align:right;">
+                <span id="inboxModalDate" class="muted small" style="display:block;"></span>
+                <span id="inboxModalStatusBadge" class="status-chip active" style="margin-top:.2rem; display:inline-block;"></span>
+            </div>
+        </div>
+        <div style="border-top:1px solid var(--admin-border-subtle); padding-top:.8rem; margin-top:.5rem;">
+            <p id="inboxModalBody" style="white-space:pre-wrap; line-height:1.6; color:var(--admin-text-secondary); margin:0; font-size:.92rem;"></p>
+        </div>
+    </div>
+
+    <!-- Status & Quick Reply Control -->
+    <div style="display:flex; gap:.8rem; flex-wrap:wrap; align-items:center; justify-content:space-between; padding-top:.5rem; border-top:1px solid var(--admin-border-subtle);">
+        <div style="display:flex; align-items:center; gap:.5rem;">
+            <label style="font-size:.82rem; color:var(--admin-text-secondary); margin:0;">Status:</label>
+            <select id="inboxModalStatusSelect" style="background:var(--admin-bg-base); border:1px solid var(--admin-border-subtle); color:var(--admin-text-main); padding:.35rem .6rem; border-radius:var(--radius-sm); font-size:.82rem;">
+                <option value="unread">Belum Dibaca</option>
+                <option value="read">Sudah Dibaca</option>
+                <option value="replied">Sudah Dibalas</option>
+            </select>
+        </div>
+        <div style="display:flex; gap:.5rem;">
+            <button type="button" class="btn-admin ghost" id="inboxModalDeleteBtn" style="color:#ef4444; border-color:rgba(239,68,68,.3);">Hapus</button>
+            <a id="inboxModalReplyMailto" href="#" class="btn-admin" style="display:inline-flex; align-items:center; gap:.4rem; text-decoration:none;">
+                <span>✉️</span> <span>Balas via Email</span>
+            </a>
+        </div>
+    </div>
+</dialog>
+
 <div id="toast" class="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../Assets/js/supabase-config.js"></script>
 <script src="../Assets/js/supabase-client.js"></script>
-<script src="assets/admin.js?v=4.1"></script>
+<script src="assets/admin.js?v=4.2"></script>
 </body>
 </html>

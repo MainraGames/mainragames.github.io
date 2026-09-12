@@ -58,8 +58,9 @@
         $('#who').textContent = user.email || 'admin';
         hideSplash();
 
-        // 1. Always load core games, highlight settings, and reviews
+        // 1. Always load core games, highlight settings, reviews, and unread inbox badge
         loadAll();
+        checkInboxBadge();
 
         // 2. Refresh the currently active tab (social, admins, analytics, etc.)
         var currentTab = 'games';
@@ -1202,7 +1203,7 @@
 
     /* ---------- tabs ---------- */
 
-    var TITLES = { games: 'Games & Featured', analytics: 'Analytics & Reviews', social: 'Social Broadcast', admins: 'Admins' };
+    var TITLES = { games: 'Games & Featured', analytics: 'Analytics & Reviews', social: 'Social Broadcast', inbox: 'Pesan Masuk (Inbox)', admins: 'Admins' };
     function selectTab(name) {
         if (name === 'featured') name = 'games';
         if (name === 'reviews') name = 'analytics';
@@ -1221,6 +1222,8 @@
             wireScheduleControls();
             initAiAssistant();
             wireLivePreview();
+        } else if (name === 'inbox') {
+            loadInboxMessages();
         } else if (name === 'admins') {
             loadAdmins();
         }
@@ -2266,6 +2269,215 @@
         loadAdmins();
     }
 
+    /* ---------- contact inbox ---------- */
+
+    var currentInboxFilter = 'all';
+    var cachedInboxMessages = [];
+
+    window.setInboxFilter = function (filter) {
+        currentInboxFilter = filter;
+        ['all', 'unread', 'read', 'replied'].forEach(function (f) {
+            var btn = $('#inboxFilter' + f.charAt(0).toUpperCase() + f.slice(1));
+            if (btn) btn.classList.toggle('active', f === filter);
+        });
+        renderInboxTable();
+    };
+
+    async function checkInboxBadge() {
+        if (!sb) return;
+        var res = await sb.from('contact_messages').select('id', { count: 'exact', head: true }).eq('status', 'unread');
+        if (!res.error && typeof res.count === 'number') {
+            updateInboxBadge(res.count);
+        }
+    }
+
+    function updateInboxBadge(unreadCount) {
+        var badge = $('#inboxUnreadBadge');
+        if (!badge) return;
+        if (unreadCount > 0) {
+            badge.style.display = 'inline-block';
+            badge.textContent = unreadCount;
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    window.loadInboxMessages = async function () {
+        var tb = $('#inboxTbody');
+        if (!tb) return;
+        tb.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:2rem"><span style="display:inline-block;animation:spin 1s linear infinite;margin-right:.5rem">↻</span> Memuat pesan masuk…</td></tr>';
+
+        var res = await sb.from('contact_messages')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (res.error) {
+            tb.innerHTML = '<tr><td colspan="5" class="error-cell" style="text-align:center;padding:1.5rem">Gagal memuat pesan: ' + esc(res.error.message) + '</td></tr>';
+            return;
+        }
+
+        cachedInboxMessages = res.data || [];
+        var unreadTotal = cachedInboxMessages.filter(function (m) { return m.status === 'unread'; }).length;
+        updateInboxBadge(unreadTotal);
+        renderInboxTable();
+    };
+
+    function renderInboxTable() {
+        var tb = $('#inboxTbody');
+        if (!tb) return;
+
+        var list = cachedInboxMessages;
+        if (currentInboxFilter !== 'all') {
+            list = list.filter(function (m) { return m.status === currentInboxFilter; });
+        }
+
+        if (!list.length) {
+            tb.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center;padding:2.5rem">' +
+                (currentInboxFilter === 'all' ? 'Belum ada pesan masuk dari formulir website.' : 'Tidak ada pesan dengan filter ini.') +
+                '</td></tr>';
+            return;
+        }
+
+        var html = '';
+        list.forEach(function (m) {
+            var dateStr = '-';
+            try {
+                dateStr = new Date(m.created_at).toLocaleString('id-ID', {
+                    day: 'numeric', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+            } catch (e) { dateStr = m.created_at || '-'; }
+
+            var statusBadge = '';
+            if (m.status === 'unread') {
+                statusBadge = '<span style="background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.4);padding:2px 8px;border-radius:999px;font-size:.75rem;font-weight:600;">Belum Dibaca</span>';
+            } else if (m.status === 'replied') {
+                statusBadge = '<span style="background:rgba(127,209,161,.15);color:var(--mainra-success);border:1px solid rgba(127,209,161,.4);padding:2px 8px;border-radius:999px;font-size:.75rem;font-weight:600;">Sudah Dibalas</span>';
+            } else {
+                statusBadge = '<span style="background:rgba(255,255,255,.06);color:var(--admin-text-secondary);border:1px solid var(--admin-border-subtle);padding:2px 8px;border-radius:999px;font-size:.75rem;font-weight:500;">Sudah Dibaca</span>';
+            }
+
+            var safeMsg = esc(m.message || '');
+            var snippet = safeMsg.length > 80 ? safeMsg.slice(0, 80) + '…' : safeMsg;
+
+            html += '<tr style="' + (m.status === 'unread' ? 'background:rgba(255,107,0,.03);' : '') + '">' +
+                '<td>' +
+                    '<strong style="color:var(--admin-text-main);display:block;font-size:.9rem;">' + esc(m.name || 'Anonymous') + '</strong>' +
+                    '<a href="mailto:' + esc(m.email) + '" style="color:var(--admin-text-muted);font-size:.8rem;text-decoration:none;">' + esc(m.email) + '</a>' +
+                '</td>' +
+                '<td>' +
+                    (m.subject ? '<div style="font-weight:600;color:var(--admin-text-main);font-size:.88rem;margin-bottom:2px;">' + esc(m.subject) + '</div>' : '') +
+                    '<div style="color:var(--admin-text-secondary);font-size:.82rem;line-height:1.4;">' + snippet + '</div>' +
+                '</td>' +
+                '<td>' + statusBadge + '</td>' +
+                '<td style="font-size:.8rem;color:var(--admin-text-muted);">' + dateStr + '</td>' +
+                '<td style="text-align:right;">' +
+                    '<button type="button" class="btn-admin ghost" style="padding:.25rem .55rem;font-size:.78rem;margin-right:.3rem;" onclick="viewInboxMessage(\'' + esc(m.id) + '\')">Buka</button>' +
+                    '<button type="button" class="btn-admin ghost" style="padding:.25rem .5rem;font-size:.78rem;color:#ef4444;border-color:rgba(239,68,68,.3);" onclick="deleteInboxMessage(\'' + esc(m.id) + '\')">✕</button>' +
+                '</td>' +
+            '</tr>';
+        });
+
+        tb.innerHTML = html;
+    }
+
+    window.viewInboxMessage = async function (id) {
+        var m = cachedInboxMessages.find(function (x) { return x.id === id; });
+        if (!m) return;
+
+        var modal = $('#inboxModal');
+        if (!modal) return;
+
+        $('#inboxModalSubject').textContent = m.subject || 'Tanpa Subjek';
+        $('#inboxModalSender').textContent = m.name || 'Anonymous';
+        var mailEl = $('#inboxModalEmailLink');
+        mailEl.textContent = m.email;
+        mailEl.href = 'mailto:' + encodeURIComponent(m.email);
+
+        try {
+            $('#inboxModalDate').textContent = new Date(m.created_at).toLocaleString('id-ID', {
+                day: 'numeric', month: 'long', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            });
+        } catch (e) { $('#inboxModalDate').textContent = m.created_at || ''; }
+
+        var badge = $('#inboxModalStatusBadge');
+        if (m.status === 'unread') {
+            badge.textContent = 'Belum Dibaca';
+            badge.style.color = '#fca5a5';
+        } else if (m.status === 'replied') {
+            badge.textContent = 'Sudah Dibalas';
+            badge.style.color = 'var(--mainra-success)';
+        } else {
+            badge.textContent = 'Sudah Dibaca';
+            badge.style.color = 'var(--admin-text-secondary)';
+        }
+
+        $('#inboxModalBody').textContent = m.message || '';
+        var statusSelect = $('#inboxModalStatusSelect');
+        if (statusSelect) statusSelect.value = m.status || 'unread';
+
+        var replyMailto = $('#inboxModalReplyMailto');
+        if (replyMailto) {
+            replyMailto.href = 'mailto:' + encodeURIComponent(m.email) +
+                '?subject=' + encodeURIComponent('Re: ' + (m.subject || 'Pesan Mainra Games')) +
+                '&body=' + encodeURIComponent('\n\n--- Pesan Asli dari ' + m.name + ' ---\n' + m.message);
+        }
+
+        var delBtn = $('#inboxModalDeleteBtn');
+        if (delBtn) {
+            delBtn.onclick = function () {
+                modal.close();
+                deleteInboxMessage(m.id);
+            };
+        }
+
+        statusSelect.onchange = async function () {
+            var newStatus = statusSelect.value;
+            var res = await sb.from('contact_messages').update({ status: newStatus }).eq('id', m.id);
+            if (res.error) {
+                toast('Gagal update status: ' + res.error.message, true);
+            } else {
+                m.status = newStatus;
+                toast('Status pesan diperbarui ke: ' + newStatus);
+                renderInboxTable();
+                var unreadTotal = cachedInboxMessages.filter(function (x) { return x.status === 'unread'; }).length;
+                updateInboxBadge(unreadTotal);
+            }
+        };
+
+        modal.showModal();
+
+        // Auto mark as read if it was unread
+        if (m.status === 'unread') {
+            sb.from('contact_messages').update({ status: 'read' }).eq('id', m.id).then(function (res) {
+                if (!res.error) {
+                    m.status = 'read';
+                    statusSelect.value = 'read';
+                    badge.textContent = 'Sudah Dibaca';
+                    badge.style.color = 'var(--admin-text-secondary)';
+                    renderInboxTable();
+                    var unreadTotal = cachedInboxMessages.filter(function (x) { return x.status === 'unread'; }).length;
+                    updateInboxBadge(unreadTotal);
+                }
+            });
+        }
+    };
+
+    window.deleteInboxMessage = async function (id) {
+        if (!confirm('Apakah Anda yakin ingin menghapus pesan ini secara permanen?')) return;
+        var res = await sb.from('contact_messages').delete().eq('id', id);
+        if (res.error) {
+            toast('Gagal menghapus pesan: ' + res.error.message, true);
+        } else {
+            toast('Pesan berhasil dihapus ✓');
+            cachedInboxMessages = cachedInboxMessages.filter(function (m) { return m.id !== id; });
+            renderInboxTable();
+            var unreadTotal = cachedInboxMessages.filter(function (m) { return m.status === 'unread'; }).length;
+            updateInboxBadge(unreadTotal);
+        }
+    };
+
     /* ---------- boot ---------- */
 
     function init() {
@@ -2344,6 +2556,7 @@
         on('#syncGamesBtn', 'click', function () { callFunction('sync-playstore'); });
 
         on('#newAdminBtn', 'click', openAddAdminModal);
+        on('#inboxModalClose', 'click', function () { $('#inboxModal').close(); });
         on('#admClose', 'click', function () { $('#adminUserModal').close(); });
         on('#admCancel', 'click', function () { $('#adminUserModal').close(); });
         on('#adminUserForm', 'submit', submitNewAdmin);

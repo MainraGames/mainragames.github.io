@@ -17,7 +17,7 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
 - `Assets/js/games-loader.js` — Logika untuk memuat data game (Supabase → fallback JSON) dan merendernya.
 - `Assets/js/supabase-config.js` — URL project + publishable key Supabase (nilai publik, aman untuk browser).
 - `Assets/js/supabase-client.js` — Inisialisasi `window.supabaseClient`.
-- `mrmainra/index.html` + `mrmainra/assets/admin.js|admin.css` — Dashboard admin (login Supabase Auth, RLS gated).
+- `mrmainra/index.html` + `mrmainra/assets/admin.js|admin.css` — Dashboard admin (login Supabase Auth, RLS gated, Games, Analytics & Reviews, Social Broadcast, Contact Form Inbox, Admins).
 - `Assets/js/nav.js` — Kontrol navigasi dan menu mobile.
 - `Assets/css/mainra.css` — Gaya visual website.
 - `Assets/img/` — Folder berisi gambar dan ikon website.

@@ -192,11 +192,96 @@
     window.initializeCarousel = initializeCarousel;
     window.currentSlide = currentSlide;
 
+    function initializeContactForm() {
+        const form = document.getElementById('contactForm');
+        if (!form) return;
+
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            const btn = document.getElementById('contactSubmitBtn');
+            const status = document.getElementById('contactFormStatus');
+
+            const name = (form.elements['name']?.value || '').trim();
+            const email = (form.elements['email']?.value || '').trim();
+            const subject = (form.elements['subject']?.value || '').trim();
+            const message = (form.elements['message']?.value || '').trim();
+
+            if (!name || !email || !message) {
+                if (status) {
+                    status.style.display = 'block';
+                    status.style.background = 'rgba(239, 68, 68, 0.15)';
+                    status.style.border = '1px solid rgba(239, 68, 68, 0.5)';
+                    status.style.color = '#fca5a5';
+                    status.textContent = 'Mohon lengkapi nama, email, dan pesan Anda.';
+                }
+                return;
+            }
+
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Sending Message…';
+            }
+            if (status) status.style.display = 'none';
+
+            try {
+                let sent = false;
+                // 1. Direct Supabase insert (primary zero-quota path)
+                if (window.supabaseClient) {
+                    const { error } = await window.supabaseClient
+                        .from('contact_messages')
+                        .insert([{ name, email, subject, message, status: 'unread' }]);
+                    if (!error) sent = true;
+                }
+
+                // 2. Fallback to Formspree if Supabase client not loaded
+                if (!sent) {
+                    const resp = await fetch('https://formspree.io/f/xjkozpab', {
+                        method: 'POST',
+                        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email, subject, message }),
+                    });
+                    if (resp.ok) sent = true;
+                }
+
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Send Message';
+                }
+
+                if (sent) {
+                    form.reset();
+                    if (status) {
+                        status.style.display = 'block';
+                        status.style.background = 'rgba(127, 209, 161, 0.15)';
+                        status.style.border = '1px solid rgba(127, 209, 161, 0.5)';
+                        status.style.color = 'var(--mainra-success)';
+                        status.textContent = 'Terima kasih! Pesan Anda telah berhasil terkirim ke tim Mainra Games. ✓';
+                    }
+                } else {
+                    throw new Error('Gagal mengirim pesan');
+                }
+            } catch (err) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Send Message';
+                }
+                if (status) {
+                    status.style.display = 'block';
+                    status.style.background = 'rgba(239, 68, 68, 0.15)';
+                    status.style.border = '1px solid rgba(239, 68, 68, 0.5)';
+                    status.style.color = '#fca5a5';
+                    status.textContent = 'Maaf, terjadi kendala saat mengirim pesan. Silakan hubungi kami langsung via email: mainragames@gmail.com.';
+                }
+            }
+        });
+    }
+
     function initializeSite() {
         setCurrentYear();
         initializeFaq();
         initializeRevealAnimations();
         updateCarouselToggle();
+        initializeContactForm();
     }
 
     if (document.readyState === 'loading') {
