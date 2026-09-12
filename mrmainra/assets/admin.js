@@ -704,10 +704,10 @@
                                 '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
                                 ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
                                 getLangBadge(r.lang) +
-                                (r.device ? ' <span class="muted" style="font-size:.78rem;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;">📱 ' + esc(r.device) + '</span>' : '') +
                                 (g ? ' <span class="muted" style="font-size:.8rem">on ' + esc(g.title) + '</span>' : '') +
                                 (r.review_timestamp ? ' <span class="muted" style="font-size:.8rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
                             '</div>' +
+                            getDeviceSpecsBadge(r) +
                             '<button class="btn-admin ghost" style="font-size:.75rem;padding:.2rem .6rem" data-reply-overview="' + i + '" type="button">' +
                                 (answered ? '✎ Edit reply' : '↩ Reply') +
                             '</button>' +
@@ -825,13 +825,15 @@
 
             return '<div class="review-item" data-rvidx="' + i + '" style="border-bottom:1px solid var(--mainra-line);padding:1rem 0">' +
                 '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap">' +
-                    '<span>' +
-                        '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
-                        ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
-                        ' ' + getLangBadge(r.lang) +
-                        (r.review_timestamp ? ' <span class="muted" style="font-size:.85rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
-                        (r.device ? ' <span class="muted" style="font-size:.85rem">· ' + esc(r.device) + (r.versionCode ? ' v' + esc(r.versionCode) : '') + '</span>' : '') +
-                    '</span>' +
+                    '<div>' +
+                        '<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">' +
+                            '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
+                            ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
+                            ' ' + getLangBadge(r.lang) +
+                            (r.review_timestamp ? ' <span class="muted" style="font-size:.85rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
+                        '</div>' +
+                        getDeviceSpecsBadge(r) +
+                    '</div>' +
                     '<button class="btn-admin ghost" style="font-size:.8rem;padding:.25rem .75rem" data-reply-tab="' + i + '" type="button">' +
                         (answered ? '✎ Edit reply' : '↩ Reply') +
                     '</button>' +
@@ -915,6 +917,39 @@
         var c = String(code).toLowerCase().slice(0, 2);
         var meta = LANG_NAMES[c] || { name: code.toUpperCase(), flag: '🌐' };
         return '<span class="badge lang" title="Language: ' + esc(meta.name) + '">' + meta.flag + ' ' + esc(meta.name) + '</span>';
+    }
+
+    function getDeviceSpecsBadge(r) {
+        var parts = [];
+        var dev = r.device_name || r.device;
+        if (dev) {
+            parts.push('📱 ' + esc(dev));
+        }
+        if (r.android_os_version) {
+            // Android SDK to OS name helper (SDK 34 -> Android 14, 33 -> 13, 32/31 -> 12, etc.)
+            var osNames = { 35: '15', 34: '14', 33: '13', 32: '12L', 31: '12', 30: '11', 29: '10', 28: '9 (Pie)', 27: '8.1', 26: '8.0' };
+            var osStr = osNames[r.android_os_version] ? 'Android ' + osNames[r.android_os_version] : 'Android SDK ' + r.android_os_version;
+            parts.push('🤖 ' + esc(osStr));
+        }
+        var vName = r.app_version_name || (r.versionCode && !String(r.versionCode).match(/^\d+$/) ? r.versionCode : null);
+        var vCode = r.app_version_code || (r.versionCode && String(r.versionCode).match(/^\d+$/) ? r.versionCode : null);
+        if (vName || vCode) {
+            var vText = '📦 v' + esc(vName || vCode) + (vName && vCode ? ' (' + esc(vCode) + ')' : '');
+            parts.push(vText);
+        }
+        if (r.device_metadata && r.device_metadata.ramMb) {
+            var ramGb = Math.round(r.device_metadata.ramMb / 1024);
+            parts.push('⚡ ' + (ramGb >= 1 ? ramGb + 'GB RAM' : r.device_metadata.ramMb + 'MB RAM'));
+        }
+        if (r.thumbs_up_count > 0) {
+            parts.push('👍 ' + r.thumbs_up_count);
+        }
+        if (!parts.length) return '';
+        return '<div class="review-specs-line" style="display:inline-flex; align-items:center; gap:.4rem; flex-wrap:wrap; font-size:.76rem; color:var(--admin-text-secondary); margin-top:.2rem;">' +
+            parts.map(function (p) {
+                return '<span style="background:rgba(255,255,255,0.04); border:1px solid var(--admin-border-subtle); padding:1px 6px; border-radius:4px;">' + p + '</span>';
+            }).join('') +
+        '</div>';
     }
 
     var translationCache = {};
@@ -1101,7 +1136,8 @@
                 '</div>' +
                 '<span style="color:var(--mainra-gold);font-size:1.05rem">' + starStr(row.star_rating) + '</span>' +
             '</div>' +
-            '<div class="muted small" style="margin-bottom:.5rem">' + esc(gameName) + (row.device ? ' · Device: ' + esc(row.device) : '') + (row.versionCode ? ' (v' + esc(row.versionCode) + ')' : '') + '</div>' +
+            getDeviceSpecsBadge(row) +
+            '<div class="muted small" style="margin-top:.3rem;margin-bottom:.5rem">' + esc(gameName) + (row.review_timestamp ? ' · ' + new Date(row.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '') + '</div>' +
             '<p style="margin:0;font-size:.9rem;color:var(--mainra-ink);line-height:1.45">' + esc(row.content || '—') + '</p>' +
             (hasForeignModal ?
                 '<div style="margin-top:.4rem">' +

@@ -124,16 +124,33 @@ function mapApiReview(r: any, appId: string) {
     replyText = reply.text[0] || "";
   }
 
+  const dm = c.deviceMetadata || (Array.isArray(c.deviceMetadata) ? c.deviceMetadata[0] : null) || {};
+  // Device display name preference: productName (e.g. "Samsung Galaxy A05s") -> manufacturer + deviceModel -> device codename
+  let deviceName = dm.productName || "";
+  if (!deviceName && dm.manufacturer && (dm.deviceModel || c.device)) {
+    deviceName = `${dm.manufacturer} ${dm.deviceModel || c.device}`.trim();
+  }
+  if (!deviceName) {
+    deviceName = c.device || dm.deviceModel || null;
+  }
+
   const row: any = {
     review_id: r.reviewId,
     game_id: appId,
     author_name: (r.authorName && (r.authorName.displayName || r.authorName)) || c.authorName || "Anonymous",
     content: content,
     star_rating: c.starRating || null,
-    versionCode: c.appVersionName || null,
-    device: c.deviceMetadata && (c.deviceMetadata.deviceModel || (Array.isArray(c.deviceMetadata) && c.deviceMetadata[0]?.deviceModel)) || null,
+    versionCode: c.appVersionName || (c.appVersionCode ? String(c.appVersionCode) : null),
+    device: deviceName || c.device || null,
+    device_name: deviceName || null,
+    android_os_version: typeof c.androidOsVersion === "number" ? c.androidOsVersion : null,
+    app_version_code: typeof c.appVersionCode === "number" ? c.appVersionCode : null,
+    app_version_name: c.appVersionName || null,
+    thumbs_up_count: typeof c.thumbsUpCount === "number" ? c.thumbsUpCount : 0,
+    thumbs_down_count: typeof c.thumbsDownCount === "number" ? c.thumbsDownCount : 0,
+    device_metadata: dm && Object.keys(dm).length > 0 ? dm : null,
     review_timestamp: lm ? Number(lm) * 1000 : null,
-    lang: c.reviewLanguage || null,
+    lang: c.reviewerLanguage || c.reviewLanguage || null,
     source: "playstore",
   };
   if (replyText) {
