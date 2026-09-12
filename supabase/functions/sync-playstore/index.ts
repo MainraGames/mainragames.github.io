@@ -46,15 +46,36 @@ Deno.serve(async (req: Request) => {
   if (!admin) return json(401, { message });
 
   try {
-    let apps: any[] = [];
+    let appsMap = new Map();
     const devFn = gplay.dev || gplay.developer;
+    const locales = [
+      { lang: "id", country: "id" },
+      { lang: "en", country: "us" },
+    ];
     if (typeof devFn === "function") {
-      apps = await devFn({ devId: DEVELOPER_ID, lang: "en", country: "us", fullDetail: true });
+      for (const loc of locales) {
+        try {
+          const list = await devFn({ devId: DEVELOPER_ID, lang: loc.lang, country: loc.country, fullDetail: true });
+          for (const a of (list || [])) {
+            if (a && a.appId && !appsMap.has(a.appId)) {
+              appsMap.set(a.appId, a);
+            }
+          }
+        } catch (e) {
+          console.error(`devFn error for ${loc.lang}-${loc.country}:`, e);
+        }
+      }
     } else if (typeof gplay.list === "function") {
-      apps = await gplay.list({ num: 60, fullDetail: true });
-      apps = apps.filter((a: any) => a.developerId === DEVELOPER_ID || a.developer === "Mainra Games");
+      const list = await gplay.list({ num: 60, fullDetail: true });
+      for (const a of (list || [])) {
+        if (a.developerId === DEVELOPER_ID || a.developer === "Mainra Games" || a.developer === "MAINRA Games") {
+          if (!appsMap.has(a.appId)) appsMap.set(a.appId, a);
+        }
+      }
     }
-    if (!apps || apps.length === 0) return json(502, { message: "No apps found on developer page" });
+
+    const apps = Array.from(appsMap.values());
+    if (apps.length === 0) return json(502, { message: "No apps found on developer page" });
 
     const rows = apps.map((app: any, i: number) => ({
       id: app.appId,
