@@ -13,9 +13,28 @@ import gplayMod from "npm:google-play-scraper@10.1.3";
 
 const gplay: any = (gplayMod as any).default ?? gplayMod;
 const API = "https://androidpublisher.googleapis.com/androidpublisher/v3";
+// Comprehensive list of locales to cover worldwide player reviews across all languages & regions
 const SCRAPE_LOCALES: Array<[string, string]> = [
-  ["id", "id"],
-  ["en", "us"],
+  ["id", "id"], // Indonesian
+  ["en", "us"], // English (US)
+  ["en", "gb"], // English (UK)
+  ["fa", "ir"], // Persian (Farsi)
+  ["ar", "sa"], // Arabic
+  ["es", "es"], // Spanish
+  ["pt", "br"], // Portuguese (Brazil)
+  ["ru", "ru"], // Russian
+  ["hi", "in"], // Hindi / India
+  ["tr", "tr"], // Turkish
+  ["fr", "fr"], // French
+  ["de", "de"], // German
+  ["ja", "jp"], // Japanese
+  ["ko", "kr"], // Korean
+  ["vi", "vn"], // Vietnamese
+  ["th", "th"], // Thai
+  ["ms", "my"], // Malay
+  ["it", "it"], // Italian
+  ["zh", "tw"], // Chinese (Traditional)
+  ["zh", "cn"], // Chinese (Simplified)
 ];
 
 const CORS_HEADERS = {
