@@ -1741,15 +1741,13 @@
                     var entry = cachedKeys[idx];
                     if (!entry) return;
                     if (!confirm('Hapus key "' + (entry.label || 'Key') + '"?')) return;
-                    deleteKey(entry.keyFull || entry.key);
+                    deleteKey(idx);
                 };
             });
             keysBody.querySelectorAll('[data-set-primary]').forEach(function (btn) {
                 btn.onclick = function () {
                     var idx = parseInt(btn.getAttribute('data-set-primary'));
-                    var entry = cachedKeys[idx];
-                    if (!entry) return;
-                    setPrimaryKey(entry.keyFull || entry.key);
+                    setPrimaryKey(idx);
                 };
             });
         }
@@ -1814,56 +1812,28 @@
             addKeyBtn.disabled = true;
             addKeyBtn.textContent = '⏳ Menyimpan…';
 
-            // Load existing keys, append new one, save all
-            var loadRes = await sb.functions.invoke('ai-social-assistant', {
-                body: { action: 'load_keys' }
-            }).catch(function (e) { return { error: e }; });
-
-            var existingKeys = [];
-            if (loadRes.data && loadRes.data.keys) {
-                existingKeys = loadRes.data.keys.map(function (k) {
-                    return { key: k.keyFull || k.key, label: k.label, status: k.status, lastChecked: k.lastChecked, isPrimary: k.isPrimary };
-                });
-            }
-
-            // Check duplicate
-            if (existingKeys.some(function (k) { return k.key === keyVal; })) {
-                addKeyBtn.disabled = false;
-                addKeyBtn.textContent = '➕ Tambah Key';
-                toast('Key ini sudah terdaftar.', true);
-                return;
-            }
-
-            existingKeys.push({
-                key: keyVal,
-                label: labelVal || 'Key ' + (existingKeys.length + 1),
-                status: 'unchecked',
-                lastChecked: null,
-                isPrimary: existingKeys.length === 0
-            });
-
-            var saveRes = await sb.functions.invoke('ai-social-assistant', {
-                body: { action: 'save_keys', keys: existingKeys }
+            var res = await sb.functions.invoke('ai-social-assistant', {
+                body: { action: 'add_key', newKey: keyVal, label: labelVal }
             }).catch(function (e) { return { error: e }; });
 
             addKeyBtn.disabled = false;
             addKeyBtn.textContent = '➕ Tambah Key';
 
-            if (saveRes.error || !saveRes.data || !saveRes.data.success) {
-                toast('Gagal menyimpan: ' + ((saveRes.data && saveRes.data.message) || (saveRes.error && saveRes.error.message) || 'Unknown error'), true);
+            if (res.error || !res.data || !res.data.success) {
+                toast('Gagal: ' + ((res.data && res.data.message) || (res.error && res.error.message) || 'Unknown error'), true);
                 return;
             }
 
             if (newKeyInput) newKeyInput.value = '';
             if (newKeyLabel) newKeyLabel.value = '';
-            toast('API Key berhasil ditambahkan! ✓');
+            toast(res.data.message || 'API Key berhasil ditambahkan! ✓');
             await loadKeys();
         }
 
         // ── Delete key ──
-        async function deleteKey(targetKey) {
+        async function deleteKey(targetIdx) {
             var res = await sb.functions.invoke('ai-social-assistant', {
-                body: { action: 'delete_key', targetKey: targetKey }
+                body: { action: 'delete_key', targetIdx: targetIdx }
             }).catch(function (e) { return { error: e }; });
 
             if (res.error || !res.data || !res.data.success) {
@@ -1875,9 +1845,9 @@
         }
 
         // ── Set primary key ──
-        async function setPrimaryKey(targetKey) {
+        async function setPrimaryKey(targetIdx) {
             var res = await sb.functions.invoke('ai-social-assistant', {
-                body: { action: 'set_primary_key', targetKey: targetKey }
+                body: { action: 'set_primary_key', targetIdx: targetIdx }
             }).catch(function (e) { return { error: e }; });
 
             if (res.error || !res.data || !res.data.success) {
@@ -1966,7 +1936,17 @@
                 var dbRes = await sb.from('site_settings').select('value').eq('key', 'gemini_api_key').maybeSingle();
                 if (dbRes.data && dbRes.data.value) {
                     var v = dbRes.data.value;
-                    activeKey = typeof v === 'string' ? v : (v.key || '');
+                    if (typeof v === 'string') {
+                        activeKey = v;
+                    } else if (Array.isArray(v)) {
+                        // Multi-key format — pick primary or first active
+                        var primary = v.find(function (k) { return k.isPrimary && k.status !== 'invalid'; });
+                        var fallback = v.find(function (k) { return k.status === 'active'; });
+                        var anyKey = v.find(function (k) { return k.key; });
+                        activeKey = (primary || fallback || anyKey || {}).key || '';
+                    } else if (v && typeof v === 'object' && v.key) {
+                        activeKey = v.key;
+                    }
                 }
             }
             if (statusDot) {

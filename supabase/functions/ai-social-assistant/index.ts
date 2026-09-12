@@ -338,11 +338,14 @@ Deno.serve(async (req: Request) => {
         keys = val;
       }
 
-      // Mask keys for security (show only last 8 chars)
-      const masked = keys.map((k: any) => ({
-        ...k,
+      // Mask keys for security (show only last 8 chars — NEVER send full key to client)
+      const masked = keys.map((k: any, idx: number) => ({
+        idx,
+        label: k.label,
+        status: k.status,
+        lastChecked: k.lastChecked,
+        isPrimary: k.isPrimary,
         keyMasked: k.key.length > 8 ? "•••" + k.key.slice(-8) : k.key,
-        keyFull: k.key, // sent only to admin
       }));
 
       return json(200, { success: true, keys: masked });
@@ -459,10 +462,54 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // ── Action: add_key (add single key to existing collection) ────
+    if (action === "add_key") {
+      const newKey = (payload.newKey || "").trim();
+      const newLabel = (payload.label || "").trim();
+      if (!newKey) return json(200, { success: false, error: true, message: "API key tidak boleh kosong." });
+
+      const { data: settingRow } = await admin
+        .from("site_settings")
+        .select("value")
+        .eq("key", "gemini_api_key")
+        .maybeSingle();
+
+      let keys: any[] = [];
+      if (settingRow?.value) {
+        if (typeof settingRow.value === "string") {
+          keys = [{ key: settingRow.value, label: "Default", status: "unchecked", lastChecked: null, isPrimary: true }];
+        } else if (Array.isArray(settingRow.value)) {
+          keys = settingRow.value;
+        }
+      }
+
+      // Check duplicate
+      if (keys.some((k: any) => k.key === newKey)) {
+        return json(200, { success: false, error: true, message: "Key ini sudah terdaftar." });
+      }
+
+      keys.push({
+        key: newKey,
+        label: newLabel || `Key ${keys.length + 1}`,
+        status: "unchecked",
+        lastChecked: null,
+        isPrimary: keys.length === 0,
+      });
+
+      const { error: upsertErr } = await admin.from("site_settings").upsert({
+        key: "gemini_api_key",
+        value: keys,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "key" });
+
+      if (upsertErr) return json(200, { success: false, error: true, message: upsertErr.message });
+      return json(200, { success: true, message: "API Key berhasil ditambahkan! ✓", total: keys.length });
+    }
+
     // ── Action: delete_key ─────────────────────────────────────────
     if (action === "delete_key") {
-      const targetKey = (payload.targetKey || "").trim();
-      if (!targetKey) return json(200, { success: false, error: true, message: "Key target tidak ditemukan." });
+      const targetIdx = typeof payload.targetIdx === "number" ? payload.targetIdx : -1;
+      const targetKey = (payload.targetKey || "").trim(); // fallback for legacy
 
       const { data: settingRow } = await admin
         .from("site_settings")
@@ -474,7 +521,15 @@ Deno.serve(async (req: Request) => {
         return json(200, { success: false, error: true, message: "Tidak ada key yang terdaftar." });
       }
 
-      let keys = settingRow.value.filter((k: any) => k.key !== targetKey);
+      let keys = settingRow.value;
+      if (targetIdx >= 0 && targetIdx < keys.length) {
+        keys.splice(targetIdx, 1);
+      } else if (targetKey) {
+        keys = keys.filter((k: any) => k.key !== targetKey);
+      } else {
+        return json(200, { success: false, error: true, message: "Index key tidak valid." });
+      }
+
       // If deleted key was primary, set first remaining as primary
       if (keys.length > 0 && !keys.some((k: any) => k.isPrimary)) {
         keys[0].isPrimary = true;
@@ -492,8 +547,8 @@ Deno.serve(async (req: Request) => {
 
     // ── Action: set_primary_key ────────────────────────────────────
     if (action === "set_primary_key") {
-      const targetKey = (payload.targetKey || "").trim();
-      if (!targetKey) return json(200, { success: false, error: true, message: "Key target tidak ditemukan." });
+      const targetIdx = typeof payload.targetIdx === "number" ? payload.targetIdx : -1;
+      const targetKey = (payload.targetKey || "").trim(); // fallback
 
       const { data: settingRow } = await admin
         .from("site_settings")
@@ -505,9 +560,9 @@ Deno.serve(async (req: Request) => {
         return json(200, { success: false, error: true, message: "Tidak ada key yang terdaftar." });
       }
 
-      const keys = settingRow.value.map((k: any) => ({
+      const keys = settingRow.value.map((k: any, i: number) => ({
         ...k,
-        isPrimary: k.key === targetKey,
+        isPrimary: targetIdx >= 0 ? i === targetIdx : k.key === targetKey,
       }));
 
       const { error: saveErr } = await admin.from("site_settings").upsert({
