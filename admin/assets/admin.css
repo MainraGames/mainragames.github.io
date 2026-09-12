@@ -311,6 +311,45 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 }
 .badge.ok { color: var(--mainra-success); border-color: rgba(127,209,161,.4); background: rgba(127,209,161,.08); }
 .badge.warn { color: var(--mainra-gold); border-color: rgba(239,189,99,.4); background: rgba(239,189,99,.08); }
+.badge.lang {
+    font-family: inherit;
+    font-weight: 600;
+    font-size: .72rem;
+    color: var(--mainra-accent-hover);
+    border-color: rgba(255,107,0,.25);
+    background: rgba(255,107,0,.08);
+    display: inline-flex;
+    align-items: center;
+    gap: .3rem;
+}
+
+/* translation toggle container */
+.trans-box {
+    margin-top: .45rem;
+    padding: .5rem .75rem;
+    border-radius: var(--radius-sm);
+    background: rgba(14, 23, 42, .65);
+    border: 1px dashed var(--mainra-line);
+    font-size: .88rem;
+    color: var(--mainra-white);
+    line-height: 1.45;
+}
+.btn-trans {
+    background: transparent;
+    border: 0;
+    color: var(--mainra-accent-hover);
+    font-size: .75rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    margin-top: .35rem;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+.btn-trans:hover { color: #fff; }
 
 /* ---------- forms ---------- */
 .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem 1.2rem; }

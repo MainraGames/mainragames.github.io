@@ -417,18 +417,28 @@
             feedBox.innerHTML = recent10.map(function (r, i) {
                 var g = games.find(function (x) { return String(x.id) === String(r.game_id); });
                 var answered = (r.reply_text || '').trim();
+                var transBoxId = 'trans_feed_' + i;
+                var hasForeignContent = r.content && r.content.trim() && r.lang !== 'id';
+
                 return '<div class="review-item" style="border-bottom:1px solid var(--mainra-line);padding:.9rem 0">' +
                     '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap">' +
-                        '<span><strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
-                        ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
-                        (g ? ' <span class="muted">on <strong>' + esc(g.title) + '</strong></span>' : '') +
-                        (r.review_timestamp ? ' <span class="muted" style="font-size:.8rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
-                        '</span>' +
+                        '<div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap">' +
+                            '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
+                            ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
+                            getLangBadge(r.lang) +
+                            (g ? ' <span class="muted" style="font-size:.8rem">on ' + esc(g.title) + '</span>' : '') +
+                            (r.review_timestamp ? ' <span class="muted" style="font-size:.8rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
+                        '</div>' +
                         '<button class="btn-admin ghost" style="font-size:.75rem;padding:.2rem .6rem" data-reply-overview="' + i + '" type="button">' +
                             (answered ? '✎ Edit reply' : '↩ Reply') +
                         '</button>' +
                     '</div>' +
                     '<p style="margin:.45rem 0 0;font-size:.92rem;color:var(--mainra-white)">' + esc(r.content || '—') + '</p>' +
+                    (hasForeignContent ?
+                        '<div>' +
+                            '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
+                            '<div id="' + transBoxId + '" class="trans-box" style="display:none"></div>' +
+                        '</div>' : '') +
                     (answered ? '<p style="margin:.6rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--mainra-success);background:rgba(127,209,161,.06);font-size:.85rem"><span class="muted" style="font-size:.75rem">Mainra replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
                 '</div>';
             }).join('');
@@ -436,6 +446,7 @@
             $$('[data-reply-overview]').forEach(function (btn) {
                 btn.addEventListener('click', function () { openReply(recent10[Number(btn.dataset.replyOverview)]); });
             });
+            wireTranslationButtons();
         }
     }
 
@@ -472,18 +483,28 @@
         }
         box.innerHTML = rows.map(function (r, i) {
             var answered = (r.reply_text || '').trim();
+            var transBoxId = 'trans_tab_' + i;
+            var hasForeignContent = r.content && r.content.trim() && r.lang !== 'id';
+
             return '<div class="review-item" data-rvidx="' + i + '" style="border-bottom:1px solid var(--mainra-line);padding:1rem 0">' +
                 '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap">' +
-                    '<span><strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
-                    ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
-                    (r.review_timestamp ? ' <span class="muted" style="font-size:.85rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
-                    (r.device ? ' <span class="muted" style="font-size:.85rem">· ' + esc(r.device) + (r.versionCode ? ' v' + esc(r.versionCode) : '') + '</span>' : '') +
+                    '<span>' +
+                        '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
+                        ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
+                        ' ' + getLangBadge(r.lang) +
+                        (r.review_timestamp ? ' <span class="muted" style="font-size:.85rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
+                        (r.device ? ' <span class="muted" style="font-size:.85rem">· ' + esc(r.device) + (r.versionCode ? ' v' + esc(r.versionCode) : '') + '</span>' : '') +
                     '</span>' +
                     '<button class="btn-admin ghost" style="font-size:.8rem;padding:.25rem .75rem" data-reply-tab="' + i + '" type="button">' +
                         (answered ? '✎ Edit reply' : '↩ Reply') +
                     '</button>' +
                 '</div>' +
                 '<p style="margin:.6rem 0 0;font-size:1rem;color:var(--mainra-white)">' + esc(r.content || '—') + '</p>' +
+                (hasForeignContent ?
+                    '<div>' +
+                        '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
+                        '<div id="' + transBoxId + '" class="trans-box" style="display:none"></div>' +
+                    '</div>' : '') +
                 (answered ? '<p style="margin:.8rem 0 0;padding:.8rem 1rem;border-left:4px solid var(--mainra-success);background:rgba(127,209,161,.08);font-size:.9rem"><span class="muted" style="font-size:.8rem;text-transform:uppercase;letter-spacing:0.05em">Mainra replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
             '</div>';
         }).join('');
@@ -492,6 +513,7 @@
         $$('[data-reply-tab]').forEach(function (btn) {
             btn.addEventListener('click', function () { openReply(_rows[Number(btn.dataset.replyTab)]); });
         });
+        wireTranslationButtons();
     }
 
     async function syncTabAnalytics(appId) {
@@ -507,6 +529,85 @@
         // Reload games and reviews to refresh entire analytics view
         await Promise.all([loadGames(), loadReviews()]);
         renderAnalyticsTab();
+    }
+
+    /* ---------- translation & language helpers ---------- */
+
+    var LANG_NAMES = {
+        id: { name: 'Indonesian', flag: '🇮🇩' },
+        en: { name: 'English', flag: '🇬🇧' },
+        fa: { name: 'Persian', flag: '🇮🇷' },
+        ar: { name: 'Arabic', flag: '🇸🇦' },
+        es: { name: 'Spanish', flag: '🇪🇸' },
+        pt: { name: 'Portuguese', flag: '🇧🇷' },
+        ru: { name: 'Russian', flag: '🇷🇺' },
+        hi: { name: 'Hindi', flag: '🇮🇳' },
+        tr: { name: 'Turkish', flag: '🇹🇷' },
+        fr: { name: 'French', flag: '🇫🇷' },
+        de: { name: 'German', flag: '🇩🇪' },
+        ja: { name: 'Japanese', flag: '🇯🇵' },
+        ko: { name: 'Korean', flag: '🇰🇷' },
+        vi: { name: 'Vietnamese', flag: '🇻🇳' },
+        th: { name: 'Thai', flag: '🇹🇭' },
+        ms: { name: 'Malay', flag: '🇲🇾' },
+        it: { name: 'Italian', flag: '🇮🇹' },
+        zh: { name: 'Chinese', flag: '🇨🇳' }
+    };
+
+    function getLangBadge(code) {
+        if (!code) return '';
+        var c = String(code).toLowerCase().slice(0, 2);
+        var meta = LANG_NAMES[c] || { name: code.toUpperCase(), flag: '🌐' };
+        return '<span class="badge lang" title="Language: ' + esc(meta.name) + '">' + meta.flag + ' ' + esc(meta.name) + '</span>';
+    }
+
+    var translationCache = {};
+
+    async function translateText(text, targetLang) {
+        targetLang = targetLang || 'id';
+        var key = targetLang + ':' + text;
+        if (translationCache[key]) return translationCache[key];
+        try {
+            var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=' + encodeURIComponent(targetLang) + '&dt=t&q=' + encodeURIComponent(text);
+            var res = await fetch(url);
+            if (!res.ok) throw new Error('Translation HTTP ' + res.status);
+            var data = await res.json();
+            var translated = (data[0] || []).map(function (s) { return s[0]; }).join('');
+            var detected = data[2] || '';
+            var result = { text: translated, detectedLang: detected };
+            translationCache[key] = result;
+            return result;
+        } catch (e) {
+            console.warn('translate error:', e);
+            return { text: text, detectedLang: '' };
+        }
+    }
+
+    function wireTranslationButtons() {
+        $$('[data-trans-btn]').forEach(function (btn) {
+            btn.onclick = async function () {
+                var targetId = btn.dataset.transTarget;
+                var originalText = btn.dataset.transText;
+                var box = $('#' + targetId);
+                if (!box) return;
+
+                if (box.dataset.state === 'translated') {
+                    // Toggle back to original text
+                    box.style.display = 'none';
+                    box.dataset.state = 'hidden';
+                    btn.innerHTML = '🌐 Terjemahkan ke Indonesia';
+                    return;
+                }
+
+                btn.innerHTML = '⏳ Menerjemahkan…';
+                var res = await translateText(originalText, 'id');
+                var sourceName = (LANG_NAMES[res.detectedLang] && LANG_NAMES[res.detectedLang].name) || res.detectedLang || 'Asing';
+                box.innerHTML = '<div style="font-size:.76rem;color:var(--mainra-muted);margin-bottom:.25rem;display:flex;align-items:center;gap:.3rem"><span>🌐 Diterjemahkan dari ' + esc(sourceName) + ':</span></div>' + esc(res.text);
+                box.style.display = 'block';
+                box.dataset.state = 'translated';
+                btn.innerHTML = '✕ Sembunyikan terjemahan';
+            };
+        });
     }
 
     /* ---------- reviews tab ---------- */
@@ -535,16 +636,27 @@
         box.innerHTML = list.map(function (r, i) {
             var g = games.find(function (x) { return String(x.id) === String(r.game_id); });
             var answered = (r.reply_text || '').trim();
+            var transBoxId = 'trans_rev_' + i;
+            var hasForeignContent = r.content && r.content.trim() && r.lang !== 'id';
+
             return '<div class="card">' +
                 '<div class="actions" style="justify-content:space-between;align-items:flex-start;gap:1rem">' +
-                    '<div style="min-width:0">' +
-                        '<strong>' + esc(r.author_name || 'Anonymous') + '</strong> ' +
-                        '<span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
-                        (g ? ' <span class="muted">· ' + esc(g.title) + '</span>' : '') +
-                        (r.review_timestamp ? ' <span class="muted">· ' + new Date(r.review_timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
-                        (r.device ? '<br><span class="muted" style="font-size:.8rem">' + esc(r.device) + (r.versionCode ? ' · v' + esc(r.versionCode) : '') + '</span>' : '') +
-                        '<p style="margin:.6rem 0 0">' + esc(r.content || '—') + '</p>' +
-                        (answered ? '<p style="margin:.6rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--mainra-success);background:rgba(127,209,161,.06)"><span class="muted" style="font-size:.78rem">Mainra Games replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
+                    '<div style="min-width:0;flex:1">' +
+                        '<div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">' +
+                            '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
+                            '<span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
+                            getLangBadge(r.lang) +
+                            (g ? '<span class="muted" style="font-size:.85rem">· ' + esc(g.title) + '</span>' : '') +
+                            (r.review_timestamp ? '<span class="muted" style="font-size:.85rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
+                        '</div>' +
+                        (r.device ? '<div class="muted small" style="margin-top:.25rem">' + esc(r.device) + (r.versionCode ? ' · App v' + esc(r.versionCode) : '') + '</div>' : '') +
+                        '<p style="margin:.6rem 0 0;font-size:.95rem;line-height:1.45">' + esc(r.content || '—') + '</p>' +
+                        (hasForeignContent ?
+                            '<div>' +
+                                '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
+                                '<div id="' + transBoxId + '" class="trans-box" style="display:none"></div>' +
+                            '</div>' : '') +
+                        (answered ? '<p style="margin:.7rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--mainra-success);background:rgba(127,209,161,.06)"><span class="muted" style="font-size:.78rem">Mainra Games replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
                     '</div>' +
                     '<div class="actions"><button class="btn ' + (answered ? 'ghost' : '') + ' small" data-reply="' + i + '" type="button">' + (answered ? 'Edit reply' : 'Reply') + '</button></div>' +
                 '</div>' +
@@ -554,6 +666,7 @@
         $$('[data-reply]').forEach(function (b) {
             b.addEventListener('click', function () { openReply(list[Number(b.dataset.reply)]); });
         });
+        wireTranslationButtons();
     }
 
     var PRESETS = [
@@ -571,13 +684,45 @@
         var gameName = gameObj ? gameObj.title : (row.game_id || 'Game');
         
         $('#rpBadge').textContent = isPlayStore ? 'Google Play Store' : 'Local Review';
+        var hasForeignModal = row.content && row.content.trim() && row.lang !== 'id';
+
         $('#rpContext').innerHTML = 
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">' +
-                '<strong>' + esc(row.author_name || 'Anonymous') + '</strong>' +
+                '<div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">' +
+                    '<strong>' + esc(row.author_name || 'Anonymous') + '</strong>' +
+                    getLangBadge(row.lang) +
+                '</div>' +
                 '<span style="color:var(--mainra-gold);font-size:1.05rem">' + starStr(row.star_rating) + '</span>' +
             '</div>' +
-            '<div class="muted small" style="margin-bottom:.5rem">' + esc(gameName) + (row.device ? ' · ' + esc(row.device) : '') + (row.versionCode ? ' (v' + esc(row.versionCode) + ')' : '') + '</div>' +
-            '<p style="margin:0;font-size:.9rem;color:var(--mainra-ink);line-height:1.45">' + esc(row.content || '—') + '</p>';
+            '<div class="muted small" style="margin-bottom:.5rem">' + esc(gameName) + (row.device ? ' · Device: ' + esc(row.device) : '') + (row.versionCode ? ' (v' + esc(row.versionCode) + ')' : '') + '</div>' +
+            '<p style="margin:0;font-size:.9rem;color:var(--mainra-ink);line-height:1.45">' + esc(row.content || '—') + '</p>' +
+            (hasForeignModal ?
+                '<div style="margin-top:.4rem">' +
+                    '<button type="button" class="btn-trans" id="rpModalTransBtn">🌐 Terjemahkan ke Indonesia</button>' +
+                    '<div id="rpModalTransBox" class="trans-box" style="display:none"></div>' +
+                '</div>' : '');
+
+        if (hasForeignModal) {
+            var mBtn = $('#rpModalTransBtn');
+            var mBox = $('#rpModalTransBox');
+            if (mBtn && mBox) {
+                mBtn.onclick = async function () {
+                    if (mBox.dataset.state === 'translated') {
+                        mBox.style.display = 'none';
+                        mBox.dataset.state = 'hidden';
+                        mBtn.innerHTML = '🌐 Terjemahkan ke Indonesia';
+                        return;
+                    }
+                    mBtn.innerHTML = '⏳ Menerjemahkan…';
+                    var res = await translateText(row.content, 'id');
+                    var sourceName = (LANG_NAMES[res.detectedLang] && LANG_NAMES[res.detectedLang].name) || res.detectedLang || 'Asing';
+                    mBox.innerHTML = '<div style="font-size:.76rem;color:var(--mainra-muted);margin-bottom:.25rem"><span>🌐 Diterjemahkan dari ' + esc(sourceName) + ':</span></div>' + esc(res.text);
+                    mBox.style.display = 'block';
+                    mBox.dataset.state = 'translated';
+                    mBtn.innerHTML = '✕ Sembunyikan terjemahan';
+                };
+            }
+        }
         
         var replyVal = row.reply_text || '';
         var charEl = $('#rpCharCount');
