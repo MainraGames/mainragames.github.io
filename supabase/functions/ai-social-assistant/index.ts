@@ -147,7 +147,7 @@ Deno.serve(async (req: Request) => {
     const action = payload.action || "generate";
 
     // Retrieve Gemini API Key with priority:
-    let geminiKey = (payload.apiKey || "").trim();
+    let geminiKey = (payload.client_gemini_key || payload.client_token || payload.geminiKey || payload.clientApiKey || payload.apiKey || "").trim();
 
     if (!geminiKey) {
       const { data: settingRow } = await admin

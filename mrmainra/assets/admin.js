@@ -1461,7 +1461,7 @@
             if (refreshModelsBtn) refreshModelsBtn.textContent = '⏳';
 
             var res = await sb.functions.invoke('ai-social-assistant', {
-                body: { action: 'list_models', apiKey: apiKey }
+                body: { action: "list_models", client_gemini_key: apiKey }
             }).catch(function (e) { return { error: e }; });
 
             if (refreshModelsBtn) refreshModelsBtn.textContent = '🔄';
@@ -1538,7 +1538,7 @@
                 if (fb) { fb.style.display = 'block'; fb.textContent = 'Menghubungi Google Gemini API (' + model + ')…'; fb.style.color = 'var(--mainra-muted)'; }
 
                 var res = await sb.functions.invoke('ai-social-assistant', {
-                    body: { action: 'test', apiKey: apiKey, model: model }
+                    body: { action: "test", client_gemini_key: apiKey, model: model }
                 }).catch(function (e) { return { error: e }; });
 
                 testBtn.disabled = false;
@@ -1602,8 +1602,8 @@
 
                 var res = await sb.functions.invoke('ai-social-assistant', {
                     body: {
-                        action: 'generate',
-                        apiKey: apiKey,
+                        action: "generate",
+                        client_gemini_key: apiKey,
                         model: model,
                         tone: tone,
                         gameTitle: titleVal || 'Game Mainra Games',
@@ -1707,8 +1707,8 @@
 
                 var res = await sb.functions.invoke('ai-social-assistant', {
                     body: {
-                        action: 'adapt_limits',
-                        apiKey: apiKey,
+                        action: "adapt_limits",
+                        client_gemini_key: apiKey,
                         model: model,
                         text: currentTxt,
                         targetLimit: targetLimit,
