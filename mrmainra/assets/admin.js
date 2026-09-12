@@ -1059,10 +1059,14 @@
         return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n);
     }
 
-    function reviewStateFilterValue() { return $('#reviewStateFilter').value; }
+    function reviewStateFilterValue() {
+        var el = $('#reviewStateFilter');
+        return el ? el.value : 'all';
+    }
 
     function renderReviews() {
-        var gid = $('#reviewGameFilter').value;
+        var rgf = $('#reviewGameFilter');
+        var gid = rgf ? rgf.value : '';
         var state = reviewStateFilterValue();
         var list = reviews.filter(function (r) {
             if (gid && String(r.game_id) !== String(gid)) return false;
@@ -1071,6 +1075,7 @@
             return true;
         });
         var box = $('#reviewsList');
+        if (!box) return;
         if (!list.length) {
             box.innerHTML = '<div class="card muted">No reviews match. Click “Fetch new reviews” to pull the latest from the Play Store, or add reviews manually in Supabase.</div>';
             return;
@@ -3081,9 +3086,8 @@
         on('#rpSaveDraft', 'click', saveReplyDraft);
         on('#rpPostGoogle', 'click', postReplyToGoogle);
         
-        on('#reviewGameFilter', 'change', renderReviews);
-        on('#reviewStateFilter', 'change', renderReviews);
-        on('#syncReviewsBtn', 'click', function () { callFunction('sync-reviews'); });
+        if ($('#reviewGameFilter')) on('#reviewGameFilter', 'change', renderReviews);
+        if ($('#reviewStateFilter')) on('#reviewStateFilter', 'change', renderReviews);
         on('#syncGamesBtn', 'click', function () { callFunction('sync-playstore'); });
 
         on('#newAdminBtn', 'click', openAddAdminModal);
