@@ -1,10 +1,22 @@
 // supabase/functions/sync-reviews/index.ts
-// Fetches Play Store reviews into game_reviews and pushes pending admin replies.
-// Requires secret GOOGLE_SERVICE_ACCOUNT_JSON (service account with "Reply to reviews" permission).
+// Pulls Play Store reviews into public.game_reviews and pushes pending admin replies.
+//
+// Two modes:
+//   1. Google Play Developer API — used when GOOGLE_SERVICE_ACCOUNT_JSON is set.
+//      Full fidelity: paginated reviews, device/version metadata, and reply posting.
+//   2. Public review scrape (google-play-scraper) — fallback when the service account
+//      is missing, so reviews still reach the dashboard. Read-only: replies saved in
+//      the dashboard stay queued and are posted on the next Developer-API run.
 // @ts-nocheck
 import { createClient } from "npm:@supabase/supabase-js@2";
+import gplayMod from "npm:google-play-scraper@10.1.3";
 
+const gplay: any = (gplayMod as any).default ?? gplayMod;
 const API = "https://androidpublisher.googleapis.com/androidpublisher/v3";
+const SCRAPE_LOCALES: Array<[string, string]> = [
+  ["id", "id"],
+  ["en", "us"],
+];
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -20,15 +32,16 @@ function b64url(buf: ArrayBuffer | Uint8Array | string): string {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+/** Decode the service-account private key: keep base64 characters only. */
+function decodePrivateKey(pem: string): Uint8Array {
+  const body = String(pem).replace(/[^A-Za-z0-9+/=]/g, "");
+  return Uint8Array.from(atob(body), (c) => c.charCodeAt(0));
+}
+
 async function signJwt(sa: any) {
-  const pemBody = sa.private_key
-    .replace(/-----BEGIN PRIVATE KEY-----/, "")
-    .replace(/-----END PRIVATE KEY-----/, "")
-    .replace(/\s/g, "");
-  const der = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
   const key = await crypto.subtle.importKey(
     "pkcs8",
-    der as unknown as ArrayBuffer,
+    decodePrivateKey(sa.private_key) as unknown as ArrayBuffer,
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
     ["sign"],
@@ -61,10 +74,13 @@ async function accessToken(sa: any) {
   return (await res.json()).access_token as string;
 }
 
-function mapReview(r: any, appId: string) {
-  const c = (r.comments && r.comments[0] && r.comments[0].userComment) || {};
+/** Google Play Developer API review -> DB row. */
+function mapApiReview(r: any, appId: string) {
+  const comment = (r.comments && r.comments[0]) || {};
+  const c = comment.userComment || {};
+  const reply = comment.developerComment || {};
   const lm = c.lastModified && (c.lastModified.seconds || c.lastModified.serverValue);
-  return {
+  const row: any = {
     review_id: r.reviewId,
     game_id: appId,
     author_name: (r.authorName && r.authorName.displayName) || c.authorName || "Anonymous",
@@ -76,9 +92,37 @@ function mapReview(r: any, appId: string) {
     lang: c.reviewLanguage || null,
     source: "playstore",
   };
+  if (reply.text) {
+    row.reply_text = reply.text[0] || reply.text;
+    row.replySentAt = new Date().toISOString();
+  }
+  return row;
 }
 
-async function listReviews(token: string, packageName: string) {
+/** Public scrape review -> DB row. */
+function mapScrapedReview(r: any, appId: string, lang: string) {
+  const ts = r.date ? Date.parse(r.date) : NaN;
+  const row: any = {
+    review_id: r.id,
+    game_id: appId,
+    author_name: r.userName || "Anonymous",
+    content: r.text || "",
+    star_rating: typeof r.score === "number" ? r.score : null,
+    versionCode: r.version || null,
+    device: null,
+    review_timestamp: Number.isFinite(ts) ? ts : null,
+    lang,
+    source: "playstore",
+  };
+  // A reply already published on Google must not be re-posted by the queue.
+  if (r.replyText) {
+    row.reply_text = r.replyText;
+    row.replySentAt = r.replyDate ? new Date(r.replyDate).toISOString() : new Date().toISOString();
+  }
+  return row;
+}
+
+async function listApiReviews(token: string, packageName: string) {
   const out: any[] = [];
   let pageToken = "";
   do {
@@ -94,6 +138,27 @@ async function listReviews(token: string, packageName: string) {
     pageToken = (data.tokenPagination && data.tokenPagination.nextPageToken) || "";
   } while (pageToken && out.length < 150);
   return out;
+}
+
+async function listScrapedReviews(packageName: string) {
+  const seen = new Map<string, any>();
+  for (const [lang, country] of SCRAPE_LOCALES) {
+    try {
+      const res = await gplay.reviews({
+        appId: packageName,
+        lang,
+        country,
+        sort: gplay.sort ? gplay.sort.NEWEST : 2,
+        num: 120,
+      });
+      for (const r of res.data || []) {
+        if (r && r.id && !seen.has(r.id)) seen.set(r.id, mapScrapedReview(r, packageName, lang));
+      }
+    } catch (err) {
+      console.error(`scrape ${packageName} (${lang}-${country}): ${(err as Error).message}`);
+    }
+  }
+  return [...seen.values()];
 }
 
 async function requireAdmin(req: Request) {
@@ -124,32 +189,47 @@ Deno.serve(async (req: Request) => {
   const { admin, message } = await requireAdmin(req);
   if (!admin) return json(401, { message });
 
-  const saRaw = (Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "").trim();
-  if (!saRaw) {
-  return json(200, {
-    message:
-      "GOOGLE_SERVICE_ACCOUNT_JSON secret is not set yet. Create a service account (Play Console → Users & permissions, grant 'Reply to reviews'), then: supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON=...",
-  });
-  }
+  const body = await req.json().catch(() => ({}));
+  const onlyAppId = typeof body.appId === "string" && body.appId.trim() ? body.appId.trim() : "";
 
   try {
-    const sa = JSON.parse(saRaw);
-    const token = await accessToken(sa);
-
-    let packages = ((Deno.env.get("PLAY_PACKAGE_NAMES") || "").split(",").map((s) => s.trim()).filter(Boolean));
-    if (packages.length === 0) {
-      const { data: games } = await admin.from("games").select("appId");
-      packages = [...new Set((games || []).map((g: any) => g.appId).filter(Boolean))];
+    let packages: string[] = [];
+    if (onlyAppId) {
+      packages = [onlyAppId];
+    } else {
+      packages = (Deno.env.get("PLAY_PACKAGE_NAMES") || "")
+        .split(",").map((s) => s.trim()).filter(Boolean);
+      if (packages.length === 0) {
+        const { data: games } = await admin.from("games").select("appId");
+        packages = [...new Set((games || []).map((g: any) => g.appId).filter(Boolean))] as string[];
+      }
     }
+    if (packages.length === 0) return json(200, { message: "No games to sync yet", mode: "none" });
+
+    const saRaw = (Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "").trim();
+    const mode = saRaw ? "developer-api" : "scrape";
+    let token = "";
+    if (saRaw) token = await accessToken(JSON.parse(saRaw));
 
     let fetched = 0;
     for (const pkg of packages) {
-      const raw = await listReviews(token, pkg);
-      if (raw.length === 0) continue;
-      const rows = raw.map((r) => mapReview(r, pkg)).map((row) => {
-        // Never overwrite admin reply fields from the scrape.
-        const { reply_text, replySentAt, ...safe } = row as any;
-        return safe;
+      let rows: any[];
+      if (mode === "developer-api") {
+        const raw = await listApiReviews(token, pkg);
+        if (raw.length === 0) continue;
+        rows = raw.map((r) => mapApiReview(r, pkg));
+      } else {
+        rows = await listScrapedReviews(pkg);
+        if (rows.length === 0) continue;
+      }
+      // Only write reply fields when Google actually has a reply; otherwise leave
+      // any draft the admin saved in the dashboard untouched.
+      rows = rows.map((row) => {
+        if (row.reply_text) return row;
+        const copy = { ...row };
+        delete copy.reply_text;
+        delete copy.replySentAt;
+        return copy;
       });
       const { error } = await admin.from("game_reviews").upsert(rows, {
         onConflict: "review_id",
@@ -159,35 +239,48 @@ Deno.serve(async (req: Request) => {
       fetched += rows.length;
     }
 
-    // Push pending replies (Play allows exactly one reply per review).
-    const { data: pending } = await admin
-      .from("game_reviews")
-      .select("review_id,game_id,reply_text")
-      .not("reply_text", "is", null)
-      .is("replySentAt", null)
-      .eq("source", "playstore")
-      .limit(25);
-
+    const parts = [`Fetched ${fetched} reviews (${mode})`];
     let posted = 0;
-    const errors: string[] = [];
-    for (const row of pending || []) {
-      const res = await fetch(`${API}/applications/${row.game_id}/reviews/${row.review_id}:reply`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ replyText: row.reply_text }),
-      });
-      if (res.ok) {
-        await admin.from("game_reviews").upsert([{ review_id: row.review_id, replySentAt: new Date().toISOString() }], { onConflict: "review_id" });
-        posted++;
-      } else {
-        errors.push(`${row.review_id}: HTTP ${res.status} ${(await res.text()).slice(0, 160)}`);
+
+    if (mode === "developer-api") {
+      // Play allows exactly one reply per review; only unsent drafts are pushed.
+      const { data: pending } = await admin
+        .from("game_reviews")
+        .select("review_id,game_id,reply_text")
+        .not("reply_text", "is", null)
+        .is("replySentAt", null)
+        .eq("source", "playstore")
+        .limit(25);
+
+      const errors: string[] = [];
+      for (const row of pending || []) {
+        const res = await fetch(`${API}/applications/${row.game_id}/reviews/${row.review_id}:reply`, {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ replyText: row.reply_text }),
+        });
+        if (res.ok) {
+          await admin.from("game_reviews")
+            .upsert([{ review_id: row.review_id, replySentAt: new Date().toISOString() }], { onConflict: "review_id" });
+          posted++;
+        } else {
+          errors.push(`${row.review_id}: HTTP ${res.status} ${(await res.text()).slice(0, 160)}`);
+        }
+      }
+      if (pending?.length) parts.push(`posted ${posted}/${pending.length} replies`);
+      if (errors.length) parts.push(`errors: ${errors.join(" | ")}`);
+    } else {
+      const { count } = await admin
+        .from("game_reviews")
+        .select("review_id", { count: "exact", head: true })
+        .not("reply_text", "is", null)
+        .is("replySentAt", null);
+      if (count) {
+        parts.push(`${count} reply draft(s) queued — set GOOGLE_SERVICE_ACCOUNT_JSON to publish them to Google Play`);
       }
     }
 
-    const parts = [`Fetched ${fetched} reviews`];
-    if (pending?.length) parts.push(`posted ${posted}/${pending.length} replies`);
-    if (errors.length) parts.push(`errors: ${errors.join(" | ")}`);
-    return json(200, { message: parts.join(", ") });
+    return json(200, { message: parts.join(", "), mode, fetched, posted });
   } catch (err) {
     return json(500, { message: String((err as Error).message || err) });
   }

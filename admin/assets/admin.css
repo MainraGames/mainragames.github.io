@@ -2,9 +2,13 @@
 
 .admin-body {
     min-height: 100vh;
+    min-height: 100dvh;
     background: var(--mainra-navy-dark);
     color: var(--mainra-ink);
+    /* admin overrides site fixed header — admin has its own chrome */
+    padding-top: 0 !important;
 }
+.admin-body header { position: static !important; inset: auto !important; min-height: 0 !important; backdrop-filter: none !important; border: 0 !important; box-shadow: none !important; }
 
 /* ---------- login ---------- */
 .login-wrap {
@@ -49,8 +53,8 @@
 .small { font-size: .8rem; }
 
 /* ---------- shell ---------- */
-.admin-shell { display: none; min-height: 100vh; }
-.admin-shell.is-on { display: grid; grid-template-columns: 240px 1fr; }
+.admin-shell { display: none; min-height: 100vh; min-height: 100dvh; }
+.admin-shell.is-on { display: grid; grid-template-columns: 240px 1fr; align-items: start; }
 
 .admin-side {
     background: var(--mainra-navy-deep);
@@ -62,6 +66,10 @@
     position: sticky;
     top: 0;
     height: 100vh;
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    z-index: 10;
 }
 .admin-brand { display: flex; align-items: center; gap: .6rem; font-weight: 700; }
 .admin-brand img { width: 34px; height: 34px; object-fit: contain; }
@@ -93,14 +101,20 @@
     word-break: break-all;
 }
 
-.admin-main { padding: 2.2rem 2rem 3rem; min-width: 0; }
+.admin-main { padding: 2.2rem 2rem 3rem; min-width: 0; min-height: 100dvh; }
 .admin-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1.4rem;
-    padding-top: .4rem;
+    margin: 0 -2rem 1.4rem;
+    padding: 1rem 2rem;
+    background: rgba(11, 17, 28, .92);
+    backdrop-filter: blur(12px) saturate(130%);
+    border-bottom: 1px solid var(--mainra-line);
 }
 .admin-topbar h2 { margin: 0; font-size: 1.3rem; }
 
@@ -315,19 +329,29 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 @media (max-width: 860px) {
     .admin-shell.is-on { grid-template-columns: 1fr; }
     .admin-side {
-        position: static;
+        position: sticky;
+        top: 0;
+        z-index: 20;
         height: auto;
+        min-height: 0;
         flex-direction: row;
         align-items: center;
         flex-wrap: wrap;
         border-right: 0;
         border-bottom: 1px solid var(--mainra-line);
+        padding: .8rem 1rem;
     }
     .admin-nav { grid-auto-flow: column; }
     .admin-user { margin-top: 0; margin-left: auto; display: flex; align-items: center; gap: .8rem; }
     .field-grid { grid-template-columns: 1fr; }
     .field-grid .span2 { grid-column: span 1; }
-    .admin-main { padding: 1.8rem 1rem 2.5rem; }
+    .admin-main { padding: 1rem 1rem 2.5rem; }
+    .admin-topbar {
+        position: static;
+        margin: 0 0 1rem;
+        padding: .9rem 1rem;
+        border-radius: var(--radius-md);
+    }
     .card-table, .card { overflow-x: auto; }
 }
 
