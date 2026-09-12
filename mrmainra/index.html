@@ -49,6 +49,7 @@
         <nav class="admin-nav">
             <button type="button" data-tab="games">Games</button>
             <button type="button" data-tab="analytics">Analytics &amp; Reviews</button>
+            <button type="button" data-tab="social">Social Broadcast</button>
             <button type="button" data-tab="admins">Admins</button>
         </nav>
         <div class="admin-user">
@@ -317,6 +318,72 @@
                     </div>
                     <div id="tabReviewsList" style="padding: 1.4rem;">
                         <div class="muted">Loading reviews...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SOCIAL BROADCAST TAB -->
+        <section id="tab-social" class="tab">
+            <div style="display:grid; grid-template-columns:minmax(320px, 460px) 1fr; gap:1.5rem; align-items:start;">
+                <!-- Compose Form -->
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+                        <h3 style="margin:0; font-size:1.1rem; display:flex; align-items:center; gap:.5rem">
+                            <span>📢</span> Buat Broadcast Berita
+                        </h3>
+                        <span id="bufferStatusBadge" class="badge warn" style="font-size:.75rem">Cek Buffer…</span>
+                    </div>
+
+                    <form id="socialBroadcastForm">
+                        <div style="display:grid; gap:.9rem;">
+                            <label>Judul Berita (Internal / Web)
+                                <input type="text" id="postTitle" placeholder="Misal: Update Pop It 3D Versi 1.2 Resmi Rilis!" required maxlength="120" style="width:100%">
+                            </label>
+
+                            <label>
+                                <div style="display:flex; justify-content:space-between; align-items:baseline">
+                                    <span>Teks / Caption Sosial Media</span>
+                                    <span id="postCharCount" class="muted small" style="font-family:monospace; font-size:.76rem">0 karakter</span>
+                                </div>
+                                <textarea id="postContent" rows="4" placeholder="Tulis caption pengumuman untuk Twitter/Facebook/Instagram..." required maxlength="1000" style="width:100%; resize:vertical; line-height:1.4"></textarea>
+                            </label>
+
+                            <label>URL Gambar Banner / Screenshot (Opsional)
+                                <input type="url" id="postImage" placeholder="https://mainragames.com/Assets/img/..." style="width:100%">
+                            </label>
+
+                            <label>Link Target Game / Berita (Opsional)
+                                <input type="url" id="postLink" placeholder="https://play.google.com/store/apps/details?id=..." style="width:100%">
+                            </label>
+
+                            <!-- Channel Selection -->
+                            <div>
+                                <label style="font-size:.84rem; color:var(--mainra-ink); margin-bottom:.4rem; display:block">
+                                    Target Akun Sosial Media (Buffer):
+                                </label>
+                                <div id="bufferChannelsList" style="display:grid; gap:.5rem; background:rgba(11,17,28,.6); padding:.8rem; border-radius:var(--radius-md); border:1px solid var(--mainra-line);">
+                                    <div class="muted small">Memeriksa akun Buffer yang terhubung…</div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top:.4rem; display:flex; justify-content:flex-end;">
+                                <button type="submit" class="btn-admin" id="broadcastSubmitBtn" style="width:100%; justify-content:center;">
+                                    🚀 Publish Berita &amp; Broadcast
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Broadcast History Feed -->
+                <div class="card" style="padding:0; overflow:hidden;">
+                    <div style="padding:1rem 1.4rem; border-bottom:1px solid var(--mainra-line); display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="margin:0; font-size:1.05rem">Riwayat Broadcast Sosial Media</h3>
+                        <span id="broadcastHistoryCount" class="badge ok" style="font-size:.75rem">-- post</span>
+                    </div>
+                    <div id="broadcastHistoryList" style="padding:1.2rem;">
+                        <div class="muted">Memuat riwayat pengumuman…</div>
                     </div>
                 </div>
             </div>

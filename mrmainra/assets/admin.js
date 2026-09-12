@@ -1174,7 +1174,7 @@
 
     /* ---------- tabs ---------- */
 
-    var TITLES = { games: 'Games & Featured', analytics: 'Analytics & Reviews', admins: 'Admins' };
+    var TITLES = { games: 'Games & Featured', analytics: 'Analytics & Reviews', social: 'Social Broadcast', admins: 'Admins' };
     function selectTab(name) {
         if (name === 'featured') name = 'games';
         if (name === 'reviews') name = 'analytics';
@@ -1185,9 +1185,154 @@
         try { localStorage.setItem('mainra-admin-tab', name); } catch (e) {}
         if (name === 'analytics') {
             renderAnalyticsTab();
+        } else if (name === 'social') {
+            loadSocialBroadcasts();
+            loadBufferProfiles();
         } else if (name === 'admins') {
             loadAdmins();
         }
+    }
+
+    /* ---------- social broadcast & buffer integration ---------- */
+
+    var bufferProfiles = [];
+    var broadcastsList = [];
+
+    async function loadBufferProfiles() {
+        var box = $('#bufferChannelsList');
+        var badge = $('#bufferStatusBadge');
+        if (!box) return;
+
+        var res = await sb.functions.invoke('sync-buffer', {
+            body: { action: 'get_profiles' }
+        }).catch(function (e) { return { error: e }; });
+
+        if (res.error || (res.data && res.data.configured === false)) {
+            if (badge) {
+                badge.className = 'badge warn';
+                badge.textContent = 'Token Belum Ada';
+            }
+            box.innerHTML = '<div class="muted small" style="line-height:1.4">' +
+                'Belum terhubung ke Buffer. Masukkan Access Token di Supabase Secret <code>BUFFER_ACCESS_TOKEN</code>.<br>' +
+                '<span style="color:var(--mainra-orange)">Postingan tetap tersimpan di database CMS website.</span>' +
+            '</div>';
+            return;
+        }
+
+        var data = res.data || {};
+        bufferProfiles = data.profiles || [];
+
+        if (!bufferProfiles.length) {
+            if (badge) { badge.className = 'badge warn'; badge.textContent = '0 Channel'; }
+            box.innerHTML = '<div class="muted small">Tidak ada profil sosial media yang terhubung di Buffer.</div>';
+            return;
+        }
+
+        if (badge) {
+            badge.className = 'badge ok';
+            badge.textContent = bufferProfiles.length + ' Channel Aktif';
+        }
+
+        box.innerHTML = bufferProfiles.map(function (p) {
+            var icon = p.service === 'facebook' ? '📘' : (p.service === 'twitter' ? '🐦' : (p.service === 'instagram' ? '📸' : '🌐'));
+            return '<label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-size:.85rem; color:var(--mainra-white)">' +
+                '<input type="checkbox" name="buffer_profile" value="' + esc(p.id) + '" checked> ' +
+                '<span>' + icon + ' <strong>' + esc(p.formatted_service || p.service) + '</strong> (' + esc(p.service_username) + ')</span>' +
+            '</label>';
+        }).join('');
+    }
+
+    async function loadSocialBroadcasts() {
+        var box = $('#broadcastHistoryList');
+        var countBadge = $('#broadcastHistoryCount');
+        if (!box) return;
+
+        box.innerHTML = '<div class="muted">Memuat riwayat pengumuman…</div>';
+
+        var res = await sb.from('social_broadcasts')
+            .select('*')
+            .order('published_at', { ascending: false })
+            .limit(20);
+
+        if (res.error) {
+            box.innerHTML = '<div class="muted">Gagal memuat riwayat: ' + esc(res.error.message) + '</div>';
+            return;
+        }
+
+        broadcastsList = res.data || [];
+        if (countBadge) countBadge.textContent = broadcastsList.length + ' post';
+
+        if (!broadcastsList.length) {
+            box.innerHTML = '<div class="muted" style="text-align:center; padding:1.5rem">Belum ada broadcast yang dipublikasikan. Buat postingan pertama di formulir sebelah kiri!</div>';
+            return;
+        }
+
+        box.innerHTML = broadcastsList.map(function (b) {
+            var dateStr = b.published_at ? new Date(b.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+            var channelsCount = Array.isArray(b.channels) ? b.channels.length : 0;
+            return '<div style="border-bottom:1px solid var(--mainra-line); padding:1rem 0;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:baseline; gap:.5rem; flex-wrap:wrap;">' +
+                    '<h4 style="margin:0; font-size:.98rem; color:var(--mainra-white)">' + esc(b.title) + '</h4>' +
+                    '<span class="muted" style="font-size:.78rem">' + esc(dateStr) + '</span>' +
+                '</div>' +
+                '<p style="margin:.5rem 0 .4rem; font-size:.88rem; line-height:1.45; color:var(--mainra-ink)">' + esc(b.content) + '</p>' +
+                (b.image_url ? '<div style="margin:.4rem 0;"><img src="' + esc(b.image_url) + '" alt="" style="max-height:120px; border-radius:var(--radius-sm); border:1px solid var(--mainra-line);" onerror="this.style.display=\'none\'"></div>' : '') +
+                '<div style="display:flex; gap:.6rem; align-items:center; margin-top:.4rem; flex-wrap:wrap;">' +
+                    '<span class="badge ok" style="font-size:.72rem">Web Published</span>' +
+                    (channelsCount > 0 ? '<span class="badge ok" style="font-size:.72rem">🚀 Broadcast ke ' + channelsCount + ' Channel</span>' : '<span class="badge warn" style="font-size:.72rem">Web Only</span>') +
+                    (b.target_link ? '<a href="' + esc(b.target_link) + '" target="_blank" rel="noopener" style="font-size:.78rem; color:var(--mainra-orange)">Buka Link ↗</a>' : '') +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    async function handleSocialBroadcastSubmit(e) {
+        e.preventDefault();
+        var submitBtn = $('#broadcastSubmitBtn');
+        var title = $('#postTitle').value.trim();
+        var content = $('#postContent').value.trim();
+        var imageUrl = $('#postImage').value.trim();
+        var targetLink = $('#postLink').value.trim();
+
+        var checkedProfiles = [];
+        $$('input[name="buffer_profile"]:checked').forEach(function (cb) {
+            checkedProfiles.push(cb.value);
+        });
+
+        if (!title || !content) {
+            toast('Judul dan teks postingan harus diisi.', true);
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Memposting…';
+
+        var res = await sb.functions.invoke('sync-buffer', {
+            body: {
+                action: 'publish',
+                title: title,
+                text: content,
+                imageUrl: imageUrl || null,
+                targetLink: targetLink || null,
+                profileIds: checkedProfiles
+            }
+        });
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = '🚀 Publish Berita & Broadcast';
+
+        if (res.error) {
+            toast('Gagal broadcast: ' + (res.error.message || res.error), true);
+            return;
+        }
+
+        toast((res.data && res.data.message) || 'Broadcast berhasil ✓');
+        $('#postTitle').value = '';
+        $('#postContent').value = '';
+        $('#postImage').value = '';
+        $('#postLink').value = '';
+        $('#postCharCount').textContent = '0 karakter';
+        loadSocialBroadcasts();
     }
 
     /* ---------- admin users management ---------- */
@@ -1416,6 +1561,15 @@
         on('#admClose', 'click', function () { $('#adminUserModal').close(); });
         on('#admCancel', 'click', function () { $('#adminUserModal').close(); });
         on('#adminUserForm', 'submit', submitNewAdmin);
+
+        on('#socialBroadcastForm', 'submit', handleSocialBroadcastSubmit);
+        var postContentInput = $('#postContent');
+        if (postContentInput) {
+            postContentInput.addEventListener('input', function () {
+                var len = postContentInput.value.length;
+                $('#postCharCount').textContent = len + ' / 1000 karakter';
+            });
+        }
 
         sb.auth.onAuthStateChange(function (event, session) {
             if (event === 'SIGNED_OUT') {
