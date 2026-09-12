@@ -671,6 +671,16 @@
         btnText.textContent = 'Posting to Play Store…';
 
         try {
+            // Ensure session token is fresh
+            var sessRes = await sb.auth.getSession();
+            var session = sessRes && sessRes.data && sessRes.data.session;
+            if (!session) {
+                toast('Session expired. Please sign out and sign in again.', true);
+                btn.disabled = false;
+                btnText.textContent = origText;
+                return;
+            }
+
             var res = await sb.functions.invoke('sync-reviews', {
                 body: {
                     action: 'reply',
@@ -681,7 +691,11 @@
             });
             if (res.error) {
                 var errStr = String(res.error.message || res.error);
-                toast('Post to Play Store failed: ' + errStr, true);
+                if (errStr.indexOf('Failed to send a request') !== -1) {
+                    toast('Network/auth error reaching Google Play service. Please try again.', true);
+                } else {
+                    toast('Google Play reply failed: ' + errStr, true);
+                }
                 return;
             }
             var data = res.data || {};
