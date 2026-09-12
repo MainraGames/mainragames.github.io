@@ -18,10 +18,16 @@ const SCRAPE_LOCALES: Array<[string, string]> = [
   ["en", "us"],
 ];
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, content-type, x-client-info, apikey",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
   });
 }
 
@@ -181,11 +187,7 @@ async function requireAdmin(req: Request) {
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization,content-type,x-client-info",
-        "Access-Control-Allow-Methods": "POST",
-      },
+      headers: CORS_HEADERS,
     });
   }
 
