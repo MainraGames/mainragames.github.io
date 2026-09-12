@@ -148,12 +148,14 @@ Instruksi Wajib:
 }
 
 Deno.serve(async (req: Request) => {
+  console.log("=== process-review-queue request received ===", req.method);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  console.log("Creating admin client with url:", supabaseUrl);
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
   // Optional: Read Gemini Key from site_settings or env

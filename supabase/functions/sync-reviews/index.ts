@@ -308,6 +308,7 @@ Deno.serve(async (req: Request) => {
     let token = "";
     if (saRaw) token = await accessToken(JSON.parse(saRaw));
 
+    const parts: string[] = [];
     let fetched = 0;
     for (const pkg of packages) {
       const rowsMap = new Map();
@@ -343,11 +344,14 @@ Deno.serve(async (req: Request) => {
 
       // Only write reply fields when Google actually has a reply; otherwise leave
       // any draft the admin saved in the dashboard untouched.
+      // Note: reply_timestamp is intentionally NOT deleted so we can track
+      // when a reply attempt was last made even if it failed.
       rows = rows.map((row) => {
         if (row.reply_text) return row;
         const copy = { ...row };
         delete copy.reply_text;
         delete copy.replySentAt;
+        delete copy.reply_timestamp;
         return copy;
       });
       const { error } = await admin.from("game_reviews").upsert(rows, {
@@ -358,7 +362,7 @@ Deno.serve(async (req: Request) => {
       fetched += rows.length;
     }
 
-    const parts = [`Fetched ${fetched} reviews (${mode})`];
+    parts.unshift(`Fetched ${fetched} reviews (${mode})`);
     let posted = 0;
 
     if (mode === "developer-api") {
