@@ -1704,14 +1704,15 @@
             keysBody.innerHTML = cachedKeys.map(function (k, i) {
                 var primaryStar = k.isPrimary ? '<span title="Key Utama" style="color:#facc15; margin-left:.3rem">★</span>' : '';
                 var maskedKey = '<code style="font-size:.78rem; color:var(--mainra-muted); letter-spacing:.5px">' + esc(k.keyMasked || ('•••' + (k.key || '').slice(-8))) + '</code>';
+                var keyIdAttr = k.id ? ' data-key-id="' + esc(k.id) + '"' : '';
                 return '<tr>' +
                     '<td><strong style="font-size:.84rem">' + esc(k.label || 'Key ' + (i + 1)) + '</strong>' + primaryStar + '</td>' +
                     '<td>' + maskedKey + '</td>' +
                     '<td>' + statusBadgeHtml(k.status) + '</td>' +
                     '<td class="muted small" style="font-size:.75rem">' + timeAgo(k.lastChecked) + '</td>' +
                     '<td style="text-align:right; white-space:nowrap">' +
-                        (!k.isPrimary ? '<button type="button" class="btn-admin ghost small" data-set-primary="' + i + '" title="Jadikan key utama" style="font-size:.7rem; padding:.15rem .4rem; margin-right:.2rem">★</button>' : '') +
-                        '<button type="button" class="btn-admin ghost small" data-delete-key="' + i + '" title="Hapus key" style="font-size:.7rem; padding:.15rem .4rem; color:#f87171; border-color:rgba(248,113,113,.3)">🗑</button>' +
+                        (!k.isPrimary ? '<button type="button" class="btn-admin ghost small" data-set-primary="' + i + '"' + keyIdAttr + ' title="Jadikan key utama" style="font-size:.7rem; padding:.15rem .4rem; margin-right:.2rem">★</button>' : '') +
+                        '<button type="button" class="btn-admin ghost small" data-delete-key="' + i + '"' + keyIdAttr + ' title="Hapus key" style="font-size:.7rem; padding:.15rem .4rem; color:#f87171; border-color:rgba(248,113,113,.3)">🗑</button>' +
                     '</td>' +
                 '</tr>';
             }).join('');
@@ -1720,16 +1721,18 @@
             keysBody.querySelectorAll('[data-delete-key]').forEach(function (btn) {
                 btn.onclick = function () {
                     var idx = parseInt(btn.getAttribute('data-delete-key'));
+                    var keyId = btn.getAttribute('data-key-id');
                     var entry = cachedKeys[idx];
                     if (!entry) return;
                     if (!confirm('Hapus key "' + (entry.label || 'Key') + '"?')) return;
-                    deleteKey(idx);
+                    deleteKey(keyId, idx);
                 };
             });
             keysBody.querySelectorAll('[data-set-primary]').forEach(function (btn) {
                 btn.onclick = function () {
                     var idx = parseInt(btn.getAttribute('data-set-primary'));
-                    setPrimaryKey(idx);
+                    var keyId = btn.getAttribute('data-key-id');
+                    setPrimaryKey(keyId, idx);
                 };
             });
         }
@@ -1813,9 +1816,9 @@
         }
 
         // ── Delete key ──
-        async function deleteKey(targetIdx) {
+        async function deleteKey(keyId, targetIdx) {
             var res = await sb.functions.invoke('ai-social-assistant', {
-                body: { action: 'delete_key', targetIdx: targetIdx }
+                body: { action: 'delete_key', keyId: keyId, targetIdx: targetIdx }
             }).catch(function (e) { return { error: e }; });
 
             if (res.error || !res.data || !res.data.success) {
@@ -1827,9 +1830,9 @@
         }
 
         // ── Set primary key ──
-        async function setPrimaryKey(targetIdx) {
+        async function setPrimaryKey(keyId, targetIdx) {
             var res = await sb.functions.invoke('ai-social-assistant', {
-                body: { action: 'set_primary_key', targetIdx: targetIdx }
+                body: { action: 'set_primary_key', keyId: keyId, targetIdx: targetIdx }
             }).catch(function (e) { return { error: e }; });
 
             if (res.error || !res.data || !res.data.success) {
@@ -1903,28 +1906,18 @@
         if (!panel) return;
 
         async function syncKeyStatus() {
-            var activeKey = '';
-            try { activeKey = localStorage.getItem('mainra-gemini-key') || ''; } catch (e) {}
-            if (!activeKey) {
-                var dbRes = await sb.from('site_settings').select('value').eq('key', 'gemini_api_key').maybeSingle();
-                if (dbRes.data && dbRes.data.value) {
-                    var v = dbRes.data.value;
-                    if (typeof v === 'string') {
-                        activeKey = v;
-                    } else if (Array.isArray(v)) {
-                        // Multi-key format — pick primary or first active
-                        var primary = v.find(function (k) { return k.isPrimary && k.status !== 'invalid'; });
-                        var fallback = v.find(function (k) { return k.status === 'active'; });
-                        var anyKey = v.find(function (k) { return k.key; });
-                        activeKey = (primary || fallback || anyKey || {}).key || '';
-                    } else if (v && typeof v === 'object' && v.key) {
-                        activeKey = v.key;
-                    }
-                }
+            var res = await sb.functions.invoke('ai-social-assistant', {
+                body: { action: 'load_keys' }
+            }).catch(function (e) { return { error: e }; });
+
+            var hasActiveKey = false;
+            if (res.data && res.data.keys && res.data.keys.length > 0) {
+                hasActiveKey = res.data.keys.some(function (k) { return k.status !== 'invalid'; });
             }
+
             if (statusDot) {
-                statusDot.style.background = activeKey ? '#7fd1a1' : '#f87171';
-                statusDot.title = activeKey ? 'Gemini AI Siap (Multi-Key Rolling Aktif)' : 'API Key Belum Dikonfigurasi di Kelola & Admin';
+                statusDot.style.background = hasActiveKey ? '#7fd1a1' : '#f87171';
+                statusDot.title = hasActiveKey ? 'Gemini AI Siap (Multi-Key Rolling Aktif)' : 'API Key Belum Dikonfigurasi di Kelola & Admin';
             }
         }
 

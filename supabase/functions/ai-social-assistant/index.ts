@@ -44,6 +44,7 @@ async function requireAdmin(req: Request) {
 // This function returns all valid keys in rolling order (primary first).
 
 interface GeminiKeyEntry {
+  id?: string;
   key: string;
   label: string;
   status: string;      // "active" | "quota_exhausted" | "invalid" | "unchecked"
@@ -340,6 +341,7 @@ Deno.serve(async (req: Request) => {
 
       // Mask keys for security (show only last 8 chars — NEVER send full key to client)
       const masked = keys.map((k: any, idx: number) => ({
+        id: k.id || `k_${idx}`,
         idx,
         label: k.label,
         status: k.status,
@@ -477,9 +479,9 @@ Deno.serve(async (req: Request) => {
       let keys: any[] = [];
       if (settingRow?.value) {
         if (typeof settingRow.value === "string") {
-          keys = [{ key: settingRow.value, label: "Default", status: "unchecked", lastChecked: null, isPrimary: true }];
+          keys = [{ id: crypto.randomUUID(), key: settingRow.value, label: "Default", status: "unchecked", lastChecked: null, isPrimary: true }];
         } else if (Array.isArray(settingRow.value)) {
-          keys = settingRow.value;
+          keys = settingRow.value.map((k: any) => ({ ...k, id: k.id || crypto.randomUUID() }));
         }
       }
 
@@ -489,6 +491,7 @@ Deno.serve(async (req: Request) => {
       }
 
       keys.push({
+        id: crypto.randomUUID(),
         key: newKey,
         label: newLabel || `Key ${keys.length + 1}`,
         status: "unchecked",
@@ -508,6 +511,7 @@ Deno.serve(async (req: Request) => {
 
     // ── Action: delete_key ─────────────────────────────────────────
     if (action === "delete_key") {
+      const keyId = (payload.keyId || "").trim();
       const targetIdx = typeof payload.targetIdx === "number" ? payload.targetIdx : -1;
       const targetKey = (payload.targetKey || "").trim(); // fallback for legacy
 
@@ -522,12 +526,14 @@ Deno.serve(async (req: Request) => {
       }
 
       let keys = settingRow.value;
-      if (targetIdx >= 0 && targetIdx < keys.length) {
+      if (keyId) {
+        keys = keys.filter((k: any) => k.id !== keyId);
+      } else if (targetIdx >= 0 && targetIdx < keys.length) {
         keys.splice(targetIdx, 1);
       } else if (targetKey) {
         keys = keys.filter((k: any) => k.key !== targetKey);
       } else {
-        return json(200, { success: false, error: true, message: "Index key tidak valid." });
+        return json(200, { success: false, error: true, message: "Key ID tidak valid." });
       }
 
       // If deleted key was primary, set first remaining as primary
@@ -547,6 +553,7 @@ Deno.serve(async (req: Request) => {
 
     // ── Action: set_primary_key ────────────────────────────────────
     if (action === "set_primary_key") {
+      const keyId = (payload.keyId || "").trim();
       const targetIdx = typeof payload.targetIdx === "number" ? payload.targetIdx : -1;
       const targetKey = (payload.targetKey || "").trim(); // fallback
 
@@ -562,7 +569,7 @@ Deno.serve(async (req: Request) => {
 
       const keys = settingRow.value.map((k: any, i: number) => ({
         ...k,
-        isPrimary: targetIdx >= 0 ? i === targetIdx : k.key === targetKey,
+        isPrimary: keyId ? k.id === keyId : (targetIdx >= 0 ? i === targetIdx : k.key === targetKey),
       }));
 
       const { error: saveErr } = await admin.from("site_settings").upsert({
@@ -572,7 +579,7 @@ Deno.serve(async (req: Request) => {
       }, { onConflict: "key" });
 
       if (saveErr) return json(200, { success: false, error: true, message: saveErr.message });
-      return json(200, { success: true, message: "Key utama berhasil diubah." });
+      return json(200, { success: true, message: "Key utama berhasil diperbarui. ★" });
     }
 
     // ── Resolve keys for generation actions ────────────────────────
