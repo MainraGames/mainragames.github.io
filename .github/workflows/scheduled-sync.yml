@@ -1,0 +1,73 @@
+name: Scheduled Play Store & Supabase Sync
+
+on:
+  schedule:
+    # Run twice daily: 00:00 and 12:00 UTC (07:00 and 19:00 WIB)
+    - cron: '0 0,12 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-playstore-cms
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tools/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tools
+        run: npm ci
+
+      - name: Update games catalog from Google Play Store
+        working-directory: tools
+        run: npm run update-games
+
+      - name: Sync games catalog to Supabase CMS
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SECRET_KEY }}
+        run: node tools/sync-supabase.js
+
+      - name: Sync Play Store reviews & post pending admin replies
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SECRET_KEY }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: node tools/sync-playstore-reviews.js
+
+      - name: Rebuild fallback games-data.json from Supabase CMS
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SECRET_KEY }}
+        run: node tools/pull-supabase.js
+
+      - name: Commit & push updated games-data.json if changed
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          if [ -n "$(git status --porcelain Assets/data/games-data.json)" ]; then
+            git add Assets/data/games-data.json
+            git commit -m "chore(sync): auto-sync games & reviews from Play Store [skip ci]"
+            git push origin main
+            echo "Changes committed and pushed."
+          else
+            echo "No changes detected in Assets/data/games-data.json."
+          fi
