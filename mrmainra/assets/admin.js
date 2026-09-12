@@ -1190,6 +1190,7 @@
             loadBufferProfiles();
             renderQuickGameChips();
             wireSocialTemplates();
+            initAiAssistant();
         } else if (name === 'admins') {
             loadAdmins();
         }
@@ -1259,6 +1260,156 @@
                 toast('Template ' + btn.textContent + ' diterapkan! ✓');
             };
         });
+    }
+
+    /* ---------- Gemini AI Social Assistant ---------- */
+
+    async function initAiAssistant() {
+        var openBtn = $('#openAiAssistantBtn');
+        var closeBtn = $('#closeAiPanelBtn');
+        var panel = $('#aiAssistantPanel');
+        var testBtn = $('#testGeminiBtn');
+        var saveKeyBtn = $('#saveGeminiKeyBtn');
+        var generateBtn = $('#generateAiPostBtn');
+        var keyInput = $('#geminiApiKeyInput');
+        var fb = $('#geminiTestFeedback');
+
+        if (!panel) return;
+
+        // Auto-load existing key from site_settings or localStorage
+        var localSavedKey = '';
+        try { localSavedKey = localStorage.getItem('mainra-gemini-key') || ''; } catch (e) {}
+        if (localSavedKey && keyInput) keyInput.value = localSavedKey;
+
+        sb.from('site_settings').select('value').eq('key', 'gemini_api_key').maybeSingle().then(function (res) {
+            if (res.data && res.data.value && keyInput && !keyInput.value) {
+                var v = res.data.value;
+                keyInput.value = typeof v === 'string' ? v : (v.key || '');
+            }
+        });
+
+        if (openBtn) {
+            openBtn.onclick = function () {
+                var isHidden = panel.style.display === 'none';
+                panel.style.display = isHidden ? 'block' : 'none';
+                openBtn.textContent = isHidden ? '✕ Tutup AI' : '✨ AI Writer (Gemini)';
+            };
+        }
+
+        if (closeBtn) {
+            closeBtn.onclick = function () {
+                panel.style.display = 'none';
+                if (openBtn) openBtn.textContent = '✨ AI Writer (Gemini)';
+            };
+        }
+
+        if (testBtn) {
+            testBtn.onclick = async function () {
+                var apiKey = keyInput ? keyInput.value.trim() : '';
+                var model = $('#aiModelSelect') ? $('#aiModelSelect').value : 'gemini-1.5-flash';
+                if (!apiKey) {
+                    toast('Mohon masukkan Gemini API Key terlebih dahulu.', true);
+                    return;
+                }
+
+                testBtn.disabled = true;
+                testBtn.textContent = 'Menguji…';
+                if (fb) { fb.style.display = 'block'; fb.textContent = 'Menghubungi Google Gemini API (' + model + ')…'; fb.style.color = 'var(--mainra-muted)'; }
+
+                var res = await sb.functions.invoke('ai-social-assistant', {
+                    body: { action: 'test', apiKey: apiKey, model: model }
+                }).catch(function (e) { return { error: e }; });
+
+                testBtn.disabled = false;
+                testBtn.textContent = '⚡ Test Model';
+
+                if (res.error) {
+                    var errTxt = (res.error && res.error.message) || String(res.error);
+                    if (fb) { fb.style.display = 'block'; fb.textContent = '❌ Gagal: ' + errTxt; fb.style.color = '#f87171'; }
+                    toast('Uji coba model gagal.', true);
+                    return;
+                }
+
+                var msg = (res.data && res.data.message) || 'Koneksi Sukses!';
+                if (fb) { fb.style.display = 'block'; fb.textContent = '✓ ' + msg; fb.style.color = 'var(--mainra-success)'; }
+                toast('Koneksi Gemini API Valid ✓');
+            };
+        }
+
+        if (saveKeyBtn) {
+            saveKeyBtn.onclick = async function () {
+                var apiKey = keyInput ? keyInput.value.trim() : '';
+                if (!apiKey) {
+                    toast('Isi API key sebelum menyimpan.', true);
+                    return;
+                }
+
+                saveKeyBtn.disabled = true;
+                saveKeyBtn.textContent = 'Menyimpan…';
+
+                try { localStorage.setItem('mainra-gemini-key', apiKey); } catch (e) {}
+
+                var res = await sb.functions.invoke('ai-social-assistant', {
+                    body: { action: 'save_key', newKey: apiKey }
+                }).catch(function (e) { return { error: e }; });
+
+                saveKeyBtn.disabled = false;
+                saveKeyBtn.textContent = '💾 Simpan Key';
+
+                if (res.error) {
+                    toast('Gagal menyimpan key: ' + (res.error.message || res.error), true);
+                    return;
+                }
+
+                toast('Gemini API Key tersimpan di sistem ✓');
+            };
+        }
+
+        if (generateBtn) {
+            generateBtn.onclick = async function () {
+                var apiKey = keyInput ? keyInput.value.trim() : '';
+                var model = $('#aiModelSelect') ? $('#aiModelSelect').value : 'gemini-1.5-flash';
+                var tone = $('#aiToneSelect') ? $('#aiToneSelect').value : '';
+                var customPrompt = $('#aiCustomInstruction') ? $('#aiCustomInstruction').value.trim() : '';
+                var titleVal = $('#postTitle') ? $('#postTitle').value.trim() : '';
+                var linkVal = $('#postLink') ? $('#postLink').value.trim() : '';
+
+                generateBtn.disabled = true;
+                generateBtn.textContent = '✨ Sedang Mengarang Konten…';
+
+                var res = await sb.functions.invoke('ai-social-assistant', {
+                    body: {
+                        action: 'generate',
+                        apiKey: apiKey,
+                        model: model,
+                        tone: tone,
+                        gameTitle: titleVal || 'Game Mainra Games',
+                        targetLink: linkVal || 'https://mainragames.com',
+                        customPrompt: customPrompt
+                    }
+                }).catch(function (e) { return { error: e }; });
+
+                generateBtn.disabled = false;
+                generateBtn.textContent = '✨ Generate Postingan dengan Gemini';
+
+                if (res.error) {
+                    toast('AI Error: ' + (res.error.message || res.error), true);
+                    return;
+                }
+
+                var data = res.data && res.data.result;
+                if (data) {
+                    if (data.title && $('#postTitle') && !$('#postTitle').value) {
+                        $('#postTitle').value = data.title;
+                    }
+                    if (data.caption && $('#postContent')) {
+                        $('#postContent').value = data.caption;
+                        $('#postCharCount').textContent = data.caption.length + ' / 1000 karakter';
+                    }
+                    toast('Postingan berhasil dibuat oleh Gemini AI! ✨');
+                }
+            };
+        }
     }
 
     /* ---------- load social broadcasts and buffer profiles ---------- */
