@@ -2190,41 +2190,40 @@
         }
 
         async function processImageFile(file) {
-            if (!file || !file.type.startsWith('image/')) {
+            if (!file) return;
+            if (file.type && !file.type.startsWith('image/')) {
                 toast('File yang dipilih bukan gambar yang valid.', true);
                 return;
             }
 
             var reader = new FileReader();
-            reader.onload = function (e) {
-                setUploading(true, file.name || 'image_pasted.png', e.target.result);
+            reader.onload = async function (e) {
+                var dataUrl = e.target.result;
+                setUploading(true, file.name || 'clipboard-image.png', dataUrl);
+
+                try {
+                    var res = await sb.functions.invoke('upload-image', {
+                        body: {
+                            base64Data: dataUrl,
+                            mimeType: file.type || 'image/png',
+                            fileName: 'broadcast-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ((file.type || 'image/png').split('/')[1] || 'png')
+                        }
+                    });
+
+                    if (res.error) throw res.error;
+                    if (res.data && res.data.error) throw new Error(res.data.message);
+
+                    var publicUrl = res.data && res.data.publicUrl;
+                    if (!publicUrl) throw new Error('URL gambar tidak diterima dari server.');
+
+                    setSuccess(publicUrl, file.name || 'Pasted Image');
+                    toast('Gambar berhasil di-paste & diupload! ✓');
+                } catch (err) {
+                    clearPastedImage();
+                    toast('Upload gambar gagal: ' + (err.message || err), true);
+                }
             };
             reader.readAsDataURL(file);
-
-            try {
-                // Generate a clean filename: timestamp-random.ext
-                var ext = file.type.split('/')[1] || 'png';
-                if (ext === 'jpeg') ext = 'jpg';
-                var cleanName = 'broadcast-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
-
-                var res = await sb.storage.from('broadcast-images').upload(cleanName, file, {
-                    cacheControl: '3600',
-                    upsert: true
-                });
-
-                if (res.error) throw res.error;
-
-                var pubRes = sb.storage.from('broadcast-images').getPublicUrl(cleanName);
-                var publicUrl = pubRes && pubRes.data ? pubRes.data.publicUrl : '';
-
-                if (!publicUrl) throw new Error('Gagal mendapatkan URL publik gambar.');
-
-                setSuccess(publicUrl, file.name || cleanName);
-                toast('Gambar berhasil di-upload dan siap disiarkan! ✓');
-            } catch (err) {
-                clearPastedImage();
-                toast('Upload gambar gagal: ' + (err.message || err), true);
-            }
         }
 
         // 1. Click zone triggers file selector
@@ -2276,16 +2275,31 @@
             var socialTab = $('#tab-social');
             if (!socialTab || !socialTab.classList.contains('is-active')) return;
 
-            var items = (e.clipboardData || window.clipboardData).items;
-            if (!items) return;
+            var clipboard = e.clipboardData || window.clipboardData;
+            if (!clipboard) return;
 
-            for (var i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf('image') !== -1) {
-                    var blob = items[i].getAsFile();
-                    if (blob) {
+            // Priority A: Check clipboard.files
+            if (clipboard.files && clipboard.files.length > 0) {
+                for (var f = 0; f < clipboard.files.length; f++) {
+                    if (clipboard.files[f].type.indexOf('image') !== -1) {
                         e.preventDefault();
-                        processImageFile(blob);
-                        break;
+                        processImageFile(clipboard.files[f]);
+                        return;
+                    }
+                }
+            }
+
+            // Priority B: Check clipboard.items (Direct Snipping Tool / Screenshot buffer)
+            var items = clipboard.items;
+            if (items) {
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].type && items[i].type.indexOf('image') !== -1) {
+                        var blob = items[i].getAsFile();
+                        if (blob) {
+                            e.preventDefault();
+                            processImageFile(blob);
+                            return;
+                        }
                     }
                 }
             }
