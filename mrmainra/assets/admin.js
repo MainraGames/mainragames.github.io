@@ -1110,7 +1110,7 @@
 
     /* ---------- tabs ---------- */
 
-    var TITLES = { games: 'Games', featured: 'Featured & Site', analytics: 'Analytics Overview', reviews: 'Reviews' };
+    var TITLES = { games: 'Games', featured: 'Featured & Site', analytics: 'Analytics Overview', reviews: 'Reviews', admins: 'Kelola Admin' };
     function selectTab(name) {
         $$('.admin-nav button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
         $$('.tab').forEach(function (t) { t.classList.toggle('active', t.id === 'tab-' + name); });
@@ -1119,7 +1119,133 @@
         try { localStorage.setItem('mainra-admin-tab', name); } catch (e) {}
         if (name === 'analytics') {
             renderAnalyticsTab();
+        } else if (name === 'admins') {
+            loadAdmins();
         }
+    }
+
+    /* ---------- admin users management ---------- */
+
+    var adminList = [];
+
+    async function loadAdmins() {
+        var tbody = $('#adminsTbody');
+        if (!tbody) return;
+        tbody.innerHTML = '<tr><td colspan="5" class="muted">Memuat daftar akun admin…</td></tr>';
+
+        var res = await sb.functions.invoke('manage-admins', {
+            body: { action: 'list' }
+        });
+
+        if (res.error) {
+            tbody.innerHTML = '<tr><td colspan="5" class="error">Gagal memuat admin: ' + esc(res.error.message || res.error) + '</td></tr>';
+            return;
+        }
+
+        var data = res.data || {};
+        adminList = data.admins || [];
+
+        if (!adminList.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="muted">Belum ada data admin.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = adminList.map(function (adm, idx) {
+            var isMe = adm.is_current_user;
+            var createdDate = adm.created_at ? new Date(adm.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+            var lastSignIn = adm.last_sign_in_at ? new Date(adm.last_sign_in_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Belum pernah';
+
+            return '<tr>' +
+                '<td>' +
+                    '<strong>' + esc(adm.email) + '</strong>' +
+                    (isMe ? ' <span class="badge ok" style="margin-left:.4rem;font-size:.72rem">Anda (Saat ini)</span>' : '') +
+                '</td>' +
+                '<td><span class="badge ok">Full Access</span></td>' +
+                '<td class="muted" style="font-size:.85rem">' + esc(lastSignIn) + '</td>' +
+                '<td class="muted" style="font-size:.85rem">' + esc(createdDate) + '</td>' +
+                '<td style="text-align:right">' +
+                    (isMe ? 
+                        '<span class="muted small" style="font-size:.8rem">—</span>' :
+                        '<button type="button" class="btn-admin ghost danger small" data-del-admin="' + idx + '" style="font-size:.78rem;padding:.25rem .6rem;color:#f87171;border-color:rgba(239,68,68,.3)">Hapus Akses</button>') +
+                '</td>' +
+            '</tr>';
+        }).join('');
+
+        $$('[data-del-admin]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var target = adminList[Number(btn.dataset.delAdmin)];
+                if (!target) return;
+                deleteAdminUser(target);
+            });
+        });
+    }
+
+    async function deleteAdminUser(target) {
+        if (!confirm('Apakah Anda yakin ingin menghapus hak akses admin untuk ' + target.email + '?\nPengguna ini tidak akan bisa login lagi ke dashboard.')) {
+            return;
+        }
+
+        toast('Menghapus akses admin…');
+        var res = await sb.functions.invoke('manage-admins', {
+            body: { action: 'delete', user_id: target.user_id }
+        });
+
+        if (res.error) {
+            toast('Gagal menghapus: ' + (res.error.message || res.error), true);
+            return;
+        }
+
+        toast('Admin ' + target.email + ' berhasil dihapus ✓');
+        loadAdmins();
+    }
+
+    function openAddAdminModal() {
+        $('#newAdminEmail').value = '';
+        $('#newAdminPassword').value = '';
+        $('#admError').textContent = '';
+        $('#admError').classList.add('hidden');
+        $('#adminUserModal').showModal();
+    }
+
+    async function submitNewAdmin(e) {
+        e.preventDefault();
+        var email = $('#newAdminEmail').value.trim();
+        var password = $('#newAdminPassword').value.trim();
+        var errEl = $('#admError');
+        var submitBtn = $('#admSubmitBtn');
+
+        if (!email || !password) {
+            errEl.textContent = 'Mohon isi email dan password.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+        if (password.length < 6) {
+            errEl.textContent = 'Password harus minimal 6 karakter.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        errEl.classList.add('hidden');
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Menambahkan…';
+
+        var res = await sb.functions.invoke('manage-admins', {
+            body: { action: 'create', email: email, password: password }
+        });
+
+        submitBtn.disabled = false;
+        submitBtn.textContent = '+ Tambahkan Sebagai Admin';
+
+        if (res.error) {
+            var msg = res.error.message || res.error;
+            errEl.textContent = 'Gagal: ' + msg;
+            errEl.classList.remove('hidden');
+            return;
+        }
+
+        $('#adminUserModal').close();
+        toast('Admin ' + email + ' berhasil ditambahkan ✓');
+        loadAdmins();
     }
 
     /* ---------- boot ---------- */
@@ -1171,6 +1297,11 @@
         $('#reviewStateFilter').addEventListener('change', renderReviews);
         $('#syncGamesBtn').addEventListener('click', function () { callFunction('sync-playstore'); });
         $('#syncReviewsBtn').addEventListener('click', function () { callFunction('sync-reviews'); });
+
+        $('#newAdminBtn').addEventListener('click', openAddAdminModal);
+        $('#admClose').addEventListener('click', function () { $('#adminUserModal').close(); });
+        $('#admCancel').addEventListener('click', function () { $('#adminUserModal').close(); });
+        $('#adminUserForm').addEventListener('submit', submitNewAdmin);
 
         sb.auth.onAuthStateChange(function (event, session) {
             if (event === 'SIGNED_OUT') {

@@ -42,6 +42,7 @@
             <button type="button" data-tab="featured">Featured</button>
             <button type="button" data-tab="analytics">Analytics</button>
             <button type="button" data-tab="reviews">Reviews</button>
+            <button type="button" data-tab="admins">Admins</button>
         </nav>
         <div class="admin-user">
             <span id="who" class="muted"></span>
@@ -313,6 +314,31 @@
                 <div class="card muted">Loading…</div>
             </div>
         </section>
+
+        <!-- ADMINS MANAGEMENT -->
+        <section id="tab-admins" class="tab">
+            <div class="admin-actions" style="margin-bottom:1.2rem; justify-content: space-between; align-items:center;">
+                <p class="muted" style="margin:0">Kelola pengguna yang memiliki izin akses penuh ke Dashboard Admin Mainra Games.</p>
+                <button type="button" class="btn-admin" id="newAdminBtn">+ Tambah Admin Baru</button>
+            </div>
+
+            <div class="card" style="padding:0; overflow:hidden;">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Email Admin</th>
+                            <th>Status Akses</th>
+                            <th>Login Terakhir</th>
+                            <th>Dibuat Pada</th>
+                            <th style="text-align:right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminsTbody">
+                        <tr><td colspan="5" class="muted">Memuat daftar admin…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </main>
 </div>
 
@@ -421,6 +447,32 @@
             </button>
         </div>
     </div>
+</dialog>
+
+<!-- ADD ADMIN MODAL -->
+<dialog id="adminUserModal" class="admin-modal" style="max-width:480px;padding:1.4rem 1.6rem">
+    <form id="adminUserForm">
+        <div class="modal-head" style="margin-bottom:1rem">
+            <h3 style="margin:0;font-size:1.15rem">Tambah Admin Baru</h3>
+            <button type="button" class="btn-admin ghost" id="admClose" title="Close" style="padding:.25rem .55rem">✕</button>
+        </div>
+        <p class="muted small" style="margin:0 0 1.2rem;line-height:1.4">
+            Pengguna yang ditambahkan akan memiliki akses penuh untuk mengelola katalog game, ulasan Play Store, dan akun admin lainnya.
+        </p>
+        <div class="field-grid" style="grid-template-columns:1fr;gap:.9rem">
+            <label>Alamat Email
+                <input type="email" id="newAdminEmail" name="email" placeholder="nama@gmail.com" required style="width:100%">
+            </label>
+            <label>Password Akun
+                <input type="password" id="newAdminPassword" name="password" placeholder="Minimal 6 karakter" required minlength="6" autocomplete="new-password" style="width:100%">
+            </label>
+        </div>
+        <div id="admError" class="form-error hidden" role="alert" style="margin-top:.8rem"></div>
+        <div class="form-foot" style="margin-top:1.2rem;padding-top:.9rem;border-top:1px solid var(--mainra-line);display:flex;justify-content:flex-end;gap:.6rem">
+            <button type="button" class="btn-admin ghost" id="admCancel">Batal</button>
+            <button type="submit" class="btn-admin" id="admSubmitBtn">+ Tambahkan Sebagai Admin</button>
+        </div>
+    </form>
 </dialog>
 
 <div id="toast" class="toast"></div>
