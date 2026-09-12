@@ -57,7 +57,14 @@
         $('#adminShell').classList.add('is-on');
         $('#who').textContent = user.email || 'admin';
         hideSplash();
+
+        // 1. Always load core games, highlight settings, and reviews
         loadAll();
+
+        // 2. Refresh the currently active tab (social, admins, analytics, etc.)
+        var currentTab = 'games';
+        try { currentTab = localStorage.getItem('mainra-admin-tab') || 'games'; } catch (e) {}
+        selectTab(currentTab);
     }
 
     function showLogin() {
@@ -72,6 +79,11 @@
 
     async function checkAdmin(user) {
         if (!user) { showLogin(); return; }
+
+        // Fast-path: Show shell immediately with user context
+        showShell(user);
+
+        // Verify admin permissions in parallel
         var res = await sb.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
         if (res.error) {
             $('#loginError').textContent = 'DB error: ' + res.error.message;
@@ -86,7 +98,6 @@
             showLogin();
             return;
         }
-        showShell(user);
     }
 
     async function doLogin(e) {
@@ -111,6 +122,10 @@
     /* ---------- data loading ---------- */
 
     async function loadGames() {
+        var tb = $('#gamesTbody');
+        if (tb && (!games || !games.length)) {
+            tb.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center;padding:1.5rem">Memuat katalog game…</td></tr>';
+        }
         var res = await sb.from('games').select('*').order('sort_order', { ascending: true }).order('title');
         if (res.error) { toast('Load games failed: ' + res.error.message, true); return; }
         games = res.data || [];
@@ -118,6 +133,7 @@
         populateGameSelectors();
         renderFeaturedGrid();
         renderAnalyticsTab();
+        renderQuickGameChips();
     }
 
     async function loadHighlight() {
