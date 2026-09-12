@@ -49,19 +49,42 @@ async function getAccessToken(sa) {
 
 function mapReview(r, appId) {
     const c = (r.comments && r.comments[0] && r.comments[0].userComment) || {};
+    const reply = (r.comments && r.comments[0] && r.comments[0].developerComment) || {};
     const lm = (c.lastModified && (c.lastModified.seconds || c.lastModified.serverValue)) || null;
-    return {
+
+    let content = '';
+    if (typeof c.text === 'string') {
+        content = c.text;
+    } else if (Array.isArray(c.text)) {
+        content = c.text[0] || '';
+    }
+
+    let replyText = null;
+    if (typeof reply.text === 'string') {
+        replyText = reply.text;
+    } else if (Array.isArray(reply.text)) {
+        replyText = reply.text[0] || '';
+    }
+
+    const row = {
         review_id: r.reviewId,
         game_id: appId,
-        author_name: (r.authorName && r.authorName.displayName) || c.authorName || 'Anonymous',
-        content: (c.text && c.text[0]) || '',
+        author_name: (r.authorName && (r.authorName.displayName || r.authorName)) || c.authorName || 'Anonymous',
+        content: content,
         star_rating: c.starRating || null,
         versionCode: c.appVersionName || null,
-        device: c.deviceMetadata && c.deviceMetadata[0] ? c.deviceMetadata[0].deviceModel || null : null,
+        device: c.deviceMetadata && (c.deviceMetadata.deviceModel || (Array.isArray(c.deviceMetadata) && c.deviceMetadata[0]?.deviceModel)) || null,
         review_timestamp: lm ? Number(lm) * 1000 : null,
         lang: c.reviewLanguage || null,
         source: 'playstore'
     };
+
+    if (replyText) {
+        row.reply_text = replyText;
+        const replyLm = reply.lastModified && (reply.lastModified.seconds || reply.lastModified.serverValue);
+        row.replySentAt = replyLm ? new Date(Number(replyLm) * 1000).toISOString() : new Date().toISOString();
+    }
+    return row;
 }
 
 async function listReviews(token, packageName) {

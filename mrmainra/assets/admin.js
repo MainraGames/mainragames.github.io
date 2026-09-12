@@ -688,6 +688,7 @@
                                 '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
                                 ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
                                 getLangBadge(r.lang) +
+                                (r.device ? ' <span class="muted" style="font-size:.78rem;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;">📱 ' + esc(r.device) + '</span>' : '') +
                                 (g ? ' <span class="muted" style="font-size:.8rem">on ' + esc(g.title) + '</span>' : '') +
                                 (r.review_timestamp ? ' <span class="muted" style="font-size:.8rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
                             '</div>' +
@@ -964,6 +965,7 @@
                             '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
                             '<span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
                             getLangBadge(r.lang) +
+                            (r.device ? ' <span class="muted" style="font-size:.78rem;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;">📱 ' + esc(r.device) + '</span>' : '') +
                             (g ? '<span class="muted" style="font-size:.85rem">· ' + esc(g.title) + '</span>' : '') +
                             (r.review_timestamp ? '<span class="muted" style="font-size:.85rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
                         '</div>' +

@@ -108,21 +108,38 @@ function mapApiReview(r: any, appId: string) {
   const c = comment.userComment || {};
   const reply = comment.developerComment || {};
   const lm = c.lastModified && (c.lastModified.seconds || c.lastModified.serverValue);
+
+  // Safely extract string content
+  let content = "";
+  if (typeof c.text === "string") {
+    content = c.text;
+  } else if (Array.isArray(c.text)) {
+    content = c.text[0] || "";
+  }
+
+  let replyText = null;
+  if (typeof reply.text === "string") {
+    replyText = reply.text;
+  } else if (Array.isArray(reply.text)) {
+    replyText = reply.text[0] || "";
+  }
+
   const row: any = {
     review_id: r.reviewId,
     game_id: appId,
-    author_name: (r.authorName && r.authorName.displayName) || c.authorName || "Anonymous",
-    content: (c.text && c.text[0]) || "",
+    author_name: (r.authorName && (r.authorName.displayName || r.authorName)) || c.authorName || "Anonymous",
+    content: content,
     star_rating: c.starRating || null,
     versionCode: c.appVersionName || null,
-    device: c.deviceMetadata && c.deviceMetadata[0] ? c.deviceMetadata[0].deviceModel || null : null,
+    device: c.deviceMetadata && (c.deviceMetadata.deviceModel || (Array.isArray(c.deviceMetadata) && c.deviceMetadata[0]?.deviceModel)) || null,
     review_timestamp: lm ? Number(lm) * 1000 : null,
     lang: c.reviewLanguage || null,
     source: "playstore",
   };
-  if (reply.text) {
-    row.reply_text = reply.text[0] || reply.text;
-    row.replySentAt = new Date().toISOString();
+  if (replyText) {
+    row.reply_text = replyText;
+    const replyLm = reply.lastModified && (reply.lastModified.seconds || reply.lastModified.serverValue);
+    row.replySentAt = replyLm ? new Date(Number(replyLm) * 1000).toISOString() : new Date().toISOString();
   }
   return row;
 }
