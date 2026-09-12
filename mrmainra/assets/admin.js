@@ -945,9 +945,9 @@
             parts.push('👍 ' + r.thumbs_up_count);
         }
         if (!parts.length) return '';
-        return '<div class="review-specs-line" style="display:inline-flex; align-items:center; gap:.4rem; flex-wrap:wrap; font-size:.76rem; color:var(--admin-text-secondary); margin-top:.2rem;">' +
+        return '<div class="review-specs-line" style="display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; font-size:.76rem; color:var(--admin-text-secondary); margin-top:.35rem;">' +
             parts.map(function (p) {
-                return '<span style="background:rgba(255,255,255,0.04); border:1px solid var(--admin-border-subtle); padding:1px 6px; border-radius:4px;">' + p + '</span>';
+                return '<span style="background:rgba(255,255,255,0.05); border:1px solid var(--admin-border-subtle); padding:2px 7px; border-radius:4px; display:inline-flex; align-items:center; gap:.25rem;">' + p + '</span>';
             }).join('') +
         '</div>';
     }

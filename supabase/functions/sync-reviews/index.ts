@@ -192,8 +192,9 @@ async function listApiReviews(token: string, packageName: string) {
     if (pageToken) qs.set("token", pageToken);
     const res = await fetch(`${API}/applications/${packageName}/reviews?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) {
-      console.error(`list ${packageName}: ${res.status} ${await res.text()}`);
-      break;
+      const errBody = await res.text();
+      console.error(`listApiReviews ${packageName} failed: HTTP ${res.status} - ${errBody}`);
+      throw new Error(`Google API ${packageName} error: ${res.status} ${errBody}`);
     }
     const data = await res.json();
     out.push(...(data.reviews || []));
@@ -313,8 +314,9 @@ Deno.serve(async (req: Request) => {
             const mapped = mapApiReview(r, pkg);
             if (mapped && mapped.review_id) rowsMap.set(mapped.review_id, mapped);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error(`listApiReviews error for ${pkg}:`, err);
+          parts.push(`Warning for ${pkg}: ${err.message || err}`);
         }
       }
 
