@@ -333,6 +333,95 @@
         }
     }
 
+    function renderDistributionBars(containerId, sentimentBadgeId, reviewList) {
+        var counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+        var totalRated = 0;
+        var positiveCount = 0;
+
+        reviewList.forEach(function (r) {
+            var s = Number(r.star_rating);
+            if (s >= 1 && s <= 5) {
+                counts[s] = (counts[s] || 0) + 1;
+                totalRated++;
+                if (s >= 4) positiveCount++;
+            }
+        });
+
+        var sentimentEl = $('#' + sentimentBadgeId);
+        if (sentimentEl) {
+            if (totalRated === 0) {
+                sentimentEl.className = 'sentiment-badge neutral';
+                sentimentEl.textContent = 'No Ratings Yet';
+            } else {
+                var pct = Math.round((positiveCount / totalRated) * 100);
+                if (pct >= 80) {
+                    sentimentEl.className = 'sentiment-badge positive';
+                    sentimentEl.textContent = '👍 ' + pct + '% Positive';
+                } else if (pct >= 50) {
+                    sentimentEl.className = 'sentiment-badge neutral';
+                    sentimentEl.textContent = '⚖️ ' + pct + '% Mixed';
+                } else {
+                    sentimentEl.className = 'sentiment-badge negative';
+                    sentimentEl.textContent = '⚠️ ' + pct + '% Critical';
+                }
+            }
+        }
+
+        var container = $('#' + containerId);
+        if (!container) return;
+
+        var html = [5, 4, 3, 2, 1].map(function (star) {
+            var c = counts[star] || 0;
+            var widthPct = totalRated > 0 ? ((c / totalRated) * 100).toFixed(1) : 0;
+            return '<div class="rating-dist-row">' +
+                '<span class="rating-star-lbl">' + star + ' ★</span>' +
+                '<div class="rating-bar-track">' +
+                    '<div class="rating-bar-fill bar-' + star + '" style="width:' + widthPct + '%"></div>' +
+                '</div>' +
+                '<span class="rating-bar-count">' + c + '</span>' +
+            '</div>';
+        }).join('');
+
+        container.innerHTML = html;
+    }
+
+    function renderLanguageGrid(containerId, countBadgeId, reviewList) {
+        var langCounts = {};
+        var total = reviewList.length;
+
+        reviewList.forEach(function (r) {
+            var l = String(r.lang || 'other').toLowerCase().slice(0, 2);
+            langCounts[l] = (langCounts[l] || 0) + 1;
+        });
+
+        var entries = Object.keys(langCounts).map(function (k) {
+            return { code: k, count: langCounts[k] };
+        }).sort(function (a, b) { return b.count - a.count; });
+
+        var countBadge = $('#' + countBadgeId);
+        if (countBadge) {
+            countBadge.textContent = entries.length + ' language(s)';
+        }
+
+        var container = $('#' + containerId);
+        if (!container) return;
+
+        if (!entries.length) {
+            container.innerHTML = '<div class="muted small">No language data yet</div>';
+            return;
+        }
+
+        container.innerHTML = entries.map(function (item) {
+            var meta = LANG_NAMES[item.code] || { name: item.code.toUpperCase(), flag: '🌐' };
+            var pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+            return '<div class="lang-dist-item">' +
+                '<div class="lang-dist-title">' + meta.flag + ' ' + esc(meta.name) + '</div>' +
+                '<div class="lang-dist-pct">' + pct + '%</div>' +
+                '<div class="lang-dist-count">' + item.count + ' review(s)</div>' +
+            '</div>';
+        }).join('');
+    }
+
     async function renderAnalyticsOverview() {
         // Compute studio KPI totals
         var totalGames = games.length;
@@ -367,6 +456,10 @@
         var unreplied = reviews.filter(function (r) { return !(r.reply_text || '').trim(); }).length;
         $('#kpiTotalReviews').textContent = totalReviews;
         $('#kpiPendingReplies').textContent = unreplied > 0 ? unreplied + ' pending replies' : 'All caught up ✓';
+
+        // Render Overview Distribution Bars and Global Language Grid
+        renderDistributionBars('overviewRatingBars', 'overviewRatingSentiment', reviews);
+        renderLanguageGrid('overviewLangGrid', 'overviewLangCount', reviews);
 
         // Render Breakdown Table
         var tbody = $('#overviewBreakdownTbody');
@@ -466,6 +559,10 @@
         } else {
             $('#tabStatResponseRate').textContent = '100%';
         }
+
+        // Render Single Game Distribution Bars and Audience Languages
+        renderDistributionBars('singleRatingBars', 'singleRatingSentiment', gReviews);
+        renderLanguageGrid('singleLangGrid', 'singleLangCount', gReviews);
     }
 
     async function loadTabReviews(gameId) {
