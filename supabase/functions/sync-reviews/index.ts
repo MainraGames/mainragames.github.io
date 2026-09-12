@@ -253,10 +253,16 @@ Deno.serve(async (req: Request) => {
 
   // Direct single-reply post/update directly to Google Play:
   if (body.action === "reply") {
-    const { reviewId, appId, replyText } = body;
+    let { reviewId, appId, replyText } = body;
     if (!reviewId || !appId || !replyText) {
       return json(400, { message: "reviewId, appId, and replyText are required" });
     }
+
+    replyText = String(replyText).trim();
+    if (replyText.length > 350) {
+      replyText = replyText.slice(0, 350).trim();
+    }
+
     const saRaw = (Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "").trim();
     if (!saRaw) {
       return json(400, { message: "Google service account key is not configured" });
@@ -269,7 +275,7 @@ Deno.serve(async (req: Request) => {
     });
     if (!res.ok) {
       const errTxt = await res.text();
-      return json(res.status, { message: `Google Play API error: ${errTxt}` });
+      return json(res.status, { message: `Google Play API error (${res.status}): ${errTxt}` });
     }
     const sentAt = new Date().toISOString();
     await admin.from("game_reviews").upsert([{

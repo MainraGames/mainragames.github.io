@@ -48,10 +48,7 @@
         </div>
         <nav class="admin-nav">
             <button type="button" data-tab="games">
-                <span>🎮</span> <span>Games</span>
-            </button>
-            <button type="button" data-tab="analytics">
-                <span>📊</span> <span>Analytics &amp; Reviews</span>
+                <span>🎮</span> <span>Games &amp; Review</span>
             </button>
             <button type="button" data-tab="social">
                 <span>📢</span> <span>Social Broadcast</span>
@@ -61,7 +58,7 @@
                 <span id="inboxUnreadBadge" style="display:none; margin-left:auto; background:var(--mainra-orange); color:#fff; font-size:.7rem; font-weight:700; padding:1px 6px; border-radius:999px;"></span>
             </button>
             <button type="button" data-tab="admins">
-                <span>👥</span> <span>Admins</span>
+                <span>⚙️</span> <span>Kelola &amp; Admin</span>
             </button>
         </nav>
         <div class="admin-user">
@@ -76,55 +73,69 @@
             <div class="admin-actions" id="tabActions"></div>
         </div>
 
-        <!-- GAMES & FEATURED -->
+        <!-- GAMES & REVIEWS UNIFIED SECTION -->
         <section id="tab-games" class="tab">
-            <!-- Homepage Featured Showcase Banner & Selector -->
-            <div class="card" style="margin-bottom:1.5rem; border-color: rgba(255,107,0,.3); background: linear-gradient(180deg, rgba(255,107,0,.04) 0%, rgba(14,23,42,.6) 100%);">
-                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; flex-wrap:wrap; gap:.8rem;">
-                    <div>
-                        <div style="display:flex; align-items:center; gap:.5rem;">
-                            <span style="color:var(--mainra-orange); font-size:1.15rem">🌟</span>
-                            <h3 style="margin:0; font-size:1.1rem">Homepage Featured Game</h3>
-                            <span id="featuredStatusBadge" class="badge ok" style="font-size:.75rem">Active</span>
+            <!-- Sub-tab Bar -->
+            <div class="subtabs-bar" role="tablist" aria-label="Games Sub Navigation">
+                <button type="button" class="subtab-btn active" data-subtab="catalog" role="tab" aria-selected="true">
+                    <span class="subtab-icon">🎮</span>
+                    <span>Katalog &amp; Featured</span>
+                </button>
+                <button type="button" class="subtab-btn" data-subtab="analytics" role="tab" aria-selected="false">
+                    <span class="subtab-icon">📊</span>
+                    <span>Analitik &amp; Review</span>
+                </button>
+            </div>
+
+            <!-- Subtab 1: Games Catalog & Featured -->
+            <div id="subtab-catalog" class="subtab-content active">
+                <!-- Homepage Featured Showcase Banner & Selector -->
+                <div class="card" style="margin-bottom:1.5rem; border-color: rgba(255,107,0,.3); background: linear-gradient(180deg, rgba(255,107,0,.04) 0%, rgba(14,23,42,.6) 100%);">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; flex-wrap:wrap; gap:.8rem;">
+                        <div>
+                            <div style="display:flex; align-items:center; gap:.5rem;">
+                                <span style="color:var(--mainra-orange); font-size:1.15rem">🌟</span>
+                                <h3 style="margin:0; font-size:1.1rem">Homepage Featured Game</h3>
+                                <span id="featuredStatusBadge" class="badge ok" style="font-size:.75rem">Active</span>
+                            </div>
+                            <p class="muted" style="margin:.3rem 0 0; font-size:.85rem">
+                                Pilih game yang ingin ditampilkan sebagai sorotan utama di halaman depan website.
+                            </p>
                         </div>
-                        <p class="muted" style="margin:.3rem 0 0; font-size:.85rem">
-                            Pilih game yang ingin ditampilkan sebagai sorotan utama di halaman depan website.
-                        </p>
+                        <div style="display:flex; gap:.5rem;">
+                            <button type="button" class="btn-admin ghost small" id="refreshStoreBtn" title="Refresh Play Store details">↻ Refresh Play Store</button>
+                            <button type="button" class="btn-admin ghost small" id="hideFeaturedBtn">Sembunyikan Featured</button>
+                        </div>
                     </div>
-                    <div style="display:flex; gap:.5rem;">
-                        <button type="button" class="btn-admin ghost small" id="refreshStoreBtn" title="Refresh Play Store details">↻ Refresh Play Store</button>
-                        <button type="button" class="btn-admin ghost small" id="hideFeaturedBtn">Sembunyikan Featured</button>
+                    <div id="featuredGrid" class="featured-grid">
+                        <div class="card muted">Memuat featured games…</div>
                     </div>
                 </div>
-                <div id="featuredGrid" class="featured-grid">
-                    <div class="card muted">Memuat featured games…</div>
+
+                <!-- Games Catalog Table Section -->
+                <div class="admin-actions" style="margin-bottom:1rem; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
+                        <button type="button" class="btn-admin" id="newGameBtn">+ Add Game</button>
+                        <button type="button" class="btn-admin ghost" id="syncGamesBtn">↻ Sync from Play Store</button>
+                    </div>
+                    <button type="button" class="btn-admin ghost" id="exportJsonBtn">⤓ Export games-data.json</button>
+                </div>
+                <div class="card" style="padding:0; overflow:hidden;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Icon</th><th>Title</th><th>Category</th><th>Status</th><th>Rating</th><th>Homepage Featured</th><th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="gamesTbody">
+                            <tr><td colspan="7" class="muted">Loading…</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Games Catalog Table Section -->
-            <div class="admin-actions" style="margin-bottom:1rem; justify-content:space-between; align-items:center;">
-                <div style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
-                    <button type="button" class="btn-admin" id="newGameBtn">+ Add Game</button>
-                    <button type="button" class="btn-admin ghost" id="syncGamesBtn">↻ Sync from Play Store</button>
-                </div>
-                <button type="button" class="btn-admin ghost" id="exportJsonBtn">⤓ Export games-data.json</button>
-            </div>
-            <div class="card" style="padding:0; overflow:hidden;">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Icon</th><th>Title</th><th>Category</th><th>Status</th><th>Rating</th><th>Homepage Featured</th><th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="gamesTbody">
-                        <tr><td colspan="7" class="muted">Loading…</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
-        <!-- ANALYTICS OVERVIEW -->
-        <section id="tab-analytics" class="tab">
+            <!-- Subtab 2: Analytics & Reviews -->
+            <div id="subtab-analytics" class="subtab-content">
             <div class="admin-actions" style="margin-bottom:1.4rem; justify-content: space-between; align-items:center; gap:1rem; flex-wrap:wrap">
                 <!-- High-End Segmented Navigation Filter (replaces clumsy native dropdown) -->
                 <div class="analytics-scope-bar" id="analyticsScopeBar" role="tablist" aria-label="Analytics Scope">
@@ -347,6 +358,7 @@
                     </div>
                 </div>
             </div>
+            </div>
         </section>
 
         <!-- SOCIAL BROADCAST TAB -->
@@ -377,19 +389,9 @@
                                     <span id="geminiConnectionStatusDot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#7fd1a1; margin-left:.3rem" title="API Siap"></span>
                                 </div>
                                 <div style="display:flex; gap:.35rem">
-                                    <button type="button" class="btn-admin ghost small" id="toggleAiKeySettingsBtn" style="font-size:.72rem; padding:.18rem .5rem" title="Konfigurasi API Key">⚙️ Pengaturan Key</button>
+                                    <button type="button" class="btn-admin ghost small" id="goToAiSettingsLink" style="font-size:.72rem; padding:.18rem .5rem" title="Buka menu konfigurasi API">⚙️ Kelola API Key</button>
                                     <button type="button" class="btn-admin ghost small" id="closeAiPanelBtn" style="padding:.18rem .45rem">✕</button>
                                 </div>
-                            </div>
-
-                            <!-- Expandable Key Settings (Hidden by default to avoid clutter) -->
-                            <div id="aiKeySettingsDrawer" class="ai-key-collapsible" style="display:none;">
-                                <div style="display:grid; grid-template-columns:1fr auto auto; gap:.35rem; align-items:center;">
-                                    <input type="password" id="geminiApiKeyInput" placeholder="Masukkan Gemini API Key..." style="font-size:.76rem; padding:.32rem .55rem; border-radius:var(--radius-sm); background:rgba(11,17,28,.85)">
-                                    <button type="button" class="btn-admin ghost small" id="testGeminiBtn" title="Test model connection">⚡ Test</button>
-                                    <button type="button" class="btn-admin ghost small" id="saveGeminiKeyBtn" title="Simpan key ke database">💾 Simpan</button>
-                                </div>
-                                <div id="geminiTestFeedback" class="small muted" style="margin-top:.45rem; font-size:.75rem; display:none;"></div>
                             </div>
 
                             <!-- Generation Controls in Clean Grid -->
@@ -647,10 +649,59 @@
             </div>
         </section>
 
-        <!-- ADMINS MANAGEMENT -->
+        <!-- ADMINS & SYSTEM API MANAGEMENT -->
         <section id="tab-admins" class="tab">
+            <!-- Global Gemini API Configuration Card -->
+            <div class="card" style="margin-bottom:1.5rem; border-color:rgba(168,85,247,.35); background:linear-gradient(180deg, rgba(147,51,234,.05) 0%, rgba(15,23,42,.7) 100%);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; flex-wrap:wrap; gap:.8rem;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:.5rem;">
+                            <span style="color:#c084fc; font-size:1.2rem">🤖</span>
+                            <h3 style="margin:0; font-size:1.1rem">Google Gemini AI Engine &amp; API Key</h3>
+                            <span id="geminiMasterStatusBadge" class="badge ok" style="font-size:.75rem">Terkoneksi</span>
+                        </div>
+                        <p class="muted" style="margin:.35rem 0 0; font-size:.85rem">
+                            Konfigurasi API Key terpusat untuk seluruh fitur AI studio: Balasan Otomatis Antrean Review, Auto-Localize Reply, Penerjemah Bahasa Ulasan, dan AI Social Post Generator.
+                        </p>
+                    </div>
+                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="btn-admin ghost small" style="color:#c084fc; border-color:rgba(168,85,247,.4)">
+                        🔑 Dapatkan Gemini API Key
+                    </a>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr auto auto; gap:.5rem; align-items:center;">
+                    <div style="position:relative; width:100%;">
+                        <input type="password" id="geminiApiKeyInput" placeholder="Masukkan Google Gemini API Key (AIzaSy…)" style="width:100%; font-size:.88rem; padding:.55rem .75rem; font-family:monospace; background:rgba(11,17,28,.85)">
+                    </div>
+                    <button type="button" class="btn-admin ghost" id="testGeminiBtn" title="Uji coba koneksi model Gemini ke Google API">
+                        ⚡ Uji Koneksi API
+                    </button>
+                    <button type="button" class="btn-admin" id="saveGeminiKeyBtn" style="background:#9333ea; border-color:#9333ea; font-weight:600">
+                        💾 Simpan ke Sistem
+                    </button>
+                </div>
+                
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-top:.75rem; flex-wrap:wrap; gap:.6rem">
+                    <div id="geminiTestFeedback" class="small muted" style="font-size:.8rem; display:none;"></div>
+                    <div style="display:flex; align-items:center; gap:.4rem; margin-left:auto;">
+                        <span class="muted small" style="font-size:.76rem">Model Aktif:</span>
+                        <select id="geminiGlobalModelSelect" style="font-size:.76rem; padding:.25rem .5rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
+                            <option value="gemini-2.5-flash">gemini-2.5-flash (Direkomendasikan)</option>
+                            <option value="gemini-3.8-flash">gemini-3.8-flash</option>
+                            <option value="gemini-3.7-flash">gemini-3.7-flash</option>
+                            <option value="gemini-3.5-flash">gemini-3.5-flash</option>
+                        </select>
+                        <button type="button" class="btn-admin ghost small" id="refreshMasterAiModelsBtn" title="Sync live models" style="padding:.2rem .45rem; font-size:.72rem">🔄</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admins List Section -->
             <div class="admin-actions" style="margin-bottom:1.2rem; justify-content: space-between; align-items:center;">
-                <p class="muted" style="margin:0">Kelola pengguna yang memiliki izin akses penuh ke Dashboard Admin Mainra Games.</p>
+                <div>
+                    <h3 style="margin:0 0 .2rem 0; font-size:1.1rem">Akun Administrator</h3>
+                    <p class="muted" style="margin:0; font-size:.85rem">Kelola pengguna yang memiliki izin akses penuh ke Dashboard Admin Mainra Games.</p>
+                </div>
                 <button type="button" class="btn-admin" id="newAdminBtn">+ Tambah Admin Baru</button>
             </div>
 

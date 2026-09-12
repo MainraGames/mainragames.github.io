@@ -328,7 +328,7 @@ ${textToTranslate}`;
 
     // Action: Auto-Localize & Generate Reply tailored to player language
     if (action === "localize_reply") {
-      const { reviewText, rating, playerLang, authorName, gameTitle, replyDraft } = payload;
+      const { reviewText, rating, playerLang, authorName, gameTitle, replyDraft, model } = payload;
       if (!geminiKey) {
         return json(200, {
           success: false,
@@ -338,10 +338,7 @@ ${textToTranslate}`;
       }
 
       try {
-        const modelName = "gemini-2.5-flash";
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
         const targetLang = playerLang || "id";
-        
         const prompt = `Kamu adalah Customer Relations & Game Community Manager profesional dari studio game indie "Mainra Games" (email: mainragames@gmail.com).
 Tugasmu adalah membuat atau menerjemahkan balasan resmi developer di Google Play Store untuk seorang pemain.
 
@@ -361,33 +358,67 @@ Instruksi Wajib:
 5. Panjang balasan MAKSIMAL 320 karakter (karena batas Google Play Store adalah 350 karakter).
 6. Jangan gunakan tanda kutip pembungkus, jangan ada salam robotik yang kaku. Langsung teks balasan 1 baris yang siap diposting ke Play Store.`;
 
-        const gRes = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              maxOutputTokens: 500,
-              thinkingConfig: { thinkingBudget: 0 },
-            },
-          }),
-        });
+        // Multi-model automated cascade fallback to beat free tier 429 quota limits
+        const candidateModels = [
+          model ? model.replace(/^models\//, "") : "",
+          "gemini-2.5-flash-lite",
+          "gemini-3.7-flash",
+          "gemini-3.8-flash",
+          "gemini-2.5-flash",
+          "gemini-3.5-flash",
+          "gemini-1.5-flash"
+        ].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
 
-        if (gRes.ok) {
-          const gData = await gRes.json();
-          let localizedText = gData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          // Strict formatting: enforce single-line (1 paragraph only) and strip redundant quotes/newlines
-          localizedText = localizedText.replace(/[
-\n]+/g, " ").replace(/\s{2,}/g, " ").trim().replace(/^["']|["']$/g, "");
-          return json(200, {
-            success: true,
-            localizedReply: localizedText,
-            targetLang: targetLang
-          });
-        } else {
-          const errBody = await gRes.text();
-          return json(200, { success: false, error: true, message: `Google Gemini error: ${errBody}` });
+        let localizedText = "";
+        let successfulModel = "";
+        let lastError = "";
+
+        for (const m of candidateModels) {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
+          try {
+            const gRes = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                  maxOutputTokens: 500,
+                  thinkingConfig: { thinkingBudget: 0 },
+                },
+              }),
+            });
+
+            if (gRes.ok) {
+              const gData = await gRes.json();
+              localizedText = gData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+              successfulModel = m;
+              break;
+            } else {
+              const errBody = await gRes.text();
+              lastError = `Model ${m} error (${gRes.status}): ${errBody}`;
+            }
+          } catch (fetchErr: any) {
+            lastError = `Model ${m} fetch failed: ${fetchErr.message || fetchErr}`;
+          }
         }
+
+        if (!localizedText) {
+          return json(200, {
+            success: false,
+            error: true,
+            message: `Semua model Gemini sedang limit/terkendala: ${lastError}`,
+          });
+        }
+
+        // Strict formatting: enforce single-line (1 paragraph only) and strip redundant quotes/newlines
+        localizedText = localizedText.replace(/[
+\n]+/g, " ").replace(/\s{2,}/g, " ").trim().replace(/^["']|["']$/g, "");
+        return json(200, {
+          success: true,
+          localizedReply: localizedText,
+          targetLang: targetLang,
+          modelUsed: successfulModel,
+        });
       } catch (err: any) {
         return json(200, { success: false, error: true, message: err.message || String(err) });
       }

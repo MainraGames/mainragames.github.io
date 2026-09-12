@@ -21,7 +21,7 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
 - `Assets/js/nav.js` — Kontrol navigasi dan menu mobile.
 - `Assets/css/mainra.css` — Gaya visual website.
 - `Assets/img/` — Folder berisi gambar dan ikon website.
-- `supabase/` — Migration SQL, seed, dan Edge Functions (`sync-playstore`, `sync-reviews`, `sync-buffer`, `ai-social-assistant`, `manage-admins`).
+- `supabase/` — Migration SQL, seed, dan Edge Functions (`sync-playstore`, `sync-reviews`, `process-review-queue`, `sync-buffer`, `ai-social-assistant`, `manage-admins`).
 - `supabase/migrations/0010_contact_messages.sql` — Tabel pesan masuk formulir kontak dengan Row Level Security (RLS).
 - `tools/sync-supabase.js` — Mirror JSON → Supabase (insert-only, aman untuk edit admin).
 - `tools/pull-supabase.js` — Bangun ulang `games-data.json` dari Supabase.
@@ -46,7 +46,7 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
    - `SUPABASE_URL` = `https://mjuzjvyatunjmgaiqtdv.supabase.co`
    - `SUPABASE_SECRET_KEY` = service role key (`sb_secret_…` / legacy `service_role`) — **jangan pernah** ditulis ke file repo.
    - `GOOGLE_SERVICE_ACCOUNT_JSON` (opsional, untuk auto-post reply): JSON service account dari Google Cloud yang di-invite di Play Console dengan permission "Reply to reviews" lalu: `supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON=...` untuk Edge Function juga.
-3. Deploy ulang Edge Functions bila diubah: `supabase functions deploy sync-playstore --no-verify-jwt && supabase functions deploy sync-reviews --no-verify-jwt`.
+3. Deploy ulang Edge Functions bila diubah: `supabase functions deploy sync-playstore --no-verify-jwt && supabase functions deploy sync-reviews --no-verify-jwt && supabase functions deploy process-review-queue --no-verify-jwt`.
 4. Dashboard: buka `https://mainragames.github.io/mrmainra/` (atau `https://mainragames.com/mrmainra/` setelah deploy) dan login.
 
 ## AdMob sellers.json dan app-ads.txt

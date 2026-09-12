@@ -1302,3 +1302,58 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 @media (prefers-reduced-motion: reduce) {
     * { animation: none !important; transition: none !important; }
 }
+
+/* Sub-Tab Navigation Bar within Sections */
+.subtabs-bar {
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .3rem .35rem;
+    background: rgba(11, 17, 28, .85);
+    border: 1px solid var(--mainra-line);
+    border-radius: 999px;
+    margin-bottom: 1.3rem;
+    width: fit-content;
+    max-width: 100%;
+}
+
+.subtab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .42rem 1.1rem;
+    border-radius: 999px;
+    font-size: .84rem;
+    font-weight: 600;
+    color: var(--mainra-muted);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .2s ease;
+}
+
+.subtab-btn:hover {
+    color: var(--mainra-ink);
+    background: rgba(255, 255, 255, .05);
+}
+
+.subtab-btn.active {
+    background: var(--mainra-panel-solid);
+    color: #fff;
+    border-color: rgba(255, 107, 0, .4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .4);
+}
+
+.subtab-btn .subtab-icon {
+    font-size: .95rem;
+}
+
+.subtab-content {
+    display: none;
+    animation: fadeInSlide .15s ease-out;
+}
+
+.subtab-content.active {
+    display: block;
+}
