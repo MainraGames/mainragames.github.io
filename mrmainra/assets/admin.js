@@ -167,12 +167,17 @@
 
     function populateGameSelectors() {
         var opts = games.map(function (g) { return '<option value="' + esc(g.id) + '">' + esc(g.title) + '</option>'; }).join('');
-        $('#reviewGameFilter').innerHTML = '<option value="">All games</option>' + opts;
+        var rgf = $('#reviewGameFilter');
+        if (rgf) rgf.innerHTML = '<option value="">All games</option>' + opts;
 
+        renderAnalyticsScopeBar();
+    }
+
+    function renderAnalyticsScopeBar() {
         // Render modern segmented pill bar for Analytics
         var scopeBar = $('#analyticsScopeBar');
         if (scopeBar) {
-            var currentVal = $('#analyticsGameFilter').value || '';
+            var currentVal = $('#analyticsGameFilter') ? $('#analyticsGameFilter').value : '';
             var pillsHtml = '<button type="button" class="scope-pill ' + (!currentVal ? 'active' : '') + '" data-scope="" role="tab" aria-selected="' + (!currentVal) + '">' +
                 '<span class="scope-icon">📊</span>' +
                 '<span>Studio Overview</span>' +
@@ -194,16 +199,16 @@
             scopeBar.innerHTML = pillsHtml;
 
             $$('[data-scope]').forEach(function (btn) {
-                btn.addEventListener('click', function () {
+                btn.onclick = function () {
                     var scopeId = btn.dataset.scope || '';
-                    $('#analyticsGameFilter').value = scopeId;
+                    if ($('#analyticsGameFilter')) $('#analyticsGameFilter').value = scopeId;
                     $$('.scope-pill').forEach(function (p) {
                         var active = (p.dataset.scope || '') === scopeId;
                         p.classList.toggle('active', active);
                         p.setAttribute('aria-selected', active);
                     });
                     renderAnalyticsTab();
-                });
+                };
             });
         }
     }
@@ -392,20 +397,27 @@
     }
 
     function renderAnalyticsTab() {
-        var id = $('#analyticsGameFilter').value;
+        // Ensure scope pills are rendered and stay in sync with latest games
+        renderAnalyticsScopeBar();
+
+        var id = $('#analyticsGameFilter') ? $('#analyticsGameFilter').value : '';
         if (!id) {
             $('#analyticsOverview').style.display = 'block';
             $('#analyticsSingleGame').style.display = 'none';
-            $('#syncAnalyticsBtn').dataset.gid = '';
-            $('#syncAnalyticsBtn').textContent = '↻ Sync All from Play Store';
+            if ($('#syncAnalyticsBtn')) {
+                $('#syncAnalyticsBtn').dataset.gid = '';
+                $('#syncAnalyticsBtn').textContent = '↻ Sync All from Play Store';
+            }
             renderAnalyticsOverview();
         } else {
             $('#analyticsOverview').style.display = 'none';
             $('#analyticsSingleGame').style.display = 'block';
             var g = games.find(function (x) { return x.id === id; });
             if (g) {
-                $('#syncAnalyticsBtn').dataset.gid = g.appId || g.id;
-                $('#syncAnalyticsBtn').textContent = '↻ Sync ' + (g.title.split(':')[0] || 'Game');
+                if ($('#syncAnalyticsBtn')) {
+                    $('#syncAnalyticsBtn').dataset.gid = g.appId || g.id;
+                    $('#syncAnalyticsBtn').textContent = '↻ Sync ' + (g.title.split(':')[0] || 'Game');
+                }
                 $('#singleGameReviewTitle').textContent = 'Reviews for ' + g.title;
                 loadTabAnalytics(g);
                 loadTabReviews(g.id);
