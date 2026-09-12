@@ -743,6 +743,111 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 }
 
 /* ---------- social broadcast enhancements ---------- */
+.broadcast-layout {
+    display: grid;
+    grid-template-columns: minmax(360px, 480px) 1fr;
+    gap: 1.25rem;
+    align-items: start;
+}
+@media (max-width: 980px) {
+    .broadcast-layout { grid-template-columns: 1fr; }
+}
+
+.broadcast-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .85rem 1.1rem;
+    background: rgba(14, 23, 42, .55);
+    border-bottom: 1px solid var(--mainra-line);
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.channel-pill-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: .4rem;
+}
+
+.channel-select-pill {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .4rem .65rem;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, .03);
+    border: 1px solid var(--mainra-line);
+    cursor: pointer;
+    font-size: .78rem;
+    user-select: none;
+    transition: all .15s ease;
+}
+.channel-select-pill:hover {
+    background: rgba(255, 255, 255, .07);
+    border-color: var(--mainra-line-strong);
+}
+.channel-select-pill input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+    accent-color: var(--mainra-orange);
+}
+.channel-select-pill.is-checked {
+    background: rgba(255, 107, 0, .08);
+    border-color: rgba(255, 107, 0, .4);
+    color: var(--mainra-white);
+}
+
+.social-preview-box {
+    background: #0d1524;
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-top: .6rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,.25);
+}
+.social-preview-header {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    margin-bottom: .65rem;
+}
+.social-preview-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #1e293b;
+}
+.social-preview-text {
+    font-size: .88rem;
+    line-height: 1.45;
+    color: var(--mainra-white);
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0 0 .6rem;
+}
+.social-preview-image {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    display: block;
+    margin-bottom: .6rem;
+    border: 1px solid var(--mainra-line);
+}
+.social-preview-link-card {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .5rem .75rem;
+    background: rgba(255, 255, 255, .03);
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-sm);
+    font-size: .78rem;
+    color: var(--mainra-muted);
+}
+
 .game-quick-chips {
     display: flex;
     gap: .4rem;

@@ -9,7 +9,7 @@
 <title>Admin — Mainra Games</title>
 <link rel="icon" type="image/png" href="../Assets/img/LogoMainraGames.png">
 <link rel="stylesheet" href="../Assets/css/mainra.css?v=3.4">
-<link rel="stylesheet" href="assets/admin.css?v=2.7">
+<link rel="stylesheet" href="assets/admin.css?v=2.8">
 </head>
 <body class="admin-body">
 
@@ -325,136 +325,176 @@
 
         <!-- SOCIAL BROADCAST TAB -->
         <section id="tab-social" class="tab">
-            <div style="display:grid; grid-template-columns:minmax(320px, 460px) 1fr; gap:1.5rem; align-items:start;">
-                <!-- Compose Form -->
-                <div class="card">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
-                        <h3 style="margin:0; font-size:1.1rem; display:flex; align-items:center; gap:.5rem">
-                            <span>📢</span> Buat Broadcast Berita
-                        </h3>
+            <div class="broadcast-layout">
+                <!-- Left: Compose Form -->
+                <div class="card" style="padding:0; overflow:hidden;">
+                    <div class="broadcast-card-header">
                         <div style="display:flex; align-items:center; gap:.5rem">
-                            <button type="button" class="btn-admin ghost small" id="openAiAssistantBtn" style="border-color:rgba(168,85,247,.4); color:#c084fc; font-weight:600">
-                                ✨ AI Writer (Gemini)
+                            <span style="font-size:1.15rem">📢</span>
+                            <h3 style="margin:0; font-size:1.05rem">Buat Broadcast</h3>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:.45rem">
+                            <button type="button" class="btn-admin ghost small" id="openAiAssistantBtn" style="border-color:rgba(168,85,247,.4); color:#c084fc; font-weight:600; padding:.25rem .55rem">
+                                ✨ AI Writer
                             </button>
-                            <span id="bufferStatusBadge" class="badge warn" style="font-size:.75rem">Cek Buffer…</span>
+                            <span id="bufferStatusBadge" class="badge warn" style="font-size:.72rem">Cek Buffer…</span>
                         </div>
                     </div>
 
-                    <!-- Collapsible AI Assistant Panel -->
-                    <div id="aiAssistantPanel" style="display:none; background:linear-gradient(180deg, rgba(168,85,247,.08) 0%, rgba(14,23,42,.6) 100%); border:1px solid rgba(168,85,247,.3); border-radius:var(--radius-md); padding:1rem; margin-bottom:1.1rem;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.8rem">
-                            <div style="display:flex; align-items:center; gap:.4rem">
-                                <span style="color:#c084fc; font-size:1.1rem">✨</span>
-                                <strong style="font-size:.92rem; color:var(--mainra-white)">Gemini AI Social Post Generator</strong>
-                            </div>
-                            <button type="button" class="btn-admin ghost small" id="closeAiPanelBtn" style="padding:.2rem .5rem">✕</button>
-                        </div>
-
-                        <!-- API Key & Model Settings Row -->
-                        <div style="display:grid; grid-template-columns:1fr auto auto; gap:.4rem; align-items:center; margin-bottom:.8rem; background:rgba(0,0,0,.25); padding:.5rem .7rem; border-radius:var(--radius-sm);">
-                            <input type="password" id="geminiApiKeyInput" placeholder="Masukkan Gemini API Key (AI Studio)" style="font-size:.78rem; padding:.35rem .6rem; border-radius:var(--radius-sm); background:rgba(11,17,28,.8)">
-                            <button type="button" class="btn-admin ghost small" id="testGeminiBtn" title="Test model connection">⚡ Test Model</button>
-                            <button type="button" class="btn-admin ghost small" id="saveGeminiKeyBtn" title="Simpan key ke database CMS">💾 Simpan Key</button>
-                        </div>
-                        <div id="geminiTestFeedback" class="small muted" style="margin-bottom:.8rem; font-size:.78rem; display:none;"></div>
-
-                        <!-- Generation Controls -->
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6rem; margin-bottom:.7rem">
-                            <label style="font-size:.8rem; color:var(--mainra-muted); margin:0">Gaya Bahasa / Tone:
-                                <select id="aiToneSelect" style="width:100%; margin-top:.25rem; font-size:.8rem; padding:.35rem .6rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
-                                    <option value="Antusias, kasual, ramah komunitas gamer">🔥 Hype &amp; Antusias</option>
-                                    <option value="Informatif, profesional, fokus fitur baru">📢 Informatif &amp; Resmi</option>
-                                    <option value="Santai, lucu, relate dengan gamer mobile">😄 Santai &amp; Menghibur</option>
-                                    <option value="Singkat, to-the-point, fokus call-to-action download">⚡ Singkat &amp; CTA Kuat</option>
-                                </select>
-                            </label>
-                            <label style="font-size:.8rem; color:var(--mainra-muted); margin:0">Pilih Model:
-                                <select id="aiModelSelect" style="width:100%; margin-top:.25rem; font-size:.8rem; padding:.35rem .6rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
-                                    <option value="gemini-1.5-flash">gemini-1.5-flash (Cepat &amp; Ringan)</option>
-                                    <option value="gemini-1.5-pro">gemini-1.5-pro (Kreativitas Tinggi)</option>
-                                    <option value="gemini-2.0-flash">gemini-2.0-flash (Generasi Terbaru)</option>
-                                </select>
-                            </label>
-                        </div>
-
-                        <label style="font-size:.8rem; color:var(--mainra-muted); margin:0 0 .7rem 0; display:block">Instruksi Khusus / Highlight Fitur (Opsional):
-                            <input type="text" id="aiCustomInstruction" placeholder="Contoh: Tekankan karakter baru atau level 100+ yang sulit" style="width:100%; margin-top:.25rem; font-size:.8rem; padding:.35rem .6rem; border-radius:var(--radius-sm)">
-                        </label>
-
-                        <button type="button" class="btn-admin" id="generateAiPostBtn" style="width:100%; justify-content:center; background:linear-gradient(90deg, #9333ea, #7c3aed); border-color:#9333ea; font-size:.85rem; padding:.45rem 1rem">
-                            ✨ Generate Postingan dengan Gemini
-                        </button>
-                    </div>
-
-                    <form id="socialBroadcastForm">
-                        <div style="display:grid; gap:.9rem;">
-                            <!-- Quick Game Selector (Auto-fill) -->
-                            <div style="background:rgba(255,107,0,.05); border:1px solid rgba(255,107,0,.25); border-radius:var(--radius-md); padding:.75rem .9rem;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.45rem">
-                                    <span style="font-size:.82rem; font-weight:600; color:var(--mainra-orange)">⚡ Quick Share Game:</span>
-                                    <span class="muted small" style="font-size:.74rem">Klik untuk auto-fill link &amp; judul</span>
+                    <div style="padding:1.2rem;">
+                        <!-- Collapsible AI Assistant Panel -->
+                        <div id="aiAssistantPanel" style="display:none; background:linear-gradient(180deg, rgba(168,85,247,.08) 0%, rgba(14,23,42,.6) 100%); border:1px solid rgba(168,85,247,.3); border-radius:var(--radius-md); padding:.9rem; margin-bottom:1.1rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.65rem">
+                                <div style="display:flex; align-items:center; gap:.35rem">
+                                    <span style="color:#c084fc; font-size:1rem">✨</span>
+                                    <strong style="font-size:.88rem; color:var(--mainra-white)">Gemini Social Generator</strong>
                                 </div>
-                                <div id="quickGameChips" class="game-quick-chips">
-                                    <div class="muted small">Memuat daftar game…</div>
-                                </div>
+                                <button type="button" class="btn-admin ghost small" id="closeAiPanelBtn" style="padding:.15rem .45rem">✕</button>
                             </div>
 
-                            <label>Judul Berita (Internal / Web)
-                                <input type="text" id="postTitle" placeholder="Misal: Update Pop It 3D Versi 1.2 Resmi Rilis!" required maxlength="120" style="width:100%">
+                            <!-- API Key & Model Settings Row -->
+                            <div style="display:grid; grid-template-columns:1fr auto auto; gap:.35rem; align-items:center; margin-bottom:.65rem; background:rgba(0,0,0,.3); padding:.45rem .65rem; border-radius:var(--radius-sm);">
+                                <input type="password" id="geminiApiKeyInput" placeholder="Gemini API Key" style="font-size:.76rem; padding:.3rem .55rem; border-radius:var(--radius-sm); background:rgba(11,17,28,.8)">
+                                <button type="button" class="btn-admin ghost small" id="testGeminiBtn" title="Test model connection">⚡ Test</button>
+                                <button type="button" class="btn-admin ghost small" id="saveGeminiKeyBtn" title="Simpan key ke database">💾 Simpan</button>
+                            </div>
+                            <div id="geminiTestFeedback" class="small muted" style="margin-bottom:.6rem; font-size:.75rem; display:none;"></div>
+
+                            <!-- Generation Controls -->
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-bottom:.6rem">
+                                <label style="font-size:.78rem; color:var(--mainra-muted); margin:0">Tone:
+                                    <select id="aiToneSelect" style="width:100%; margin-top:.2rem; font-size:.78rem; padding:.3rem .5rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
+                                        <option value="Antusias, kasual, ramah komunitas gamer">🔥 Hype &amp; Antusias</option>
+                                        <option value="Informatif, profesional, fokus fitur baru">📢 Informatif</option>
+                                        <option value="Santai, lucu, relate dengan gamer mobile">😄 Santai &amp; Seru</option>
+                                        <option value="Singkat, to-the-point, fokus call-to-action download">⚡ Singkat + CTA</option>
+                                    </select>
+                                </label>
+                                <label style="font-size:.78rem; color:var(--mainra-muted); margin:0">Model:
+                                    <select id="aiModelSelect" style="width:100%; margin-top:.2rem; font-size:.78rem; padding:.3rem .5rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
+                                        <option value="gemini-1.5-flash">gemini-1.5-flash (Fast)</option>
+                                        <option value="gemini-1.5-pro">gemini-1.5-pro (Creative)</option>
+                                        <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                                    </select>
+                                </label>
+                            </div>
+
+                            <label style="font-size:.78rem; color:var(--mainra-muted); margin:0 0 .6rem 0; display:block">Instruksi Khusus (Opsional):
+                                <input type="text" id="aiCustomInstruction" placeholder="Misal: Tekankan event berhadiah atau fitur multiplayer" style="width:100%; margin-top:.2rem; font-size:.78rem; padding:.3rem .55rem; border-radius:var(--radius-sm)">
                             </label>
 
-                            <!-- Caption with Quick Templates -->
-                            <div>
-                                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.35rem">
-                                    <label for="postContent" style="margin:0; font-size:.85rem; color:var(--mainra-muted)">Teks / Caption Sosial Media</label>
-                                    <span id="postCharCount" class="muted small" style="font-family:monospace; font-size:.76rem">0 / 1000 karakter</span>
-                                </div>
-                                <div style="display:flex; align-items:center; gap:.4rem; margin-bottom:.4rem; flex-wrap:wrap">
-                                    <span class="muted small" style="font-size:.72rem">Template Instan:</span>
-                                    <div class="template-btn-group">
-                                        <button type="button" class="template-btn" data-tmpl="update">🚀 Update Rilis</button>
-                                        <button type="button" class="template-btn" data-tmpl="milestone">🎉 Milestone / Unduhan</button>
-                                        <button type="button" class="template-btn" data-tmpl="promo">🎮 Ajak Main</button>
+                            <button type="button" class="btn-admin" id="generateAiPostBtn" style="width:100%; justify-content:center; background:linear-gradient(90deg, #9333ea, #7c3aed); border-color:#9333ea; font-size:.82rem; padding:.4rem .8rem">
+                                ✨ Generate Postingan Otomatis
+                            </button>
+                        </div>
+
+                        <form id="socialBroadcastForm">
+                            <div style="display:grid; gap:.85rem;">
+                                <!-- Quick Game Selector -->
+                                <div style="background:rgba(255,107,0,.04); border:1px solid rgba(255,107,0,.2); border-radius:var(--radius-md); padding:.65rem .8rem;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.35rem">
+                                        <span style="font-size:.78rem; font-weight:600; color:var(--mainra-orange)">⚡ Quick Game Share:</span>
+                                        <span class="muted small" style="font-size:.72rem">Klik untuk auto-fill link &amp; judul</span>
+                                    </div>
+                                    <div id="quickGameChips" class="game-quick-chips">
+                                        <div class="muted small">Memuat daftar game…</div>
                                     </div>
                                 </div>
-                                <textarea id="postContent" rows="4" placeholder="Tulis caption pengumuman untuk Twitter/Facebook/Instagram..." required maxlength="1000" style="width:100%; resize:vertical; line-height:1.4"></textarea>
-                            </div>
 
-                            <label>URL Gambar Banner / Screenshot (Opsional)
-                                <input type="url" id="postImage" placeholder="https://mainragames.com/Assets/img/..." style="width:100%">
-                            </label>
-
-                            <label>Link Target Game / Berita (Opsional)
-                                <input type="url" id="postLink" placeholder="https://play.google.com/store/apps/details?id=..." style="width:100%">
-                            </label>
-
-                            <!-- Channel Selection -->
-                            <div>
-                                <label style="font-size:.84rem; color:var(--mainra-ink); margin-bottom:.4rem; display:block">
-                                    Target Akun Sosial Media (Buffer):
+                                <label style="font-size:.82rem">Judul Berita (Web CMS)
+                                    <input type="text" id="postTitle" placeholder="Misal: Update Pop It 3D Versi 1.2 Resmi Rilis!" required maxlength="120" style="width:100%; margin-top:.25rem; font-size:.85rem; padding:.5rem .7rem">
                                 </label>
-                                <div id="bufferChannelsList" style="display:grid; gap:.5rem; background:rgba(11,17,28,.6); padding:.8rem; border-radius:var(--radius-md); border:1px solid var(--mainra-line);">
-                                    <div class="muted small">Memeriksa akun Buffer yang terhubung…</div>
+
+                                <!-- Caption with Quick Templates -->
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.25rem">
+                                        <label for="postContent" style="margin:0; font-size:.82rem; color:var(--mainra-muted)">Teks / Caption Sosial Media</label>
+                                        <span id="postCharCount" class="muted small" style="font-family:monospace; font-size:.74rem">0 / 1000</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:.35rem; margin-bottom:.35rem; flex-wrap:wrap">
+                                        <span class="muted small" style="font-size:.7rem">Presets:</span>
+                                        <div class="template-btn-group">
+                                            <button type="button" class="template-btn" data-tmpl="update">🚀 Update</button>
+                                            <button type="button" class="template-btn" data-tmpl="milestone">🎉 Milestone</button>
+                                            <button type="button" class="template-btn" data-tmpl="promo">🎮 Ajak Main</button>
+                                        </div>
+                                    </div>
+                                    <textarea id="postContent" rows="4" placeholder="Tulis caption pengumuman untuk Twitter/Facebook/Instagram..." required maxlength="1000" style="width:100%; resize:vertical; line-height:1.45; font-size:.86rem; padding:.55rem .75rem"></textarea>
+                                </div>
+
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:.6rem;">
+                                    <label style="font-size:.8rem">URL Gambar (Opsional)
+                                        <input type="url" id="postImage" placeholder="https://..." style="width:100%; margin-top:.2rem; font-size:.8rem; padding:.45rem .65rem">
+                                    </label>
+
+                                    <label style="font-size:.8rem">Link Target (Opsional)
+                                        <input type="url" id="postLink" placeholder="https://play.google.com/..." style="width:100%; margin-top:.2rem; font-size:.8rem; padding:.45rem .65rem">
+                                    </label>
+                                </div>
+
+                                <!-- Channel Selection -->
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.35rem">
+                                        <label style="font-size:.8rem; color:var(--mainra-ink); margin:0">Target Channel Buffer:</label>
+                                        <div style="display:flex; gap:.4rem">
+                                            <button type="button" class="btn-admin ghost small" id="selectAllChannelsBtn" style="padding:.1rem .4rem; font-size:.72rem">Pilih Semua</button>
+                                            <button type="button" class="btn-admin ghost small" id="clearChannelsBtn" style="padding:.1rem .4rem; font-size:.72rem">Hapus Semua</button>
+                                        </div>
+                                    </div>
+                                    <div id="bufferChannelsList" class="channel-pill-grid">
+                                        <div class="muted small">Memeriksa akun Buffer yang terhubung…</div>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top:.3rem; display:flex; justify-content:flex-end;">
+                                    <button type="submit" class="btn-admin" id="broadcastSubmitBtn" style="width:100%; justify-content:center; padding:.6rem 1.2rem; font-weight:700">
+                                        🚀 Publish Berita &amp; Broadcast
+                                    </button>
                                 </div>
                             </div>
-
-                            <div style="margin-top:.4rem; display:flex; justify-content:flex-end;">
-                                <button type="submit" class="btn-admin" id="broadcastSubmitBtn" style="width:100%; justify-content:center;">
-                                    🚀 Publish Berita &amp; Broadcast
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
 
-                <!-- Broadcast History Feed -->
-                <div class="card" style="padding:0; overflow:hidden;">
-                    <div style="padding:1rem 1.4rem; border-bottom:1px solid var(--mainra-line); display:flex; justify-content:space-between; align-items:center;">
-                        <h3 style="margin:0; font-size:1.05rem">Riwayat Broadcast Sosial Media</h3>
-                        <span id="broadcastHistoryCount" class="badge ok" style="font-size:.75rem">-- post</span>
+                <!-- Right Column: Live Feed & Interactive Mockup Preview -->
+                <div style="display:flex; flex-direction:column; gap:1.2rem;">
+                    <!-- Live Dynamic Preview Card -->
+                    <div class="card" style="padding:0; overflow:hidden;">
+                        <div class="broadcast-card-header">
+                            <div style="display:flex; align-items:center; gap:.45rem">
+                                <span style="color:var(--mainra-orange)">👁️</span>
+                                <h3 style="margin:0; font-size:.98rem">Live Social Media Preview</h3>
+                            </div>
+                            <span class="badge ok" style="font-size:.72rem">Real-time Preview</span>
+                        </div>
+                        <div style="padding:1.1rem;">
+                            <div class="social-preview-box">
+                                <div class="social-preview-header">
+                                    <img src="../Assets/img/LogoMainraGames.png" alt="Mainra Games" class="social-preview-avatar">
+                                    <div>
+                                        <div style="font-size:.88rem; font-weight:700; color:var(--mainra-white)">Mainra Games</div>
+                                        <div class="muted small" style="font-size:.74rem">Just now · 🌍 Public</div>
+                                    </div>
+                                </div>
+                                <p id="previewText" class="social-preview-text">Tulis pesan di sebelah kiri untuk melihat pratinjau langsung postingan media sosial Anda…</p>
+                                <img id="previewImage" class="social-preview-image" src="" alt="Pratinjau Media" style="display:none">
+                                <div id="previewLinkCard" class="social-preview-link-card" style="display:none">
+                                    <span style="font-size:1.1rem">🔗</span>
+                                    <span id="previewLinkText" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">https://mainragames.com</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div id="broadcastHistoryList" style="padding:1.2rem;">
-                        <div class="muted">Memuat riwayat pengumuman…</div>
+
+                    <!-- Broadcast History Feed -->
+                    <div class="card" style="padding:0; overflow:hidden;">
+                        <div class="broadcast-card-header">
+                            <h3 style="margin:0; font-size:.98rem">Riwayat Broadcast Sosial Media</h3>
+                            <span id="broadcastHistoryCount" class="badge ok" style="font-size:.72rem">-- post</span>
+                        </div>
+                        <div id="broadcastHistoryList" style="padding:1.1rem;">
+                            <div class="muted">Memuat riwayat pengumuman…</div>
+                        </div>
                     </div>
                 </div>
             </div>

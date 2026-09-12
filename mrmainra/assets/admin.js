@@ -1203,9 +1203,56 @@
             renderQuickGameChips();
             wireSocialTemplates();
             initAiAssistant();
+            wireLivePreview();
         } else if (name === 'admins') {
             loadAdmins();
         }
+    }
+
+    function wireLivePreview() {
+        var contentInput = $('#postContent');
+        var imgInput = $('#postImage');
+        var linkInput = $('#postLink');
+
+        var previewText = $('#previewText');
+        var previewImage = $('#previewImage');
+        var previewLinkCard = $('#previewLinkCard');
+        var previewLinkText = $('#previewLinkText');
+
+        function updatePreview() {
+            if (previewText) {
+                var txt = (contentInput && contentInput.value.trim()) || '';
+                previewText.textContent = txt || 'Tulis pesan di sebelah kiri untuk melihat pratinjau langsung postingan media sosial Anda…';
+                previewText.style.color = txt ? 'var(--mainra-white)' : 'var(--mainra-muted)';
+            }
+
+            if (previewImage) {
+                var imgUrl = (imgInput && imgInput.value.trim()) || '';
+                if (imgUrl) {
+                    previewImage.src = imgUrl;
+                    previewImage.style.display = 'block';
+                    previewImage.onerror = function () { previewImage.style.display = 'none'; };
+                } else {
+                    previewImage.style.display = 'none';
+                }
+            }
+
+            if (previewLinkCard) {
+                var lk = (linkInput && linkInput.value.trim()) || '';
+                if (lk) {
+                    previewLinkCard.style.display = 'flex';
+                    if (previewLinkText) previewLinkText.textContent = lk;
+                } else {
+                    previewLinkCard.style.display = 'none';
+                }
+            }
+        }
+
+        if (contentInput) contentInput.addEventListener('input', updatePreview);
+        if (imgInput) imgInput.addEventListener('input', updatePreview);
+        if (linkInput) linkInput.addEventListener('input', updatePreview);
+
+        updatePreview();
     }
 
     function renderQuickGameChips() {
@@ -1245,7 +1292,8 @@
                     (g.description ? g.description.slice(0, 160) + '…\n\n' : '') +
                     '📲 Unduh gratis: ' + playLink + '\n#MainraGames #IndieGame #AndroidGames';
 
-                $('#postCharCount').textContent = contentInput.value.length + ' / 1000 karakter';
+                $('#postCharCount').textContent = contentInput.value.length + ' / 1000';
+                wireLivePreview();
                 toast('Data game “' + shortTitle + '” berhasil di-isi otomatis! ⚡');
             };
         });
@@ -1268,7 +1316,8 @@
                     contentInput.value = '🕹️ Lagi cari game seru untuk mengisi waktu luang?\n\nCobain ' + gameTitle + ' sekarang! Ringan, adiktif, dan cocok dimainkan kapan saja.\n\n📲 Unduh gratis di Google Play: ' + link + '\n#MainraGames #MobileGaming #GameSeru';
                 }
 
-                $('#postCharCount').textContent = contentInput.value.length + ' / 1000 karakter';
+                $('#postCharCount').textContent = contentInput.value.length + ' / 1000';
+                wireLivePreview();
                 toast('Template ' + btn.textContent + ' diterapkan! ✓');
             };
         });
@@ -1416,7 +1465,8 @@
                     }
                     if (data.caption && $('#postContent')) {
                         $('#postContent').value = data.caption;
-                        $('#postCharCount').textContent = data.caption.length + ' / 1000 karakter';
+                        $('#postCharCount').textContent = data.caption.length + ' / 1000';
+                        wireLivePreview();
                     }
                     toast('Postingan berhasil dibuat oleh Gemini AI! ✨');
                 }
@@ -1475,12 +1525,40 @@
             else if (s === 'youtube') icon = '▶️';
             else if (s === 'linkedin') icon = '💼';
 
-            return '<label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-size:.85rem; color:var(--mainra-white)">' +
+            return '<label class="channel-select-pill is-checked" title="' + esc(p.account_email || '') + '">' +
                 '<input type="checkbox" name="buffer_profile" value="' + esc(p.id) + '" checked> ' +
-                '<span>' + icon + ' <strong>' + esc(p.formatted_service || p.service) + '</strong> (' + esc(p.service_username) + ')</span>' +
-                (p.account_email ? ' <span class="muted small" style="font-size:.72rem">· ' + esc(p.account_email) + '</span>' : '') +
+                '<span>' + icon + ' ' + esc(p.formatted_service || p.service) + '</span>' +
             '</label>';
         }).join('');
+
+        $$('#bufferChannelsList input[type="checkbox"]').forEach(function (cb) {
+            cb.onchange = function () {
+                var label = cb.closest('.channel-select-pill');
+                if (label) label.classList.toggle('is-checked', cb.checked);
+            };
+        });
+
+        var selectAllBtn = $('#selectAllChannelsBtn');
+        if (selectAllBtn) {
+            selectAllBtn.onclick = function () {
+                $$('#bufferChannelsList input[type="checkbox"]').forEach(function (cb) {
+                    cb.checked = true;
+                    var label = cb.closest('.channel-select-pill');
+                    if (label) label.classList.add('is-checked');
+                });
+            };
+        }
+
+        var clearBtn = $('#clearChannelsBtn');
+        if (clearBtn) {
+            clearBtn.onclick = function () {
+                $$('#bufferChannelsList input[type="checkbox"]').forEach(function (cb) {
+                    cb.checked = false;
+                    var label = cb.closest('.channel-select-pill');
+                    if (label) label.classList.remove('is-checked');
+                });
+            };
+        }
     }
 
     async function loadSocialBroadcasts() {
