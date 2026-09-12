@@ -38,6 +38,16 @@
 
     /* ---------- auth ---------- */
 
+    function hideSplash() {
+        var splash = $('#appSplash');
+        if (splash) {
+            splash.classList.add('is-hidden');
+            setTimeout(function () {
+                if (splash.parentNode) splash.style.display = 'none';
+            }, 350);
+        }
+    }
+
     function showShell(user) {
         var loginView = $('#loginView');
         if (loginView) {
@@ -46,6 +56,7 @@
         }
         $('#adminShell').classList.add('is-on');
         $('#who').textContent = user.email || 'admin';
+        hideSplash();
         loadAll();
     }
 
@@ -56,6 +67,7 @@
             loginView.classList.add('is-active');
             loginView.style.display = 'grid';
         }
+        hideSplash();
     }
 
     async function checkAdmin(user) {
@@ -1345,6 +1357,7 @@
         } catch (e) {}
 
         if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+            hideSplash();
             $('#loginView').style.display = 'grid';
             $('#loginError').textContent = 'Supabase client failed to load. Check network / supabase-config.js.';
             $('#loginError').classList.remove('hidden');

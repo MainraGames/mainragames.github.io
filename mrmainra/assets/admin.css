@@ -10,7 +10,65 @@
 }
 .admin-body header { position: static !important; inset: auto !important; min-height: 0 !important; backdrop-filter: none !important; border: 0 !important; box-shadow: none !important; }
 
-/* ---------- login ---------- */
+/* ---------- app loading splash overlay ---------- */
+.app-splash {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.2rem;
+    background: #0b111c;
+    transition: opacity .3s ease, visibility .3s ease;
+}
+.app-splash.is-hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+.splash-logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    animation: splashPulse 1.8s ease-in-out infinite;
+}
+.splash-loader-bar {
+    width: 140px;
+    height: 3px;
+    background: rgba(255, 255, 255, .08);
+    border-radius: 999px;
+    overflow: hidden;
+    position: relative;
+}
+.splash-loader-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 45%;
+    background: linear-gradient(90deg, var(--mainra-orange), #ff944d);
+    border-radius: 999px;
+    animation: splashIndeterminate 1.4s ease-in-out infinite;
+}
+.splash-text {
+    font-size: .85rem;
+    font-weight: 500;
+    color: var(--mainra-muted);
+    letter-spacing: .02em;
+}
+
+@keyframes splashPulse {
+    0%, 100% { transform: scale(1); opacity: .9; }
+    50% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 0 16px rgba(255, 107, 0, .4)); }
+}
+
+@keyframes splashIndeterminate {
+    0% { left: -45%; width: 45%; }
+    50% { width: 60%; }
+    100% { left: 100%; width: 45%; }
+}
 .login-wrap {
     display: none;
     min-height: 100vh;
