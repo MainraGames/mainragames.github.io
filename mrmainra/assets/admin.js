@@ -164,16 +164,16 @@
         }
         tb.innerHTML = games.map(function (g) {
             return '<tr>' +
-                '<td><img class="thumb" src="' + esc(icon256(g.image)) + '" alt="" loading="lazy" onerror="this.src=\'../Assets/img/LogoMainraGames.png\'"></td>' +
-                '<td><strong>' + esc(g.title) + '</strong><br><span class="muted" style="font-size:.8rem">' + esc(g.id) + '</span></td>' +
+                '<td><img class="thumb" src="' + esc(icon256(g.image)) + '" alt="' + esc(g.title) + ' Icon" loading="lazy" onerror="this.src=\'../Assets/img/LogoMainraGames.png\'"></td>' +
+                '<td><strong>' + esc(g.title) + '</strong><br><span class="muted" style="font-size:.8rem;font-family:monospace">' + esc(g.id) + '</span></td>' +
                 '<td>' + esc(g.category || '—') + '</td>' +
                 '<td><span class="badge' + (g.status === 'Released' ? ' ok' : ' warn') + '">' + esc(g.status || '—') + '</span></td>' +
                 '<td>' + (g.rating != null ? '★ ' + esc(g.rating) : '—') + '</td>' +
                 '<td>' + (g.featured ? '<span class="badge ok">yes</span>' : '<span class="muted">no</span>') + '</td>' +
                 '<td><div class="actions">' +
-                    '<button class="btn ghost small" data-edit="' + esc(g.id) + '" type="button">Edit</button>' +
-                    '<button class="btn ghost small" data-view-analytics="' + esc(g.id) + '" type="button">Analytics</button>' +
-                    '<button class="btn danger small" data-del="' + esc(g.id) + '" type="button">Delete</button>' +
+                    '<button class="btn ghost small" data-edit="' + esc(g.id) + '" type="button" aria-label="Edit data game ' + esc(g.title) + '">Edit</button>' +
+                    '<button class="btn ghost small" data-view-analytics="' + esc(g.id) + '" type="button" aria-label="Lihat analitik ulasan game ' + esc(g.title) + '">Analytics</button>' +
+                    '<button class="btn danger small" data-del="' + esc(g.id) + '" type="button" aria-label="Hapus game ' + esc(g.title) + '">Delete</button>' +
                 '</div></td>' +
             '</tr>';
         }).join('');
@@ -206,8 +206,8 @@
                 var shortTitle = g.title.split(':')[0].trim();
                 var gReviews = reviews.filter(function (r) { return String(r.game_id) === String(g.id); });
                 var badgeText = gReviews.length ? gReviews.length : (g.rating != null ? '★' + g.rating : '—');
-                return '<button type="button" class="scope-pill ' + (isActive ? 'active' : '') + '" data-scope="' + esc(g.id) + '" role="tab" aria-selected="' + isActive + '" title="' + esc(g.title) + '">' +
-                    '<img class="scope-thumb" src="' + esc(icon256(g.image)) + '" alt="" onerror="this.src=\'../Assets/img/LogoMainraGames.png\'">' +
+                return '<button type="button" class="scope-pill ' + (isActive ? 'active' : '') + '" data-scope="' + esc(g.id) + '" role="tab" aria-selected="' + isActive + '" title="' + esc(g.title) + '" aria-label="Lihat analitik ulasan ' + esc(shortTitle) + '">' +
+                    '<img class="scope-thumb" src="' + esc(icon256(g.image)) + '" alt="' + esc(shortTitle) + ' Icon" onerror="this.src=\'../Assets/img/LogoMainraGames.png\'">' +
                     '<span>' + esc(shortTitle) + '</span>' +
                     '<span class="scope-badge">' + esc(badgeText) + '</span>' +
                 '</button>';
@@ -835,7 +835,7 @@
                         '</div>' +
                         getDeviceSpecsBadge(r) +
                     '</div>' +
-                    '<button class="btn-admin ghost" style="font-size:.8rem;padding:.25rem .75rem" data-reply-tab="' + i + '" type="button">' +
+                    '<button class="btn-admin ghost" style="font-size:.8rem;padding:.3rem .85rem" data-reply-tab="' + i + '" type="button" aria-label="' + (answered ? 'Ubah balasan ulasan dari ' : 'Balas ulasan dari ') + esc(r.author_name || 'Pengguna') + '">' +
                         (answered ? '✎ Edit reply' : '↩ Reply') +
                     '</button>' +
                 '</div>' +
