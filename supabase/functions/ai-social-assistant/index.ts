@@ -275,6 +275,57 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    // Action: Translate Review / Text
+    if (action === "translate") {
+      const textToTranslate = payload.text || "";
+      const target = payload.targetLang || "id";
+      if (!textToTranslate.trim()) {
+        return json(200, { success: true, translatedText: "", detectedLang: "" });
+      }
+
+      if (!geminiKey) {
+        return json(200, {
+          success: false,
+          error: true,
+          message: "Gemini API Key belum dikonfigurasi untuk AI translation.",
+        });
+      }
+
+      try {
+        const modelName = "gemini-2.5-flash";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
+        const prompt = `Terjemahkan ulasan game pemain berikut secara natural dan akurat ke dalam Bahasa Indonesia (bahasa target: ${target}).
+JANGAN menambahkan pembuka, penutup, atau tanda kutip. Cukup kembalikan HANYA teks hasil terjemahannya saja:
+
+${textToTranslate}`;
+
+        const gRes = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              maxOutputTokens: 1000,
+              thinkingConfig: { thinkingBudget: 0 },
+            },
+          }),
+        });
+
+        if (gRes.ok) {
+          const gData = await gRes.json();
+          const translatedOut = gData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          return json(200, {
+            success: true,
+            translatedText: translatedOut.trim(),
+            detectedLang: payload.sourceLang || "fa",
+          });
+        }
+      } catch (err: any) {
+        console.error("AI translate error:", err);
+      }
+      return json(200, { success: false, error: true, message: "Gagal menerjemahkan via AI." });
+    }
+
     // Action: Test Model Connection
     if (action === "test") {
       if (!geminiKey) {

@@ -699,7 +699,7 @@
                         '<p style="margin:.45rem 0 0;font-size:.92rem;color:var(--mainra-white)">' + esc(r.content || '—') + '</p>' +
                         (hasForeignContent ?
                             '<div>' +
-                                '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
+                                '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-lang="' + esc(r.lang || '') + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
                                 '<div id="' + transBoxId + '" class="trans-box" style="display:none"></div>' +
                             '</div>' : '') +
                         (answered ? '<p style="margin:.6rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--mainra-success);background:rgba(127,209,161,.06);font-size:.85rem"><span class="muted" style="font-size:.75rem">Mainra replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
@@ -811,7 +811,7 @@
                 '<p style="margin:.6rem 0 0;font-size:1rem;color:var(--mainra-white)">' + esc(r.content || '—') + '</p>' +
                 (hasForeignContent ?
                     '<div>' +
-                        '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
+                        '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-lang="' + esc(r.lang || '') + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
                         '<div id="' + transBoxId + '" class="trans-box" style="display:none"></div>' +
                     '</div>' : '') +
                 (answered ? '<p style="margin:.8rem 0 0;padding:.8rem 1rem;border-left:4px solid var(--mainra-success);background:rgba(127,209,161,.08);font-size:.9rem"><span class="muted" style="font-size:.8rem;text-transform:uppercase;letter-spacing:0.05em">Mainra replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
@@ -882,24 +882,74 @@
 
     var translationCache = {};
 
-    async function translateText(text, targetLang) {
+    async function translateText(text, targetLang, sourceLang) {
         targetLang = targetLang || 'id';
-        var key = targetLang + ':' + text;
+        var key = (sourceLang || 'auto') + ':' + targetLang + ':' + text;
         if (translationCache[key]) return translationCache[key];
+
+        // 1. Primary Engine: MyMemory Translated API (Reliable, supports Autodetect, Persian, Arabic, English, etc.)
         try {
-            var url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=' + encodeURIComponent(targetLang) + '&dt=t&q=' + encodeURIComponent(text);
-            var res = await fetch(url);
-            if (!res.ok) throw new Error('Translation HTTP ' + res.status);
-            var data = await res.json();
-            var translated = (data[0] || []).map(function (s) { return s[0]; }).join('');
-            var detected = data[2] || '';
-            var result = { text: translated, detectedLang: detected };
-            translationCache[key] = result;
-            return result;
-        } catch (e) {
-            console.warn('translate error:', e);
-            return { text: text, detectedLang: '' };
+            var pair = (sourceLang && sourceLang !== 'auto' ? sourceLang : 'Autodetect') + '|' + targetLang;
+            var myMemoryUrl = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + encodeURIComponent(pair);
+            var res = await fetch(myMemoryUrl);
+            if (res.ok) {
+                var json = await res.json();
+                var trans = json && json.responseData && json.responseData.translatedText;
+                var det = (json && json.responseData && json.responseData.detectedLanguage) || sourceLang || '';
+                // Normalize detected ISO-639 codes (e.g. 'pes' -> 'fa')
+                if (det === 'pes') det = 'fa';
+                if (trans && trans.trim() && trans.trim() !== text.trim()) {
+                    var result = { text: trans, detectedLang: det };
+                    translationCache[key] = result;
+                    return result;
+                }
+            }
+        } catch (e1) {
+            console.warn('MyMemory translate error:', e1);
         }
+
+        // 2. Secondary Engine: Google GTX Fallback
+        try {
+            var sl = (sourceLang && sourceLang !== 'auto') ? sourceLang : 'auto';
+            var gtxUrl = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=' + encodeURIComponent(sl) + '&tl=' + encodeURIComponent(targetLang) + '&dt=t&q=' + encodeURIComponent(text);
+            var gtxRes = await fetch(gtxUrl);
+            if (gtxRes.ok) {
+                var gData = await gtxRes.json();
+                var gTrans = (gData[0] || []).map(function (s) { return s[0]; }).join('');
+                var gDet = gData[2] || sourceLang || '';
+                if (gTrans && gTrans.trim()) {
+                    var gResult = { text: gTrans, detectedLang: gDet };
+                    translationCache[key] = gResult;
+                    return gResult;
+                }
+            }
+        } catch (e2) {
+            console.warn('Google GTX translate error:', e2);
+        }
+
+        // 3. Tertiary Engine: Gemini AI Translation (if Gemini API key is configured by admin)
+        var savedGeminiKey = localStorage.getItem('mainra-gemini-key');
+        if (savedGeminiKey) {
+            try {
+                var aiRes = await sb.functions.invoke('ai-social-assistant', {
+                    body: {
+                        action: 'translate',
+                        client_gemini_key: savedGeminiKey,
+                        text: text,
+                        targetLang: targetLang
+                    }
+                });
+                if (aiRes.data && aiRes.data.success && aiRes.data.translatedText) {
+                    var aiResult = { text: aiRes.data.translatedText, detectedLang: aiRes.data.detectedLang || sourceLang || '' };
+                    translationCache[key] = aiResult;
+                    return aiResult;
+                }
+            } catch (e3) {
+                console.warn('AI translate error:', e3);
+            }
+        }
+
+        return { text: text, detectedLang: sourceLang || '' };
     }
 
     function wireTranslationButtons() {
@@ -919,7 +969,7 @@
                 }
 
                 btn.innerHTML = '⏳ Menerjemahkan…';
-                var res = await translateText(originalText, 'id');
+                var res = await translateText(originalText, 'id', btn.dataset.transLang);
                 var sourceName = (LANG_NAMES[res.detectedLang] && LANG_NAMES[res.detectedLang].name) || res.detectedLang || 'Asing';
                 box.innerHTML = '<div style="font-size:.76rem;color:var(--mainra-muted);margin-bottom:.25rem;display:flex;align-items:center;gap:.3rem"><span>🌐 Diterjemahkan dari ' + esc(sourceName) + ':</span></div>' + esc(res.text);
                 box.style.display = 'block';
@@ -973,7 +1023,7 @@
                         '<p style="margin:.6rem 0 0;font-size:.95rem;line-height:1.45">' + esc(r.content || '—') + '</p>' +
                         (hasForeignContent ?
                             '<div>' +
-                                '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
+                                '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-lang="' + esc(r.lang || '') + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
                                 '<div id="' + transBoxId + '" class="trans-box" style="display:none"></div>' +
                             '</div>' : '') +
                         (answered ? '<p style="margin:.7rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--mainra-success);background:rgba(127,209,161,.06)"><span class="muted" style="font-size:.78rem">Mainra Games replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
@@ -1034,9 +1084,9 @@
                         return;
                     }
                     mBtn.innerHTML = '⏳ Menerjemahkan…';
-                    var res = await translateText(row.content, 'id');
-                    var sourceName = (LANG_NAMES[res.detectedLang] && LANG_NAMES[res.detectedLang].name) || res.detectedLang || 'Asing';
-                    mBox.innerHTML = '<div style="font-size:.76rem;color:var(--mainra-muted);margin-bottom:.25rem"><span>🌐 Diterjemahkan dari ' + esc(sourceName) + ':</span></div>' + esc(res.text);
+                    var res = await translateText(row.content, 'id', row.lang);
+                    var sName = (LANG_NAMES[res.detectedLang] && LANG_NAMES[res.detectedLang].name) || res.detectedLang || 'Asing';
+                    mBox.innerHTML = '<div style="font-size:.76rem;color:var(--mainra-muted);margin-bottom:.25rem">🌐 Diterjemahkan dari ' + esc(sName) + ':</div>' + esc(res.text);
                     mBox.style.display = 'block';
                     mBox.dataset.state = 'translated';
                     mBtn.innerHTML = '✕ Sembunyikan terjemahan';
