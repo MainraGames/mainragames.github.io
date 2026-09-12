@@ -1410,3 +1410,218 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .subtab-content.active {
     display: block;
 }
+
+/* ==========================================================================
+   Gemini AI Engine — Multi-Key Management & Model Probe
+   ========================================================================== */
+
+.gemini-key-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.gemini-key-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--admin-border-subtle);
+    border-radius: 8px;
+    transition: border-color .2s, background .2s;
+}
+
+.gemini-key-row:hover {
+    border-color: rgba(168, 85, 247, 0.3);
+    background: rgba(168, 85, 247, 0.04);
+}
+
+.gemini-key-row.primary-key {
+    border-color: rgba(168, 85, 247, 0.4);
+    background: rgba(168, 85, 247, 0.06);
+}
+
+.gemini-key-row input[type="text"] {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--admin-border-subtle);
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--mainra-white);
+    min-width: 0;
+}
+
+.gemini-key-row input[type="text"]:focus {
+    outline: none;
+    border-color: rgba(168, 85, 247, 0.6);
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.15);
+}
+
+.gemini-key-row .key-label-input {
+    width: 100px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--admin-border-subtle);
+    border-radius: 6px;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
+    color: var(--mainra-muted);
+}
+
+.gemini-key-row .key-label-input:focus {
+    outline: none;
+    border-color: rgba(168, 85, 247, 0.4);
+}
+
+.key-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 3px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+    text-transform: uppercase;
+}
+
+.key-status-badge.active {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.key-status-badge.quota_exhausted {
+    background: rgba(234, 179, 8, 0.15);
+    color: #facc15;
+    border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.key-status-badge.invalid {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.key-status-badge.unchecked,
+.key-status-badge.error {
+    background: rgba(148, 163, 184, 0.12);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.key-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--admin-border-subtle);
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: var(--mainra-muted);
+    transition: all .15s;
+    flex-shrink: 0;
+}
+
+.key-action-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--mainra-white);
+}
+
+.key-action-btn.primary-toggle.is-primary {
+    color: #facc15;
+    border-color: rgba(234, 179, 8, 0.4);
+}
+
+.key-action-btn.delete-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+#geminiModelGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.5rem;
+}
+
+.model-card {
+    padding: 0.6rem 0.75rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--admin-border-subtle);
+    border-radius: 8px;
+    transition: all .2s;
+    cursor: default;
+}
+
+.model-card:hover {
+    border-color: rgba(168, 85, 247, 0.3);
+    background: rgba(168, 85, 247, 0.04);
+}
+
+.model-card .model-name {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--mainra-white);
+    margin-bottom: 2px;
+}
+
+.model-card .model-desc {
+    font-size: 0.72rem;
+    color: var(--mainra-muted);
+    line-height: 1.3;
+}
+
+.model-card .model-limits {
+    font-size: 0.68rem;
+    color: rgba(148, 163, 184, 0.7);
+    margin-top: 4px;
+}
+
+#geminiMasterStatusBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.gemini-probe-summary {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.gemini-probe-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--mainra-muted);
+}
+
+.gemini-probe-stat .stat-value {
+    font-weight: 700;
+    color: var(--mainra-white);
+}
+
+@media (max-width: 640px) {
+    .gemini-key-row {
+        flex-wrap: wrap;
+    }
+    .gemini-key-row input[type="text"] {
+        width: 100%;
+    }
+    #geminiModelGrid {
+        grid-template-columns: 1fr;
+    }
+}

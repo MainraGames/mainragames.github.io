@@ -72,7 +72,7 @@ async function accessToken(sa: any) {
   return (await res.json()).access_token as string;
 }
 
-async function generateReplyWithGemini(geminiKey: string, review: any, gameTitle: string) {
+async function generateReplyWithGemini(geminiKeys: string[], review: any, gameTitle: string) {
   const targetLang = review.lang || "id";
 
   const prompt = `Kamu adalah Customer Relations & Game Community Manager profesional dari studio game indie "Mainra Games" (email: mainragames@gmail.com).
@@ -101,34 +101,53 @@ Instruksi Wajib:
     "gemini-1.5-flash"
   ];
 
-  for (const m of candidateModels) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            maxOutputTokens: 500,
-            thinkingConfig: { thinkingBudget: 0 },
-          },
-        }),
-      });
+  for (const geminiKey of geminiKeys) {
+    for (const m of candidateModels) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
+      try {
+        let res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              maxOutputTokens: 500,
+              thinkingConfig: { thinkingBudget: 0 },
+            },
+          }),
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        text = text.replace(/[\r\n]+/g, " ").replace(/\s{2,}/g, " ").trim().replace(/^["']|["']$/g, "");
-        if (text) {
-          if (text.length > 350) text = text.slice(0, 320).trim();
-          return text;
+        // Retry without thinkingConfig if 400 (unsupported feature)
+        if (!res.ok && res.status === 400) {
+          res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { maxOutputTokens: 500 },
+            }),
+          });
         }
-      } else {
-        console.warn(`Gemini worker model ${m} returned HTTP ${res.status}: ${await res.text()}`);
+
+        if (res.ok) {
+          const data = await res.json();
+          let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          text = text.replace(/[\r\n]+/g, " ").replace(/\s{2,}/g, " ").trim().replace(/^["']|["']$/g, "");
+          if (text) {
+            if (text.length > 350) text = text.slice(0, 320).trim();
+            return text;
+          }
+        } else {
+          const errText = await res.text();
+          console.warn(`Gemini worker key[${geminiKeys.indexOf(geminiKey)}] model ${m} returned HTTP ${res.status}: ${errText.slice(0, 200)}`);
+          // If 429 quota, skip to next key
+          if (res.status === 429) break;
+          // If 403 invalid key, skip to next key
+          if (res.status === 403) break;
+        }
+      } catch (e: any) {
+        console.warn(`Gemini worker key[${geminiKeys.indexOf(geminiKey)}] model ${m} fetch error:`, e.message || e);
       }
-    } catch (e: any) {
-      console.warn(`Gemini worker model ${m} fetch error:`, e.message || e);
     }
   }
 
@@ -158,14 +177,35 @@ Deno.serve(async (req: Request) => {
   console.log("Creating admin client with url:", supabaseUrl);
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
-  // Optional: Read Gemini Key from site_settings or env
-  let geminiKey = (Deno.env.get("GEMINI_API_KEY") || "").trim();
-  if (!geminiKey) {
-    const { data: dbSetting } = await admin.from("site_settings").select("value").eq("key", "gemini_api_key").maybeSingle();
-    geminiKey = (dbSetting?.value || "").trim();
+  // Resolve Gemini keys (multi-key rolling support)
+  let geminiKeys: string[] = [];
+
+  // 1. Check env var first
+  const envKey = (Deno.env.get("GEMINI_API_KEY") || "").trim();
+  if (envKey) geminiKeys.push(envKey);
+
+  // 2. Load from DB (new multi-key format or legacy single key)
+  const { data: dbSetting } = await admin.from("site_settings").select("value").eq("key", "gemini_api_key").maybeSingle();
+  if (dbSetting?.value) {
+    const val = dbSetting.value;
+    if (typeof val === "string" && val.trim()) {
+      if (!geminiKeys.includes(val.trim())) geminiKeys.push(val.trim());
+    } else if (Array.isArray(val)) {
+      // Sort: primary first, then active keys only
+      const sorted = [...val].sort((a: any, b: any) => {
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        return 0;
+      });
+      for (const entry of sorted) {
+        if (entry.key?.trim() && entry.status !== "invalid" && !geminiKeys.includes(entry.key.trim())) {
+          geminiKeys.push(entry.key.trim());
+        }
+      }
+    }
   }
 
-  if (!geminiKey) {
+  if (geminiKeys.length === 0) {
     return json(200, { success: false, message: "Gemini API key is not configured yet. Queue will wait." });
   }
 
@@ -224,7 +264,7 @@ Deno.serve(async (req: Request) => {
     try {
       const gameTitle = gamesMap.get(review.game_id) || "Mainra Games";
       // 1. Generate reply with Gemini
-      const replyText = await generateReplyWithGemini(geminiKey, review, gameTitle);
+      const replyText = await generateReplyWithGemini(geminiKeys, review, gameTitle);
 
       let replySentAt = null;
 

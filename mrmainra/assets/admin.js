@@ -1657,184 +1657,286 @@
     /* ---------- Gemini AI System Configuration (in Kelola & Admin) ---------- */
 
     async function initAiSystemSettings() {
-        var keyInput = $('#geminiApiKeyInput');
-        var testBtn = $('#testGeminiBtn');
-        var saveKeyBtn = $('#saveGeminiKeyBtn');
-        var refreshModelsBtn = $('#refreshMasterAiModelsBtn');
         var fb = $('#geminiTestFeedback');
         var modelSelect = $('#geminiGlobalModelSelect');
         var masterBadge = $('#geminiMasterStatusBadge');
+        var modelCountBadge = $('#geminiModelCount');
+        var keysBody = $('#geminiKeysBody');
+        var modelGrid = $('#geminiModelGrid');
+        var addKeyBtn = $('#geminiAddKeyBtn');
+        var newKeyInput = $('#geminiNewKeyInput');
+        var newKeyLabel = $('#geminiNewKeyLabel');
+        var probeAllBtn = $('#geminiProbeAllBtn');
+        var refreshModelsBtn = $('#refreshMasterAiModelsBtn');
 
-        if (!keyInput) return;
+        // State
+        var cachedKeys = [];
+        var cachedModels = [];
 
-        // 1. Auto-load existing key from database or localStorage
-        var localKey = '';
-        try { localKey = localStorage.getItem('mainra-gemini-key') || ''; } catch (e) {}
-        var activeKey = localKey;
+        function showFeedback(msg, isError) {
+            if (!fb) return;
+            fb.style.display = 'block';
+            fb.textContent = msg;
+            fb.style.color = isError ? '#f87171' : 'var(--mainra-success)';
+            setTimeout(function () { fb.style.display = 'none'; }, 6000);
+        }
 
-        if (!activeKey) {
-            var dbRes = await sb.from('site_settings').select('value').eq('key', 'gemini_api_key').maybeSingle();
-            if (dbRes.data && dbRes.data.value) {
-                var v = dbRes.data.value;
-                activeKey = typeof v === 'string' ? v : (v.key || '');
+        function statusBadgeHtml(status) {
+            if (status === 'active') return '<span class="badge ok" style="font-size:.7rem">✓ Aktif</span>';
+            if (status === 'quota_exhausted') return '<span class="badge warn" style="font-size:.7rem">⚠ Kuota Habis</span>';
+            if (status === 'invalid') return '<span class="badge danger" style="font-size:.7rem">✕ Invalid</span>';
+            if (status === 'error') return '<span class="badge danger" style="font-size:.7rem">✕ Error</span>';
+            return '<span class="badge" style="font-size:.7rem; background:rgba(100,100,120,.3); color:#94a3b8">? Belum Dicek</span>';
+        }
+
+        function timeAgo(isoStr) {
+            if (!isoStr) return '—';
+            var diff = Date.now() - new Date(isoStr).getTime();
+            if (diff < 60000) return 'Baru saja';
+            if (diff < 3600000) return Math.floor(diff / 60000) + ' menit lalu';
+            if (diff < 86400000) return Math.floor(diff / 3600000) + ' jam lalu';
+            return Math.floor(diff / 86400000) + ' hari lalu';
+        }
+
+        function renderKeysTable(keys) {
+            cachedKeys = keys || [];
+            if (!keysBody) return;
+
+            if (cachedKeys.length === 0) {
+                keysBody.innerHTML = '<tr><td colspan="5" class="muted" style="text-align:center; padding:1.5rem">Belum ada API key yang terdaftar. Tambahkan key di atas ↑</td></tr>';
+                if (masterBadge) { masterBadge.textContent = 'Belum Dikonfigurasi'; masterBadge.className = 'badge warn'; }
+                return;
+            }
+
+            var activeCount = cachedKeys.filter(function (k) { return k.status === 'active'; }).length;
+            if (masterBadge) {
+                if (activeCount > 0) {
+                    masterBadge.textContent = activeCount + '/' + cachedKeys.length + ' Key Aktif';
+                    masterBadge.className = 'badge ok';
+                } else {
+                    masterBadge.textContent = 'Tidak Ada Key Aktif';
+                    masterBadge.className = 'badge danger';
+                }
+            }
+
+            keysBody.innerHTML = cachedKeys.map(function (k, i) {
+                var primaryStar = k.isPrimary ? '<span title="Key Utama" style="color:#facc15; margin-left:.3rem">★</span>' : '';
+                var maskedKey = '<code style="font-size:.78rem; color:var(--mainra-muted); letter-spacing:.5px">' + esc(k.keyMasked || ('•••' + (k.key || '').slice(-8))) + '</code>';
+                return '<tr>' +
+                    '<td><strong style="font-size:.84rem">' + esc(k.label || 'Key ' + (i + 1)) + '</strong>' + primaryStar + '</td>' +
+                    '<td>' + maskedKey + '</td>' +
+                    '<td>' + statusBadgeHtml(k.status) + '</td>' +
+                    '<td class="muted small" style="font-size:.75rem">' + timeAgo(k.lastChecked) + '</td>' +
+                    '<td style="text-align:right; white-space:nowrap">' +
+                        (!k.isPrimary ? '<button type="button" class="btn-admin ghost small" data-set-primary="' + i + '" title="Jadikan key utama" style="font-size:.7rem; padding:.15rem .4rem; margin-right:.2rem">★</button>' : '') +
+                        '<button type="button" class="btn-admin ghost small" data-delete-key="' + i + '" title="Hapus key" style="font-size:.7rem; padding:.15rem .4rem; color:#f87171; border-color:rgba(248,113,113,.3)">🗑</button>' +
+                    '</td>' +
+                '</tr>';
+            }).join('');
+
+            // Wire action buttons
+            keysBody.querySelectorAll('[data-delete-key]').forEach(function (btn) {
+                btn.onclick = function () {
+                    var idx = parseInt(btn.getAttribute('data-delete-key'));
+                    var entry = cachedKeys[idx];
+                    if (!entry) return;
+                    if (!confirm('Hapus key "' + (entry.label || 'Key') + '"?')) return;
+                    deleteKey(entry.keyFull || entry.key);
+                };
+            });
+            keysBody.querySelectorAll('[data-set-primary]').forEach(function (btn) {
+                btn.onclick = function () {
+                    var idx = parseInt(btn.getAttribute('data-set-primary'));
+                    var entry = cachedKeys[idx];
+                    if (!entry) return;
+                    setPrimaryKey(entry.keyFull || entry.key);
+                };
+            });
+        }
+
+        function renderModelGrid(models) {
+            cachedModels = models || [];
+            if (!modelGrid) return;
+
+            if (cachedModels.length === 0) {
+                modelGrid.innerHTML = '<div class="muted small" style="padding:.5rem; font-size:.78rem">Tidak ada model yang terdeteksi.</div>';
+                if (modelCountBadge) modelCountBadge.textContent = '0 model';
+                return;
+            }
+
+            if (modelCountBadge) modelCountBadge.textContent = cachedModels.length + ' model';
+
+            modelGrid.innerHTML = cachedModels.map(function (m) {
+                var isFlash = m.id.includes('flash');
+                var isPro = m.id.includes('pro');
+                var borderColor = isFlash ? 'rgba(168,85,247,.25)' : (isPro ? 'rgba(255,107,0,.25)' : 'rgba(100,100,120,.2)');
+                var iconTag = isFlash ? '⚡' : (isPro ? '💎' : '🔧');
+                return '<div style="background:rgba(14,22,36,.6); border:1px solid ' + borderColor + '; border-radius:var(--radius-sm); padding:.45rem .6rem; font-size:.76rem;">' +
+                    '<div style="display:flex; justify-content:space-between; align-items:center">' +
+                        '<span style="font-weight:600; color:var(--mainra-white)">' + iconTag + ' ' + esc(m.id) + '</span>' +
+                        '<span class="badge ok" style="font-size:.62rem">Tersedia</span>' +
+                    '</div>' +
+                    '<div class="muted" style="font-size:.68rem; margin-top:.15rem">' +
+                        (m.inputTokenLimit ? (m.inputTokenLimit / 1000) + 'K in' : '') +
+                        (m.outputTokenLimit ? ' / ' + (m.outputTokenLimit / 1000) + 'K out' : '') +
+                    '</div>' +
+                '</div>';
+            }).join('');
+
+            // Update model select dropdown
+            if (modelSelect) {
+                var currentVal = modelSelect.value;
+                modelSelect.innerHTML = cachedModels.map(function (m) {
+                    return '<option value="' + esc(m.id) + '">' + esc(m.displayName || m.id) + '</option>';
+                }).join('');
+                if (currentVal && cachedModels.some(function (m) { return m.id === currentVal; })) {
+                    modelSelect.value = currentVal;
+                }
             }
         }
 
-        if (activeKey) {
-            keyInput.value = activeKey;
-            try { localStorage.setItem('mainra-gemini-key', activeKey); } catch (e) {}
-            if (masterBadge) {
-                masterBadge.textContent = 'Terkoneksi';
-                masterBadge.className = 'badge ok';
-            }
-            await fetchModels(true);
-        } else {
-            if (masterBadge) {
-                masterBadge.textContent = 'Belum Dikonfigurasi';
-                masterBadge.className = 'badge warn';
-            }
+        // ── Load keys on init ──
+        async function loadKeys() {
+            var res = await sb.functions.invoke('ai-social-assistant', {
+                body: { action: 'load_keys' }
+            }).catch(function (e) { return { error: e }; });
+
+            if (res.error || !res.data || !res.data.success) return;
+            renderKeysTable(res.data.keys || []);
         }
 
+        // ── Add key ──
+        async function addKey() {
+            var keyVal = newKeyInput ? newKeyInput.value.trim() : '';
+            var labelVal = newKeyLabel ? newKeyLabel.value.trim() : '';
+            if (!keyVal) { toast('Masukkan API Key terlebih dahulu.', true); return; }
+
+            addKeyBtn.disabled = true;
+            addKeyBtn.textContent = '⏳ Menyimpan…';
+
+            // Load existing keys, append new one, save all
+            var loadRes = await sb.functions.invoke('ai-social-assistant', {
+                body: { action: 'load_keys' }
+            }).catch(function (e) { return { error: e }; });
+
+            var existingKeys = [];
+            if (loadRes.data && loadRes.data.keys) {
+                existingKeys = loadRes.data.keys.map(function (k) {
+                    return { key: k.keyFull || k.key, label: k.label, status: k.status, lastChecked: k.lastChecked, isPrimary: k.isPrimary };
+                });
+            }
+
+            // Check duplicate
+            if (existingKeys.some(function (k) { return k.key === keyVal; })) {
+                addKeyBtn.disabled = false;
+                addKeyBtn.textContent = '➕ Tambah Key';
+                toast('Key ini sudah terdaftar.', true);
+                return;
+            }
+
+            existingKeys.push({
+                key: keyVal,
+                label: labelVal || 'Key ' + (existingKeys.length + 1),
+                status: 'unchecked',
+                lastChecked: null,
+                isPrimary: existingKeys.length === 0
+            });
+
+            var saveRes = await sb.functions.invoke('ai-social-assistant', {
+                body: { action: 'save_keys', keys: existingKeys }
+            }).catch(function (e) { return { error: e }; });
+
+            addKeyBtn.disabled = false;
+            addKeyBtn.textContent = '➕ Tambah Key';
+
+            if (saveRes.error || !saveRes.data || !saveRes.data.success) {
+                toast('Gagal menyimpan: ' + ((saveRes.data && saveRes.data.message) || (saveRes.error && saveRes.error.message) || 'Unknown error'), true);
+                return;
+            }
+
+            if (newKeyInput) newKeyInput.value = '';
+            if (newKeyLabel) newKeyLabel.value = '';
+            toast('API Key berhasil ditambahkan! ✓');
+            await loadKeys();
+        }
+
+        // ── Delete key ──
+        async function deleteKey(targetKey) {
+            var res = await sb.functions.invoke('ai-social-assistant', {
+                body: { action: 'delete_key', targetKey: targetKey }
+            }).catch(function (e) { return { error: e }; });
+
+            if (res.error || !res.data || !res.data.success) {
+                toast('Gagal menghapus key.', true);
+                return;
+            }
+            toast('Key berhasil dihapus.');
+            await loadKeys();
+        }
+
+        // ── Set primary key ──
+        async function setPrimaryKey(targetKey) {
+            var res = await sb.functions.invoke('ai-social-assistant', {
+                body: { action: 'set_primary_key', targetKey: targetKey }
+            }).catch(function (e) { return { error: e }; });
+
+            if (res.error || !res.data || !res.data.success) {
+                toast('Gagal mengubah key utama.', true);
+                return;
+            }
+            toast('Key utama berhasil diubah. ★');
+            await loadKeys();
+        }
+
+        // ── Probe all keys + discover models ──
+        async function probeAll() {
+            if (probeAllBtn) { probeAllBtn.disabled = true; probeAllBtn.textContent = '⏳ Probing…'; }
+            showFeedback('Menguji semua key dan mendeteksi model dari Google API…', false);
+
+            var res = await sb.functions.invoke('ai-social-assistant', {
+                body: { action: 'probe_keys' }
+            }).catch(function (e) { return { error: e }; });
+
+            if (probeAllBtn) { probeAllBtn.disabled = false; probeAllBtn.textContent = '🔍 Auto-Probe Semua'; }
+
+            if (res.error || !res.data) {
+                showFeedback('Probe gagal: ' + ((res.error && res.error.message) || 'Tidak dapat terhubung'), true);
+                return;
+            }
+
+            if (res.data.keys) renderKeysTable(res.data.keys);
+            if (res.data.models) renderModelGrid(res.data.models);
+            showFeedback(res.data.message || 'Probe selesai!', false);
+            toast(res.data.message || 'Auto-Probe selesai! ✓');
+        }
+
+        // ── Fetch models only (refresh button) ──
         async function fetchModels(quiet) {
-            var currentKey = keyInput ? keyInput.value.trim() : '';
             if (refreshModelsBtn) refreshModelsBtn.textContent = '⏳';
 
             var res = await sb.functions.invoke('ai-social-assistant', {
-                body: { action: 'list_models', client_gemini_key: currentKey }
+                body: { action: 'list_models' }
             }).catch(function (e) { return { error: e }; });
 
             if (refreshModelsBtn) refreshModelsBtn.textContent = '🔄';
 
             if (res.error || !res.data || !res.data.models || !res.data.models.length) {
-                if (!quiet) {
-                    var errMsg = (res.error && res.error.message) || (res.data && res.data.message) || 'Gagal mengambil daftar model.';
-                    toast(errMsg, true);
-                }
+                if (!quiet) toast((res.data && res.data.message) || 'Gagal mengambil daftar model.', true);
                 return;
             }
 
-            var models = res.data.models;
-            var currentVal = modelSelect ? modelSelect.value : 'gemini-2.5-flash';
-
-            if (modelSelect) {
-                modelSelect.innerHTML = models.map(function (m) {
-                    var label = m.displayName || m.id;
-                    if (m.id === 'gemini-2.5-flash') label += ' ★ Rekomendasi Utama';
-                    else if (m.id === 'gemini-3.8-flash') label += ' (Terbaru)';
-                    else if (m.id === 'gemini-3.7-flash') label += ' (Intelligence)';
-                    return '<option value="' + esc(m.id) + '">' + esc(label) + '</option>';
-                }).join('');
-
-                if (currentVal && models.some(function (m) { return m.id === currentVal; })) {
-                    modelSelect.value = currentVal;
-                } else if (models.some(function (m) { return m.id === 'gemini-2.5-flash'; })) {
-                    modelSelect.value = 'gemini-2.5-flash';
-                }
-            }
-
-            if (!quiet) {
-                toast(models.length + ' model Gemini terbaru berhasil dimuat! ✓');
-            }
+            renderModelGrid(res.data.models);
+            if (!quiet) toast(res.data.models.length + ' model Gemini berhasil dimuat! ✓');
         }
 
-        if (refreshModelsBtn) {
-            refreshModelsBtn.onclick = function () { fetchModels(false); };
-        }
+        // ── Wire event handlers ──
+        if (addKeyBtn) addKeyBtn.onclick = addKey;
+        if (probeAllBtn) probeAllBtn.onclick = probeAll;
+        if (refreshModelsBtn) refreshModelsBtn.onclick = function () { fetchModels(false); };
 
-        if (testBtn) {
-            testBtn.onclick = async function () {
-                var apiKey = keyInput ? keyInput.value.trim() : '';
-                var model = modelSelect ? modelSelect.value : 'gemini-2.5-flash';
-                if (!apiKey) {
-                    toast('Mohon masukkan Gemini API Key terlebih dahulu.', true);
-                    return;
-                }
-
-                testBtn.disabled = true;
-                testBtn.textContent = 'Menguji…';
-                if (fb) {
-                    fb.style.display = 'block';
-                    fb.textContent = 'Menghubungi Google Gemini API (' + model + ')…';
-                    fb.style.color = 'var(--mainra-muted)';
-                }
-
-                var res = await sb.functions.invoke('ai-social-assistant', {
-                    body: { action: 'test', client_gemini_key: apiKey, model: model }
-                }).catch(function (e) { return { error: e }; });
-
-                testBtn.disabled = false;
-                testBtn.textContent = '⚡ Uji Koneksi API';
-
-                if (res.error) {
-                    var errorDetail = '';
-                    if (res.error.context && typeof res.error.context.json === 'function') {
-                        try {
-                            var errBody = await res.error.context.json();
-                            errorDetail = errBody.message || '';
-                        } catch (_) {}
-                    }
-                    var errTxt = errorDetail || res.error.message || String(res.error);
-                    if (fb) {
-                        fb.style.display = 'block';
-                        fb.textContent = '❌ Gagal: ' + errTxt;
-                        fb.style.color = '#f87171';
-                    }
-                    if (masterBadge) {
-                        masterBadge.textContent = 'Error Koneksi';
-                        masterBadge.className = 'badge danger';
-                    }
-                    toast('Uji coba koneksi API gagal.', true);
-                    return;
-                }
-
-                var msg = (res.data && res.data.message) || 'Koneksi Sukses!';
-                if (fb) {
-                    fb.style.display = 'block';
-                    fb.textContent = '✓ ' + msg;
-                    fb.style.color = 'var(--mainra-success)';
-                }
-                if (masterBadge) {
-                    masterBadge.textContent = 'Terkoneksi';
-                    masterBadge.className = 'badge ok';
-                }
-                toast('Koneksi model ' + model + ' valid! ✓');
-                fetchModels(true);
-            };
-        }
-
-        if (saveKeyBtn) {
-            saveKeyBtn.onclick = async function () {
-                var apiKey = keyInput ? keyInput.value.trim() : '';
-                if (!apiKey) {
-                    toast('Isi API key sebelum menyimpan.', true);
-                    return;
-                }
-
-                saveKeyBtn.disabled = true;
-                saveKeyBtn.textContent = 'Menyimpan…';
-
-                try { localStorage.setItem('mainra-gemini-key', apiKey); } catch (e) {}
-
-                var res = await sb.functions.invoke('ai-social-assistant', {
-                    body: { action: 'save_key', newKey: apiKey }
-                }).catch(function (e) { return { error: e }; });
-
-                saveKeyBtn.disabled = false;
-                saveKeyBtn.textContent = '💾 Simpan ke Sistem';
-
-                if (res.error) {
-                    toast('Gagal menyimpan key: ' + (res.error.message || res.error), true);
-                    return;
-                }
-
-                if (masterBadge) {
-                    masterBadge.textContent = 'Terkoneksi';
-                    masterBadge.className = 'badge ok';
-                }
-                toast('Gemini API Key berhasil disimpan & siap digunakan semua fungsi! ✓');
-                fetchModels(true);
-            };
-        }
+        // ── Initial load ──
+        await loadKeys();
+        await fetchModels(true);
     }
 
     /* ---------- Gemini AI Social Assistant (In Broadcast Composer) ---------- */

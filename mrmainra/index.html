@@ -651,49 +651,80 @@
 
         <!-- ADMINS & SYSTEM API MANAGEMENT -->
         <section id="tab-admins" class="tab">
-            <!-- Global Gemini API Configuration Card -->
+            <!-- Global Gemini AI Engine & Multi-Key Management -->
             <div class="card" style="margin-bottom:1.5rem; border-color:rgba(168,85,247,.35); background:linear-gradient(180deg, rgba(147,51,234,.05) 0%, rgba(15,23,42,.7) 100%);">
+                <!-- Header -->
                 <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; flex-wrap:wrap; gap:.8rem;">
                     <div>
-                        <div style="display:flex; align-items:center; gap:.5rem;">
+                        <div style="display:flex; align-items:center; gap:.5rem; flex-wrap:wrap;">
                             <span style="color:#c084fc; font-size:1.2rem">🤖</span>
-                            <h3 style="margin:0; font-size:1.1rem">Google Gemini AI Engine &amp; API Key</h3>
-                            <span id="geminiMasterStatusBadge" class="badge ok" style="font-size:.75rem">Terkoneksi</span>
+                            <h3 style="margin:0; font-size:1.1rem">Google Gemini AI Engine</h3>
+                            <span id="geminiMasterStatusBadge" class="badge warn" style="font-size:.75rem">Memuat…</span>
                         </div>
-                        <p class="muted" style="margin:.35rem 0 0; font-size:.85rem">
-                            Konfigurasi API Key terpusat untuk seluruh fitur AI studio: Balasan Otomatis Antrean Review, Auto-Localize Reply, Penerjemah Bahasa Ulasan, dan AI Social Post Generator.
+                        <p class="muted" style="margin:.35rem 0 0; font-size:.82rem">
+                            Multi-Key rolling API terpusat untuk Balasan Otomatis Review, Auto-Localize Reply, Penerjemah Ulasan, dan AI Social Post Generator.
                         </p>
                     </div>
-                    <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="btn-admin ghost small" style="color:#c084fc; border-color:rgba(168,85,247,.4)">
-                        🔑 Dapatkan Gemini API Key
-                    </a>
+                    <div style="display:flex; gap:.4rem; flex-wrap:wrap">
+                        <button type="button" class="btn-admin" id="geminiProbeAllBtn" style="background:#9333ea; border-color:#9333ea; font-weight:600; font-size:.78rem; padding:.35rem .75rem" title="Uji semua key dan deteksi model terbaru">
+                            🔍 Auto-Probe Semua
+                        </button>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="btn-admin ghost small" style="color:#c084fc; border-color:rgba(168,85,247,.4); font-size:.78rem">
+                            🔑 Dapatkan Key Baru
+                        </a>
+                    </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr auto auto; gap:.5rem; align-items:center;">
-                    <div style="position:relative; width:100%;">
-                        <input type="password" id="geminiApiKeyInput" placeholder="Masukkan Google Gemini API Key (AIzaSy…)" style="width:100%; font-size:.88rem; padding:.55rem .75rem; font-family:monospace; background:rgba(11,17,28,.85)">
-                    </div>
-                    <button type="button" class="btn-admin ghost" id="testGeminiBtn" title="Uji coba koneksi model Gemini ke Google API">
-                        ⚡ Uji Koneksi API
-                    </button>
-                    <button type="button" class="btn-admin" id="saveGeminiKeyBtn" style="background:#9333ea; border-color:#9333ea; font-weight:600">
-                        💾 Simpan ke Sistem
+                <!-- Add New Key Form -->
+                <div style="display:grid; grid-template-columns:1fr auto auto; gap:.5rem; align-items:center; margin-bottom:.85rem;" id="geminiAddKeyRow">
+                    <input type="password" id="geminiNewKeyInput" placeholder="Masukkan Gemini API Key baru (AIzaSy…)" style="width:100%; font-size:.85rem; padding:.5rem .7rem; font-family:monospace; background:rgba(11,17,28,.85)" aria-label="Input API Key baru">
+                    <input type="text" id="geminiNewKeyLabel" placeholder="Label (mis: Akun Pribadi)" style="width:140px; font-size:.82rem; padding:.5rem .6rem;" aria-label="Label untuk key baru">
+                    <button type="button" class="btn-admin" id="geminiAddKeyBtn" style="background:#9333ea; border-color:#9333ea; font-weight:600; white-space:nowrap; font-size:.82rem">
+                        ➕ Tambah Key
                     </button>
                 </div>
-                
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-top:.75rem; flex-wrap:wrap; gap:.6rem">
-                    <div id="geminiTestFeedback" class="small muted" style="font-size:.8rem; display:none;"></div>
-                    <div style="display:flex; align-items:center; gap:.4rem; margin-left:auto;">
-                        <span class="muted small" style="font-size:.76rem">Model Aktif:</span>
-                        <select id="geminiGlobalModelSelect" style="font-size:.76rem; padding:.25rem .5rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
-                            <option value="gemini-2.5-flash">gemini-2.5-flash (Direkomendasikan)</option>
-                            <option value="gemini-3.8-flash">gemini-3.8-flash</option>
-                            <option value="gemini-3.7-flash">gemini-3.7-flash</option>
-                            <option value="gemini-3.5-flash">gemini-3.5-flash</option>
-                        </select>
-                        <button type="button" class="btn-admin ghost small" id="refreshMasterAiModelsBtn" title="Sync live models" style="padding:.2rem .45rem; font-size:.72rem">🔄</button>
+
+                <!-- Keys Table -->
+                <div style="overflow-x:auto; margin-bottom:1rem;">
+                    <table class="admin-table" id="geminiKeysTable">
+                        <thead>
+                            <tr>
+                                <th style="width:30%">Label</th>
+                                <th style="width:25%">API Key</th>
+                                <th style="width:15%">Status</th>
+                                <th style="width:15%">Terakhir Dicek</th>
+                                <th style="width:15%; text-align:right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="geminiKeysBody">
+                            <tr><td colspan="5" class="muted" style="text-align:center; padding:1.2rem">Memuat daftar key…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Model Discovery & Rolling Status -->
+                <div style="border-top:1px solid rgba(168,85,247,.15); padding-top:.85rem;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.6rem; flex-wrap:wrap; gap:.5rem">
+                        <div style="display:flex; align-items:center; gap:.4rem">
+                            <span style="color:#c084fc; font-size:.9rem">⚡</span>
+                            <strong style="font-size:.88rem; color:var(--mainra-white)">Model Rolling & Auto-Cascade</strong>
+                            <span id="geminiModelCount" class="badge ok" style="font-size:.7rem">0 model</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:.4rem">
+                            <span class="muted small" style="font-size:.76rem">Model Preferensi:</span>
+                            <select id="geminiGlobalModelSelect" style="font-size:.76rem; padding:.25rem .5rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);" aria-label="Pilih model preferensi">
+                                <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                            </select>
+                            <button type="button" class="btn-admin ghost small" id="refreshMasterAiModelsBtn" title="Refresh daftar model dari Google API" style="padding:.2rem .45rem; font-size:.72rem" aria-label="Refresh model">🔄</button>
+                        </div>
+                    </div>
+                    <div id="geminiModelGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:.4rem; max-height:200px; overflow-y:auto;">
+                        <div class="muted small" style="padding:.5rem; font-size:.78rem">Tekan "🔍 Auto-Probe Semua" untuk mendeteksi model yang tersedia.</div>
                     </div>
                 </div>
+
+                <!-- Feedback area -->
+                <div id="geminiTestFeedback" class="small muted" style="font-size:.8rem; display:none; margin-top:.65rem;"></div>
             </div>
 
             <!-- Admins List Section -->
