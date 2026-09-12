@@ -473,14 +473,41 @@
                                     </div>
                                 </div>
 
-                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
-                                    <label style="font-size:.8rem">URL Gambar Postingan (Opsional)
-                                        <input type="url" id="postImage" placeholder="https://..." style="width:100%; margin-top:.25rem; font-size:.8rem; padding:.45rem .65rem">
-                                    </label>
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.3rem">
+                                        <label style="font-size:.8rem; margin:0">Media / Gambar Postingan (Opsional)</label>
+                                        <span class="muted small" style="font-size:.72rem">Bisa Paste (Ctrl+V) langsung / Upload / URL</span>
+                                    </div>
+                                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
+                                        <div>
+                                            <!-- Paste & Drop Box -->
+                                            <div id="imagePasteZone" style="border:1.5px dashed var(--admin-border-subtle); border-radius:var(--radius-sm); padding:.75rem .6rem; text-align:center; background:rgba(255,255,255,0.015); cursor:pointer; transition:border-color .2s, background .2s;">
+                                                <div id="imagePastePrompt" style="display:flex; flex-direction:column; align-items:center; gap:.25rem;">
+                                                    <span style="font-size:1.2rem;">📋 / 📁</span>
+                                                    <span style="font-size:.78rem; color:var(--admin-text-main); font-weight:600;">Klik atau Paste Gambar di Sini (Ctrl+V)</span>
+                                                    <span class="muted small" style="font-size:.68rem;">Mendukung PNG, JPG, WebP otomatis di-upload</span>
+                                                </div>
+                                                <div id="imagePastePreviewBox" style="display:none; align-items:center; justify-content:space-between; gap:.5rem;">
+                                                    <img id="imagePasteThumb" src="" alt="Thumbnail" style="width:44px; height:44px; border-radius:4px; object-fit:cover; border:1px solid var(--admin-border-subtle);">
+                                                    <div style="flex:1; text-align:left; overflow:hidden;">
+                                                        <div id="imagePasteStatus" style="font-size:.75rem; color:var(--mainra-orange); font-weight:600; text-overflow:ellipsis; white-space:nowrap; overflow:hidden;">Mengupload…</div>
+                                                        <div id="imagePasteMeta" class="muted small" style="font-size:.68rem;"></div>
+                                                    </div>
+                                                    <button type="button" class="btn-admin ghost small" id="removePastedImageBtn" title="Hapus gambar" style="padding:.2rem .4rem; font-size:.7rem; color:#ef4444;">✕</button>
+                                                </div>
+                                                <input type="file" id="postImageFileInput" accept="image/png, image/jpeg, image/webp, image/gif" style="display:none;">
+                                            </div>
+                                            <input type="url" id="postImage" placeholder="Atau ketik URL: https://..." style="width:100%; margin-top:.35rem; font-size:.75rem; padding:.35rem .55rem">
+                                        </div>
 
-                                    <label style="font-size:.8rem">Tautan Target / Unduh (Opsional)
-                                        <input type="url" id="postLink" placeholder="https://play.google.com/..." style="width:100%; margin-top:.25rem; font-size:.8rem; padding:.45rem .65rem">
-                                    </label>
+                                        <div>
+                                            <label style="font-size:.8rem; display:block; margin-bottom:.3rem">Tautan Target / Unduh (Opsional)</label>
+                                            <input type="url" id="postLink" placeholder="https://play.google.com/..." style="width:100%; font-size:.8rem; padding:.45rem .65rem">
+                                            <p class="muted small" style="margin-top:.4rem; font-size:.72rem; line-height:1.4">
+                                                Link akan otomatis disematkan atau dilampirkan sesuai format platform yang dipilih.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Channel Selection -->
@@ -841,6 +868,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../Assets/js/supabase-config.js"></script>
 <script src="../Assets/js/supabase-client.js"></script>
-<script src="assets/admin.js?v=4.2"></script>
+<script src="assets/admin.js?v=4.3"></script>
 </body>
 </html>

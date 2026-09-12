@@ -1219,6 +1219,7 @@
             loadBufferProfiles();
             renderQuickGameChips();
             wireSocialTemplates();
+            wireImagePasteUploader();
             wireScheduleControls();
             initAiAssistant();
             wireLivePreview();
@@ -2006,6 +2007,165 @@
     }
 
     var isScheduleMode = false;
+
+    function wireImagePasteUploader() {
+        var zone = $('#imagePasteZone');
+        var fileInput = $('#postImageFileInput');
+        var urlInput = $('#postImage');
+        var promptBox = $('#imagePastePrompt');
+        var previewBox = $('#imagePastePreviewBox');
+        var thumb = $('#imagePasteThumb');
+        var statusEl = $('#imagePasteStatus');
+        var metaEl = $('#imagePasteMeta');
+        var removeBtn = $('#removePastedImageBtn');
+        var broadcastForm = $('#socialBroadcastForm');
+
+        if (!zone) return;
+
+        function setUploading(isUploading, name, previewDataUrl) {
+            if (isUploading) {
+                if (promptBox) promptBox.style.display = 'none';
+                if (previewBox) previewBox.style.display = 'flex';
+                if (thumb && previewDataUrl) thumb.src = previewDataUrl;
+                if (statusEl) {
+                    statusEl.textContent = 'Mengupload ke CDN…';
+                    statusEl.style.color = 'var(--mainra-orange)';
+                }
+                if (metaEl) metaEl.textContent = name || '';
+                zone.style.borderColor = 'var(--mainra-orange)';
+            }
+        }
+
+        function setSuccess(url, name) {
+            if (promptBox) promptBox.style.display = 'none';
+            if (previewBox) previewBox.style.display = 'flex';
+            if (thumb) thumb.src = url;
+            if (statusEl) {
+                statusEl.textContent = '✓ Gambar Siap Digunakan';
+                statusEl.style.color = 'var(--mainra-success)';
+            }
+            if (metaEl) metaEl.textContent = name || 'Uploaded';
+            if (urlInput) {
+                urlInput.value = url;
+                urlInput.dispatchEvent(new Event('input'));
+            }
+            zone.style.borderColor = 'var(--mainra-success)';
+        }
+
+        function clearPastedImage() {
+            if (promptBox) promptBox.style.display = 'flex';
+            if (previewBox) previewBox.style.display = 'none';
+            if (thumb) thumb.src = '';
+            if (urlInput) {
+                urlInput.value = '';
+                urlInput.dispatchEvent(new Event('input'));
+            }
+            zone.style.borderColor = '';
+            zone.style.background = '';
+        }
+
+        async function processImageFile(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                toast('File yang dipilih bukan gambar yang valid.', true);
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                setUploading(true, file.name || 'image_pasted.png', e.target.result);
+            };
+            reader.readAsDataURL(file);
+
+            try {
+                // Generate a clean filename: timestamp-random.ext
+                var ext = file.type.split('/')[1] || 'png';
+                if (ext === 'jpeg') ext = 'jpg';
+                var cleanName = 'broadcast-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
+
+                var res = await sb.storage.from('broadcast-images').upload(cleanName, file, {
+                    cacheControl: '3600',
+                    upsert: true
+                });
+
+                if (res.error) throw res.error;
+
+                var pubRes = sb.storage.from('broadcast-images').getPublicUrl(cleanName);
+                var publicUrl = pubRes && pubRes.data ? pubRes.data.publicUrl : '';
+
+                if (!publicUrl) throw new Error('Gagal mendapatkan URL publik gambar.');
+
+                setSuccess(publicUrl, file.name || cleanName);
+                toast('Gambar berhasil di-upload dan siap disiarkan! ✓');
+            } catch (err) {
+                clearPastedImage();
+                toast('Upload gambar gagal: ' + (err.message || err), true);
+            }
+        }
+
+        // 1. Click zone triggers file selector
+        zone.onclick = function (e) {
+            if (e.target.closest('#removePastedImageBtn')) return;
+            if (fileInput) fileInput.click();
+        };
+
+        if (fileInput) {
+            fileInput.onchange = function () {
+                if (fileInput.files && fileInput.files[0]) {
+                    processImageFile(fileInput.files[0]);
+                }
+            };
+        }
+
+        if (removeBtn) {
+            removeBtn.onclick = function (e) {
+                e.stopPropagation();
+                clearPastedImage();
+            };
+        }
+
+        // 2. Drag and drop onto zone
+        zone.ondragover = function (e) {
+            e.preventDefault();
+            zone.style.borderColor = 'var(--mainra-orange)';
+            zone.style.background = 'rgba(255,107,0,0.08)';
+        };
+
+        zone.ondragleave = function (e) {
+            e.preventDefault();
+            zone.style.borderColor = '';
+            zone.style.background = '';
+        };
+
+        zone.ondrop = function (e) {
+            e.preventDefault();
+            zone.style.borderColor = '';
+            zone.style.background = '';
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+                processImageFile(e.dataTransfer.files[0]);
+            }
+        };
+
+        // 3. Global Clipboard Paste (Ctrl+V anywhere in broadcast form or page when social tab active)
+        window.addEventListener('paste', function (e) {
+            // Only process if social tab is visible
+            var socialTab = $('#tab-social');
+            if (!socialTab || !socialTab.classList.contains('is-active')) return;
+
+            var items = (e.clipboardData || window.clipboardData).items;
+            if (!items) return;
+
+            for (var i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    var blob = items[i].getAsFile();
+                    if (blob) {
+                        e.preventDefault();
+                        processImageFile(blob);
+                        break;
+                    }
+                }
+            }
+        });
+    }
 
     function wireScheduleControls() {
         var nowBtn = $('#scheduleNowModeBtn');
