@@ -1917,19 +1917,10 @@
         var panel = $('#aiAssistantPanel');
         var statusDot = $('#geminiConnectionStatusDot');
         var generateBtn = $('#generateAiPostBtn');
-        var refreshModelsBtn = $('#refreshAiModelsBtn');
-        var modelSelect = $('#aiModelSelect');
-        var goToSettingsLink = $('#goToAiSettingsLink');
 
         if (!panel) return;
 
-        if (goToSettingsLink) {
-            goToSettingsLink.onclick = function () {
-                selectTab('admins');
-            };
-        }
-
-        async function syncKeyStatusAndModels() {
+        async function syncKeyStatus() {
             var activeKey = '';
             try { activeKey = localStorage.getItem('mainra-gemini-key') || ''; } catch (e) {}
             if (!activeKey) {
@@ -1951,58 +1942,11 @@
             }
             if (statusDot) {
                 statusDot.style.background = activeKey ? '#7fd1a1' : '#f87171';
-                statusDot.title = activeKey ? 'Gemini API Siap' : 'API Key Belum Disetting';
-            }
-            if (activeKey) {
-                fetchDynamicModels(true, activeKey);
+                statusDot.title = activeKey ? 'Gemini AI Siap (Multi-Key Rolling Aktif)' : 'API Key Belum Dikonfigurasi di Kelola & Admin';
             }
         }
 
-        syncKeyStatusAndModels();
-
-        async function fetchDynamicModels(quiet, keyOverride) {
-            var apiKey = keyOverride || localStorage.getItem('mainra-gemini-key') || '';
-            if (refreshModelsBtn) refreshModelsBtn.textContent = '⏳';
-
-            var res = await sb.functions.invoke('ai-social-assistant', {
-                body: { action: "list_models", client_gemini_key: apiKey }
-            }).catch(function (e) { return { error: e }; });
-
-            if (refreshModelsBtn) refreshModelsBtn.textContent = '🔄';
-
-            if (res.error || !res.data || !res.data.models || !res.data.models.length) {
-                if (!quiet) {
-                    var errMsg = (res.error && res.error.message) || (res.data && res.data.message) || 'Gagal mengambil daftar model.';
-                    toast(errMsg, true);
-                }
-                return;
-            }
-
-            var currentVal = modelSelect ? modelSelect.value : 'gemini-2.5-flash';
-            var models = res.data.models;
-
-            if (modelSelect) {
-                modelSelect.innerHTML = models.map(function (m) {
-                    var label = m.displayName || m.id;
-                    if (m.id === 'gemini-2.5-flash') label += ' ★ Stabil & Cepat';
-                    else if (m.id === 'gemini-3.8-flash') label += ' (Terbaru)';
-                    else if (m.id === 'gemini-3.7-flash') label += ' (High Intelligence)';
-                    return '<option value="' + esc(m.id) + '">' + esc(label) + '</option>';
-                }).join('');
-
-                if (currentVal && models.some(function (m) { return m.id === currentVal; })) {
-                    modelSelect.value = currentVal;
-                } else if (models.some(function (m) { return m.id === 'gemini-2.5-flash'; })) {
-                    modelSelect.value = 'gemini-2.5-flash';
-                }
-            }
-        }
-
-        if (refreshModelsBtn) {
-            refreshModelsBtn.onclick = function () {
-                fetchDynamicModels(false);
-            };
-        }
+        syncKeyStatus();
 
         if (openBtn) {
             openBtn.onclick = function () {
@@ -2010,7 +1954,7 @@
                 panel.style.display = isHidden ? 'block' : 'none';
                 openBtn.textContent = isHidden ? '✕ Tutup AI' : '✨ AI Writer';
                 if (isHidden) {
-                    syncKeyStatusAndModels();
+                    syncKeyStatus();
                 }
             };
         }
@@ -2025,7 +1969,6 @@
         if (generateBtn) {
             generateBtn.onclick = async function () {
                 var apiKey = localStorage.getItem('mainra-gemini-key') || '';
-                var model = modelSelect ? modelSelect.value : 'gemini-2.5-flash';
                 var tone = $('#aiToneSelect') ? $('#aiToneSelect').value : '';
                 var customPrompt = $('#aiCustomInstruction') ? $('#aiCustomInstruction').value.trim() : '';
                 var titleVal = $('#postTitle') ? $('#postTitle').value.trim() : '';
@@ -2038,7 +1981,6 @@
                     body: {
                         action: "generate",
                         client_gemini_key: apiKey,
-                        model: model,
                         tone: tone,
                         gameTitle: titleVal || 'Game Mainra Games',
                         targetLink: linkVal || 'https://mainragames.com',
@@ -2047,7 +1989,7 @@
                 }).catch(function (e) { return { error: e }; });
 
                 generateBtn.disabled = false;
-                generateBtn.textContent = '✨ Generate Postingan Otomatis';
+                generateBtn.textContent = '✨ Buat Postingan Otomatis Sekarang';
 
                 if (res.error) {
                     var errorDetail = '';

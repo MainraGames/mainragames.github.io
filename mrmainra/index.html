@@ -388,38 +388,24 @@
                                     <strong style="font-size:.9rem; color:var(--mainra-white)">Gemini Post Generator</strong>
                                     <span id="geminiConnectionStatusDot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#7fd1a1; margin-left:.3rem" title="API Siap"></span>
                                 </div>
-                                <div style="display:flex; gap:.35rem">
-                                    <button type="button" class="btn-admin ghost small" id="goToAiSettingsLink" style="font-size:.72rem; padding:.18rem .5rem" title="Buka menu konfigurasi API">⚙️ Kelola API Key</button>
-                                    <button type="button" class="btn-admin ghost small" id="closeAiPanelBtn" style="padding:.18rem .45rem">✕</button>
-                                </div>
+                                <button type="button" class="btn-admin ghost small" id="closeAiPanelBtn" style="padding:.18rem .45rem">✕</button>
                             </div>
 
-                            <!-- Generation Controls in Clean Grid -->
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:.65rem; margin-top:.6rem; margin-bottom:.65rem">
-                                <label style="font-size:.78rem; color:var(--mainra-muted); margin:0">Gaya Bahasa (Tone):
-                                    <select id="aiToneSelect" style="width:100%; margin-top:.25rem; font-size:.78rem; padding:.35rem .5rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
+                            <!-- Generation Controls: Tone & Custom Instruction -->
+                            <div style="margin-top:.6rem; margin-bottom:.65rem">
+                                <label style="font-size:.78rem; color:var(--mainra-muted); margin:0 0 .55rem 0; display:block">Gaya Bahasa (Tone):
+                                    <select id="aiToneSelect" style="width:100%; margin-top:.25rem; font-size:.78rem; padding:.4rem .55rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
                                         <option value="Antusias, kasual, ramah komunitas gamer">🔥 Hype &amp; Antusias</option>
                                         <option value="Informatif, profesional, fokus fitur baru">📢 Informatif &amp; Resmi</option>
                                         <option value="Santai, lucu, relate dengan gamer mobile">😄 Santai &amp; Seru</option>
                                         <option value="Singkat, to-the-point, fokus call-to-action download">⚡ Singkat + CTA Unduh</option>
                                     </select>
                                 </label>
-                                <label style="font-size:.78rem; color:var(--mainra-muted); margin:0">Model Gemini:
-                                    <div style="display:flex; gap:.25rem; margin-top:.25rem">
-                                        <select id="aiModelSelect" style="flex:1; font-size:.78rem; padding:.35rem .5rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
-                                            <option value="gemini-3.8-flash">gemini-3.8-flash (Terbaru ★ Rekomendasi)</option>
-                                            <option value="gemini-3.7-flash">gemini-3.7-flash (High Intelligence)</option>
-                                            <option value="gemini-3.5-flash">gemini-3.5-flash (Stable)</option>
-                                            <option value="gemini-2.5-flash">gemini-2.5-flash (Fast)</option>
-                                        </select>
-                                        <button type="button" class="btn-admin ghost small" id="refreshAiModelsBtn" title="Fetch model live dari Google API" style="padding:.2rem .5rem; font-size:.74rem">🔄</button>
-                                    </div>
+
+                                <label style="font-size:.78rem; color:var(--mainra-muted); margin:0; display:block">Instruksi Tambahan (Opsional):
+                                    <input type="text" id="aiCustomInstruction" placeholder="Contoh: Tekankan fitur multiplayer online atau event spesial bulan ini" style="width:100%; margin-top:.25rem; font-size:.78rem; padding:.4rem .6rem; border-radius:var(--radius-sm)">
                                 </label>
                             </div>
-
-                            <label style="font-size:.78rem; color:var(--mainra-muted); margin:0 0 .65rem 0; display:block">Instruksi Tambahan (Opsional):
-                                <input type="text" id="aiCustomInstruction" placeholder="Contoh: Tekankan fitur multiplayer online atau event spesial bulan ini" style="width:100%; margin-top:.25rem; font-size:.78rem; padding:.35rem .6rem; border-radius:var(--radius-sm)">
-                            </label>
 
                             <button type="button" class="btn-admin" id="generateAiPostBtn" style="width:100%; justify-content:center; background:linear-gradient(90deg, #9333ea, #7c3aed); border-color:#9333ea; font-size:.84rem; font-weight:600; padding:.45rem .8rem">
                                 ✨ Buat Postingan Otomatis Sekarang
