@@ -378,9 +378,30 @@
     var singleFilterMode = 'all';
 
     function filterReviewItems(items, mode) {
-        if (mode === 'unreplied') return items.filter(function (r) { return !(r.reply_text || '').trim(); });
-        if (mode === '5star') return items.filter(function (r) { return Number(r.star_rating) === 5; });
-        if (mode === 'critical') return items.filter(function (r) { return Number(r.star_rating) < 5 && Number(r.star_rating) > 0; });
+        if (!items) return [];
+        if (mode === 'unreplied') {
+            return items.filter(function (r) {
+                var txt = (r.reply_text || '').trim();
+                return !txt;
+            });
+        }
+        if (mode === 'replied') {
+            return items.filter(function (r) {
+                var txt = (r.reply_text || '').trim();
+                return !!txt;
+            });
+        }
+        if (mode === '5star') {
+            return items.filter(function (r) {
+                return Number(r.star_rating) === 5;
+            });
+        }
+        if (mode === 'critical') {
+            return items.filter(function (r) {
+                var s = Number(r.star_rating);
+                return s < 5 && s > 0;
+            });
+        }
         return items;
     }
 
@@ -575,10 +596,14 @@
         } else {
             function updateOverviewFeed() {
                 var filtered = filterReviewItems(reviews, overviewFilterMode);
-                if ($('#overviewFeedCount')) $('#overviewFeedCount').textContent = filtered.length + ' shown';
+                if ($('#overviewFeedCount')) {
+                    $('#overviewFeedCount').textContent = filtered.length + ' of ' + reviews.length;
+                }
 
                 if (!filtered.length) {
-                    feedBox.innerHTML = '<div class="muted" style="text-align:center;padding:1.5rem">No reviews match the "' + esc(overviewFilterMode) + '" filter.</div>';
+                    feedBox.innerHTML = '<div class="muted" style="text-align:center;padding:1.8rem">' +
+                        'No reviews match the current filter (' + esc(overviewFilterMode) + ').' +
+                    '</div>';
                     return;
                 }
 
@@ -620,14 +645,14 @@
 
             updateOverviewFeed();
 
-            // Wire filter chips
+            // Wire filter chips with onclick handler directly (prevents duplicate listeners)
             $$('#overviewFeedFilters .filter-chip').forEach(function (chip) {
-                chip.addEventListener('click', function () {
+                chip.onclick = function () {
                     $$('#overviewFeedFilters .filter-chip').forEach(function (c) { c.classList.remove('active'); });
                     chip.classList.add('active');
                     overviewFilterMode = chip.dataset.filter;
                     updateOverviewFeed();
-                });
+                };
             });
 
             // Wire star bar clicks to filter overview
