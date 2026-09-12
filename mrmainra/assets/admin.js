@@ -1566,12 +1566,38 @@
 
                 var data = res.data && res.data.result;
                 if (data) {
-                    if (data.title && $('#postTitle') && !$('#postTitle').value) {
-                        $('#postTitle').value = data.title;
+                    var titleInput = $('#postTitle');
+                    var contentInput = $('#postContent');
+
+                    var finalTitle = (data.title || '').trim();
+                    var finalCaption = (data.caption || '').trim();
+
+                    // Client-side safety guard: If raw JSON string was somehow assigned to caption, parse it
+                    if (finalCaption.startsWith('{') && finalCaption.includes('"caption"')) {
+                        try {
+                            var innerParsed = JSON.parse(finalCaption);
+                            if (innerParsed.title && !finalTitle) finalTitle = innerParsed.title;
+                            if (innerParsed.caption) finalCaption = innerParsed.caption;
+                        } catch (e) {
+                            var capMatch = finalCaption.match(/"caption"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+                            var titMatch = finalCaption.match(/"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+                            if (capMatch) {
+                                try { finalCaption = JSON.parse('"' + capMatch[1] + '"'); } catch (_) { finalCaption = capMatch[1]; }
+                            }
+                            if (titMatch && !finalTitle) {
+                                try { finalTitle = JSON.parse('"' + titMatch[1] + '"'); } catch (_) { finalTitle = titMatch[1]; }
+                            }
+                        }
                     }
-                    if (data.caption && $('#postContent')) {
-                        $('#postContent').value = data.caption;
-                        $('#postCharCount').textContent = data.caption.length + ' / 1000';
+
+                    // Always overwrite with AI generated title
+                    if (finalTitle && titleInput) {
+                        titleInput.value = finalTitle;
+                    }
+                    // Clean and set caption without JSON debris
+                    if (finalCaption && contentInput) {
+                        contentInput.value = finalCaption;
+                        $('#postCharCount').textContent = finalCaption.length + ' / 1000';
                         wireLivePreview();
                     }
                     toast('Postingan dibuat dengan model ' + (res.data.modelUsed || model) + '! ✨');

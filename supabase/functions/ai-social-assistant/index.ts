@@ -1,7 +1,6 @@
 // supabase/functions/ai-social-assistant/index.ts
 // AI assistant for social media posts powered by Google Gemini API.
-// Features: Dynamic Model Listing from Google API, Model Connectivity Test,
-// Post Generation with multi-tone presets, and secure key persistence.
+// Robust JSON response parsing with responseSchema, responseMimeType, and heuristic regex recovery.
 // @ts-nocheck
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -37,6 +36,104 @@ async function requireAdmin(req: Request) {
   return { admin, user: data.user, message: "" };
 }
 
+// Resilient parsing to guarantee clean { title, caption, hashtags }
+function extractStructuredPost(rawText: string, defaultGameTitle: string) {
+  if (!rawText) {
+    return {
+      title: `Update Seru ${defaultGameTitle || "Mainra Games"}`,
+      caption: "",
+      hashtags: ["#MainraGames", "#IndieGame"],
+    };
+  }
+
+  // 1. Strip markdown fences (```json ... ``` or ``` ... ```)
+  let cleaned = rawText
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  // 2. Try standard JSON.parse first
+  try {
+    const parsed = JSON.parse(cleaned);
+    if (parsed && typeof parsed === "object") {
+      let title = (parsed.title || "").trim();
+      let caption = (parsed.caption || "").trim();
+      let hashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
+
+      // If caption somehow is empty but text or body exists
+      if (!caption && parsed.text) caption = String(parsed.text).trim();
+      if (!caption && parsed.body) caption = String(parsed.body).trim();
+
+      if (title || caption) {
+        return {
+          title: title || `Update Seru ${defaultGameTitle || "Mainra Games"}`,
+          caption: caption || rawText.trim(),
+          hashtags,
+        };
+      }
+    }
+  } catch (_e) {
+    // proceed to heuristic extraction
+  }
+
+  // 3. Fallback: Search for embedded JSON object { ... } via Regex
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed && (parsed.title || parsed.caption)) {
+        return {
+          title: (parsed.title || `Update Seru ${defaultGameTitle || "Mainra Games"}`).trim(),
+          caption: (parsed.caption || "").trim(),
+          hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags : [],
+        };
+      }
+    } catch (_e2) {
+      // If incomplete or unclosed JSON string (cut off by token limit)
+      // Extract "title": "..." and "caption": "..." manually
+      const titleMatch = cleaned.match(/"title"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+      const captionMatch = cleaned.match(/"caption"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"/i);
+
+      if (titleMatch || captionMatch) {
+        const unescape = (str: string) => {
+          try {
+            return JSON.parse(`"${str}"`);
+          } catch {
+            return str.replace(/\\n/g, "\n").replace(/\\"/g, '"');
+          }
+        };
+
+        const extractedTitle = titleMatch ? unescape(titleMatch[1]) : `Update Seru ${defaultGameTitle || "Mainra Games"}`;
+        const extractedCaption = captionMatch ? unescape(captionMatch[1]) : "";
+
+        if (extractedCaption) {
+          return {
+            title: extractedTitle.trim(),
+            caption: extractedCaption.trim(),
+            hashtags: ["#MainraGames", "#IndieGame"],
+          };
+        }
+      }
+    }
+  }
+
+  // 4. Ultimate fallback if model purely returned freeform text without JSON
+  const lines = rawText.trim().split("\n").filter((l) => l.trim().length > 0);
+  let fallbackTitle = `Update Seru ${defaultGameTitle || "Mainra Games"}`;
+  let fallbackCaption = rawText.trim();
+
+  if (lines.length > 1 && lines[0].length < 120) {
+    fallbackTitle = lines[0].replace(/^[#*>\s]+/, "").trim();
+    fallbackCaption = lines.slice(1).join("\n\n").trim();
+  }
+
+  return {
+    title: fallbackTitle,
+    caption: fallbackCaption,
+    hashtags: ["#MainraGames", "#IndieGame"],
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
@@ -49,10 +146,7 @@ Deno.serve(async (req: Request) => {
     const payload = await req.json().catch(() => ({}));
     const action = payload.action || "generate";
 
-    // 1. Resolve Gemini API Key with hierarchy:
-    // a. Explicit key sent from dashboard client
-    // b. Stored key in public.site_settings (key: 'gemini_api_key')
-    // c. Supabase secret GEMINI_API_KEY
+    // Retrieve Gemini API Key with priority:
     let geminiKey = (payload.apiKey || "").trim();
 
     if (!geminiKey) {
@@ -83,18 +177,10 @@ Deno.serve(async (req: Request) => {
       }, { onConflict: "key" });
 
       if (upsertErr) return json(500, { message: upsertErr.message });
-      return json(200, { message: "Gemini API Key berhasil disimpan ke database CMS! ✓" });
+      return json(200, { message: "Gemini API Key berhasil disimpan ke sistem! ✓" });
     }
 
-    // Action: Fetch Key Status (checks if a key is already configured)
-    if (action === "get_status") {
-      return json(200, {
-        hasKey: Boolean(geminiKey),
-        maskedKey: geminiKey ? (geminiKey.slice(0, 4) + "••••••••" + geminiKey.slice(-4)) : null,
-      });
-    }
-
-    // Action: List Available Models dynamically from Google Gemini API
+    // Action: List supported text-generation models from Google API
     if (action === "list_models") {
       if (!geminiKey) {
         return json(400, { message: "API key belum diisi. Masukkan API key untuk mengambil daftar model." });
@@ -113,7 +199,7 @@ Deno.serve(async (req: Request) => {
       const listData = await res.json();
       const rawModels = listData.models || [];
 
-      // Filter models that support content generation (exclude embeddings, etc.)
+      // Filter models that support generateContent
       const textModels = rawModels
         .filter((m: any) => {
           const methods = m.supportedGenerationMethods || [];
@@ -131,8 +217,7 @@ Deno.serve(async (req: Request) => {
           };
         });
 
-      // Priority ranking based on Google official release tiers:
-      // Gemini 3.8 Flash, 3.7 Flash, 3.5 Flash, 3.1 Pro, 2.5 Flash, 2.0 Flash
+      // Priority ranking: Gemini 3.8/3.7/3.5/2.5/2.0
       textModels.sort((a: any, b: any) => {
         const getScore = (id: string) => {
           if (id === "gemini-3.8-flash") return 150;
@@ -173,20 +258,20 @@ Deno.serve(async (req: Request) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: "Respond only with 'OK' if you can read this." }] }],
+          contents: [{ parts: [{ text: "Ketik 'OK' jika koneksi berhasil." }] }],
         }),
       });
 
       if (!res.ok) {
         const errText = await res.text();
-        return json(res.status, { message: `Gagal terhubung ke Gemini (${res.status}): ${errText}` });
+        return json(res.status, { message: `Gagal terhubung ke Gemini API (${res.status}): ${errText}` });
       }
 
       const testData = await res.json();
       const reply = testData?.candidates?.[0]?.content?.parts?.[0]?.text || "OK";
 
       return json(200, {
-        message: `Koneksi ke model '${modelName}' sukses! Respon Google: "${reply.trim()}"`,
+        message: `Koneksi ke model ${modelName} berhasil! Respon: "${reply.trim()}"`,
         model: modelName,
       });
     }
@@ -213,31 +298,57 @@ Tone of voice: ${tone || "Antusias, ramah komunitas gamer, kasual"}
 Link Tujuan: ${targetLink || "https://mainragames.com"}
 ${customPrompt ? `Catatan Tambahan: ${customPrompt}` : ""}
 
-Format Output JSON persis seperti ini (hanya JSON murni, tanpa markdown formatting atau backtick):
+Keluarkan HANYA dokumen JSON dengan schema berikut:
 {
-  "title": "Judul singkat untuk berita web",
-  "caption": "Teks caption lengkap dengan emoji, link, dan hashtag",
+  "title": "Judul singkat untuk pengumuman website (maksimal 70 karakter)",
+  "caption": "Teks postingan media sosial lengkap dengan emoji, call-to-action link, dan hashtag",
   "hashtags": ["#MainraGames", "#IndieGame"]
 }`;
 
       const genUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
 
-      const res = await fetch(genUrl, {
+      // Enforce responseMimeType: "application/json" and schema for guaranteed structured output
+      const requestBody: any = {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: systemInstruction + "\n\n" + userPrompt }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1200,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              title: { type: "STRING" },
+              caption: { type: "STRING" },
+              hashtags: {
+                type: "ARRAY",
+                items: { type: "STRING" },
+              },
+            },
+            required: ["title", "caption"],
+          },
+        },
+      };
+
+      let res = await fetch(genUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: systemInstruction + "\n\n" + userPrompt }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1000,
-          },
-        }),
+        body: JSON.stringify(requestBody),
       });
+
+      // If model does not support responseSchema (some experimental models), retry without responseSchema but keep responseMimeType
+      if (!res.ok && res.status === 400) {
+        delete requestBody.generationConfig.responseSchema;
+        res = await fetch(genUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
+      }
 
       if (!res.ok) {
         const errText = await res.text();
@@ -247,22 +358,13 @@ Format Output JSON persis seperti ini (hanya JSON murni, tanpa markdown formatti
       const genData = await res.json();
       const rawOutput = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-      // Clean markdown code fence if returned
-      const cleanJson = rawOutput.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
-      let parsed = null;
-      try {
-        parsed = JSON.parse(cleanJson);
-      } catch {
-        parsed = {
-          title: `Update Seru ${gameTitle || "Mainra Games"}`,
-          caption: rawOutput.trim(),
-        };
-      }
+      // Bulletproof extraction guaranteeing title and caption are cleanly separated
+      const finalResult = extractStructuredPost(rawOutput, gameTitle);
 
       return json(200, {
         success: true,
         modelUsed: modelName,
-        result: parsed,
+        result: finalResult,
       });
     }
 
