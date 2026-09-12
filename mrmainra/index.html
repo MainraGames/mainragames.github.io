@@ -229,20 +229,27 @@
                     </div>
                 </div>
 
-                <!-- Recent Activity Feed with Interactive Filter Toolbar -->
+                <!-- Recent Activity Feed with Interactive Filter & Search Toolbar -->
                 <div class="card" style="padding:0; overflow:hidden;">
-                    <div class="analytics-filter-toolbar">
-                        <div style="display:flex;align-items:center;gap:.6rem">
-                            <h3 style="margin:0; font-size:1.02rem;">Latest Player Feedback Across All Games</h3>
-                            <span id="overviewFeedCount" class="badge ok" style="font-size:.72rem">--</span>
+                    <div class="analytics-filter-toolbar" style="flex-direction:column; align-items:stretch; gap:.8rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.6rem;">
+                            <div style="display:flex;align-items:center;gap:.6rem">
+                                <h3 style="margin:0; font-size:1.02rem;">Latest Player Feedback Across All Games</h3>
+                                <span id="overviewFeedCount" class="badge ok" style="font-size:.72rem">--</span>
+                            </div>
+                            <div class="filter-chip-group" id="overviewFeedFilters">
+                                <span class="muted small" style="font-size:.76rem;margin-right:.2rem">Filter:</span>
+                                <button type="button" class="filter-chip active" data-filter="all">All</button>
+                                <button type="button" class="filter-chip" data-filter="unreplied">Needs Reply</button>
+                                <button type="button" class="filter-chip" data-filter="replied">Replied</button>
+                                <button type="button" class="filter-chip" data-filter="5star">5 ★</button>
+                                <button type="button" class="filter-chip" data-filter="critical">&lt; 5 ★</button>
+                            </div>
                         </div>
-                        <div class="filter-chip-group" id="overviewFeedFilters">
-                            <span class="muted small" style="font-size:.76rem;margin-right:.2rem">Filter:</span>
-                            <button type="button" class="filter-chip active" data-filter="all">All</button>
-                            <button type="button" class="filter-chip" data-filter="unreplied">Needs Reply</button>
-                            <button type="button" class="filter-chip" data-filter="replied">Replied</button>
-                            <button type="button" class="filter-chip" data-filter="5star">5 ★</button>
-                            <button type="button" class="filter-chip" data-filter="critical">&lt; 5 ★</button>
+                        <!-- Search Box Toolbar -->
+                        <div style="position:relative; width:100%;">
+                            <span style="position:absolute; left:.75rem; top:50%; transform:translateY(-50%); font-size:.85rem; color:var(--mainra-muted); pointer-events:none;">🔍</span>
+                            <input type="search" id="overviewReviewSearchInput" placeholder="Cari ulasan berdasarkan kata kunci, kalimat, nama pengulas, atau perangkat (contoh: lag, update, seru, Sajjad)..." style="width:100%; padding:.45rem .8rem .45rem 2.2rem; font-size:.84rem; background:rgba(11,17,28,.65); border:1px solid var(--admin-border-subtle); border-radius:var(--radius-sm); color:var(--admin-text-main);">
                         </div>
                     </div>
                     <div id="overviewLatestReviews" style="padding:1.2rem;">
@@ -311,21 +318,28 @@
                 </div>
 
                 <div class="card" style="padding: 0; overflow: hidden;">
-                    <div class="analytics-filter-toolbar">
-                        <div style="display:flex;align-items:center;gap:.6rem">
-                            <h3 id="singleGameReviewTitle" style="margin: 0; font-size: 1.02rem;">Reviews &amp; Feedback</h3>
-                            <span id="singleFeedCount" class="badge ok" style="font-size:.72rem">--</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
-                            <div class="filter-chip-group" id="singleFeedFilters">
-                                <span class="muted small" style="font-size:.76rem;margin-right:.2rem">Filter:</span>
-                                <button type="button" class="filter-chip active" data-filter="all">All</button>
-                                <button type="button" class="filter-chip" data-filter="unreplied">Needs Reply</button>
-                                <button type="button" class="filter-chip" data-filter="replied">Replied</button>
-                                <button type="button" class="filter-chip" data-filter="5star">5 ★</button>
-                                <button type="button" class="filter-chip" data-filter="critical">&lt; 5 ★</button>
+                    <div class="analytics-filter-toolbar" style="flex-direction:column; align-items:stretch; gap:.8rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.8rem;">
+                            <div style="display:flex;align-items:center;gap:.6rem">
+                                <h3 id="singleGameReviewTitle" style="margin: 0; font-size: 1.02rem;">Reviews &amp; Feedback</h3>
+                                <span id="singleFeedCount" class="badge ok" style="font-size:.72rem">--</span>
                             </div>
-                            <button type="button" class="btn-admin ghost small" id="backToOverviewBtn">← Back to Overview</button>
+                            <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+                                <div class="filter-chip-group" id="singleFeedFilters">
+                                    <span class="muted small" style="font-size:.76rem;margin-right:.2rem">Filter:</span>
+                                    <button type="button" class="filter-chip active" data-filter="all">All</button>
+                                    <button type="button" class="filter-chip" data-filter="unreplied">Needs Reply</button>
+                                    <button type="button" class="filter-chip" data-filter="replied">Replied</button>
+                                    <button type="button" class="filter-chip" data-filter="5star">5 ★</button>
+                                    <button type="button" class="filter-chip" data-filter="critical">&lt; 5 ★</button>
+                                </div>
+                                <button type="button" class="btn-admin ghost small" id="backToOverviewBtn">← Back to Overview</button>
+                            </div>
+                        </div>
+                        <!-- Single Game Search Box Toolbar -->
+                        <div style="position:relative; width:100%;">
+                            <span style="position:absolute; left:.75rem; top:50%; transform:translateY(-50%); font-size:.85rem; color:var(--mainra-muted); pointer-events:none;">🔍</span>
+                            <input type="search" id="singleReviewSearchInput" placeholder="Cari dalam ulasan game ini (kata kunci, kalimat, nama pengulas, perangkat)..." style="width:100%; padding:.45rem .8rem .45rem 2.2rem; font-size:.84rem; background:rgba(11,17,28,.65); border:1px solid var(--admin-border-subtle); border-radius:var(--radius-sm); color:var(--admin-text-main);">
                         </div>
                     </div>
                     <div id="tabReviewsList" style="padding: 1.4rem;">
@@ -868,6 +882,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../Assets/js/supabase-config.js"></script>
 <script src="../Assets/js/supabase-client.js"></script>
-<script src="assets/admin.js?v=4.5"></script>
+<script src="assets/admin.js?v=4.6"></script>
 </body>
 </html>

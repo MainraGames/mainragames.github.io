@@ -444,33 +444,48 @@
 
     var overviewFilterMode = 'all';
     var singleFilterMode = 'all';
+    var overviewSearchQuery = '';
+    var singleSearchQuery = '';
 
-    function filterReviewItems(items, mode) {
+    function filterReviewItems(items, mode, query) {
         if (!items) return [];
+        var result = items;
         if (mode === 'unreplied') {
-            return items.filter(function (r) {
+            result = result.filter(function (r) {
                 var txt = (r.reply_text || '').trim();
                 return !txt;
             });
-        }
-        if (mode === 'replied') {
-            return items.filter(function (r) {
+        } else if (mode === 'replied') {
+            result = result.filter(function (r) {
                 var txt = (r.reply_text || '').trim();
                 return !!txt;
             });
-        }
-        if (mode === '5star') {
-            return items.filter(function (r) {
+        } else if (mode === '5star') {
+            result = result.filter(function (r) {
                 return Number(r.star_rating) === 5;
             });
-        }
-        if (mode === 'critical') {
-            return items.filter(function (r) {
+        } else if (mode === 'critical') {
+            result = result.filter(function (r) {
                 var s = Number(r.star_rating);
                 return s < 5 && s > 0;
             });
         }
-        return items;
+
+        if (query && query.trim()) {
+            var q = query.trim().toLowerCase();
+            result = result.filter(function (r) {
+                var content = (r.content || '').toLowerCase();
+                var author = (r.author_name || '').toLowerCase();
+                var reply = (r.reply_text || '').toLowerCase();
+                var device = (r.device || '').toLowerCase();
+                return content.indexOf(q) !== -1 ||
+                       author.indexOf(q) !== -1 ||
+                       reply.indexOf(q) !== -1 ||
+                       device.indexOf(q) !== -1;
+            });
+        }
+
+        return result;
     }
 
     function renderDistributionBars(containerId, sentimentBadgeId, reviewList, onStarClick) {
@@ -663,19 +678,20 @@
             if ($('#overviewFeedCount')) $('#overviewFeedCount').textContent = '0';
         } else {
             function updateOverviewFeed() {
-                var filtered = filterReviewItems(reviews, overviewFilterMode);
+                var filtered = filterReviewItems(reviews, overviewFilterMode, overviewSearchQuery);
                 if ($('#overviewFeedCount')) {
                     $('#overviewFeedCount').textContent = filtered.length + ' of ' + reviews.length;
                 }
 
                 if (!filtered.length) {
-                    feedBox.innerHTML = '<div class="muted" style="text-align:center;padding:1.8rem">' +
-                        'No reviews match the current filter (' + esc(overviewFilterMode) + ').' +
-                    '</div>';
+                    var emptyMsg = overviewSearchQuery
+                        ? 'Tidak ada ulasan yang cocok dengan pencarian "' + esc(overviewSearchQuery) + '".'
+                        : 'No reviews match the current filter (' + esc(overviewFilterMode) + ').';
+                    feedBox.innerHTML = '<div class="muted" style="text-align:center;padding:1.8rem">' + emptyMsg + '</div>';
                     return;
                 }
 
-                var displayItems = filtered.slice(0, 8);
+                var displayItems = filtered.slice(0, 15);
                 feedBox.innerHTML = displayItems.map(function (r, i) {
                     var g = games.find(function (x) { return String(x.id) === String(r.game_id); });
                     var answered = (r.reply_text || '').trim();
@@ -723,6 +739,15 @@
                     updateOverviewFeed();
                 };
             });
+
+            // Wire search input
+            var searchInp = $('#overviewReviewSearchInput');
+            if (searchInp) {
+                searchInp.oninput = function () {
+                    overviewSearchQuery = searchInp.value;
+                    updateOverviewFeed();
+                };
+            }
 
             // Wire star bar clicks to filter overview
             renderDistributionBars('overviewRatingBars', 'overviewRatingSentiment', reviews, function (clickedStar) {
@@ -782,11 +807,14 @@
             return;
         }
 
-        var rows = filterReviewItems(allRows, singleFilterMode);
+        var rows = filterReviewItems(allRows, singleFilterMode, singleSearchQuery);
         if (countBadge) countBadge.textContent = rows.length + ' of ' + allRows.length;
 
         if (!rows.length) {
-            box.innerHTML = '<div class="muted" style="text-align:center;padding:1.5rem">No reviews match the "' + esc(singleFilterMode) + '" filter.</div>';
+            var emptyMsg = singleSearchQuery
+                ? 'Tidak ada ulasan yang cocok dengan pencarian "' + esc(singleSearchQuery) + '".'
+                : 'No reviews match the "' + esc(singleFilterMode) + '" filter.';
+            box.innerHTML = '<div class="muted" style="text-align:center;padding:1.5rem">' + emptyMsg + '</div>';
             return;
         }
 
@@ -833,6 +861,15 @@
                 loadTabReviews(gameId);
             };
         });
+
+        // Wire single review search input
+        var singleSearchInp = $('#singleReviewSearchInput');
+        if (singleSearchInp) {
+            singleSearchInp.oninput = function () {
+                singleSearchQuery = singleSearchInp.value;
+                loadTabReviews(gameId);
+            };
+        }
     }
 
     async function syncTabAnalytics(appId) {
