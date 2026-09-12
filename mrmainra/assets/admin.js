@@ -1218,6 +1218,10 @@
         var previewImage = $('#previewImage');
         var previewLinkCard = $('#previewLinkCard');
         var previewLinkText = $('#previewLinkText');
+        var previewAuthorName = $('#previewAuthorName');
+        var previewSubtitle = $('#previewSubtitle');
+
+        var activePlatform = 'facebook';
 
         function updatePreview() {
             if (previewText) {
@@ -1246,7 +1250,34 @@
                     previewLinkCard.style.display = 'none';
                 }
             }
+
+            // Adapt preview header styling based on active social platform
+            if (previewAuthorName && previewSubtitle) {
+                if (activePlatform === 'twitter') {
+                    previewAuthorName.textContent = 'Mainra Games';
+                    previewSubtitle.textContent = '@MainraGames · Just now';
+                } else if (activePlatform === 'threads') {
+                    previewAuthorName.textContent = 'mainragames';
+                    previewSubtitle.textContent = 'mainragames.com · Just now';
+                } else if (activePlatform === 'instagram') {
+                    previewAuthorName.textContent = 'mainragames';
+                    previewSubtitle.textContent = 'Sponsored / Official Post';
+                } else {
+                    previewAuthorName.textContent = 'Mainra Games';
+                    previewSubtitle.textContent = 'Just now · 🌍 Public';
+                }
+            }
         }
+
+        // Platform switcher buttons
+        $$('.preview-tab-btn').forEach(function (btn) {
+            btn.onclick = function () {
+                $$('.preview-tab-btn').forEach(function (b) { b.classList.remove('is-active'); });
+                btn.classList.add('is-active');
+                activePlatform = btn.dataset.platform || 'facebook';
+                updatePreview();
+            };
+        });
 
         if (contentInput) contentInput.addEventListener('input', updatePreview);
         if (imgInput) imgInput.addEventListener('input', updatePreview);
@@ -1272,6 +1303,9 @@
 
         $$('[data-share-game]').forEach(function (btn) {
             btn.onclick = function () {
+                $$('.game-chip-btn').forEach(function (b) { b.classList.remove('is-active'); });
+                btn.classList.add('is-active');
+
                 var gid = btn.dataset.shareGame;
                 var g = games.find(function (x) { return x.id === gid; });
                 if (!g) return;
@@ -1288,13 +1322,13 @@
                 linkInput.value = playLink;
                 if (g.image) imgInput.value = g.image;
 
-                contentInput.value = '🎮 Mainkan ' + shortTitle + ' sekarang di Google Play Store!\n\n' +
+                contentInput.value = '🎮 ' + shortTitle + ' kini hadir dengan konten & update seru!\n\n' +
                     (g.description ? g.description.slice(0, 160) + '…\n\n' : '') +
-                    '📲 Unduh gratis: ' + playLink + '\n#MainraGames #IndieGame #AndroidGames';
+                    '📲 Unduh gratis di Google Play: ' + playLink + '\n#MainraGames #IndieGame #AndroidGames';
 
                 $('#postCharCount').textContent = contentInput.value.length + ' / 1000';
                 wireLivePreview();
-                toast('Data game “' + shortTitle + '” berhasil di-isi otomatis! ⚡');
+                toast('Game “' + shortTitle + '” dipilih! ⚡');
             };
         });
     }
@@ -1329,27 +1363,42 @@
         var openBtn = $('#openAiAssistantBtn');
         var closeBtn = $('#closeAiPanelBtn');
         var panel = $('#aiAssistantPanel');
+        var toggleKeyBtn = $('#toggleAiKeySettingsBtn');
+        var keyDrawer = $('#aiKeySettingsDrawer');
+        var statusDot = $('#geminiConnectionStatusDot');
         var testBtn = $('#testGeminiBtn');
         var saveKeyBtn = $('#saveGeminiKeyBtn');
-        var refreshModelsBtn = $('#refreshAiModelsBtn');
         var generateBtn = $('#generateAiPostBtn');
-        var modelSelect = $('#aiModelSelect');
+        var refreshModelsBtn = $('#refreshAiModelsBtn');
         var keyInput = $('#geminiApiKeyInput');
         var fb = $('#geminiTestFeedback');
+        var modelSelect = $('#aiModelSelect');
 
         if (!panel) return;
 
         // Auto-load existing key from site_settings or localStorage
         var localSavedKey = '';
         try { localSavedKey = localStorage.getItem('mainra-gemini-key') || ''; } catch (e) {}
-        if (localSavedKey && keyInput) keyInput.value = localSavedKey;
+        if (localSavedKey && keyInput) {
+            keyInput.value = localSavedKey;
+            if (statusDot) statusDot.style.background = '#7fd1a1';
+        }
 
         sb.from('site_settings').select('value').eq('key', 'gemini_api_key').maybeSingle().then(function (res) {
             if (res.data && res.data.value && keyInput && !keyInput.value) {
                 var v = res.data.value;
                 keyInput.value = typeof v === 'string' ? v : (v.key || '');
+                if (statusDot) statusDot.style.background = '#7fd1a1';
             }
         });
+
+        if (toggleKeyBtn && keyDrawer) {
+            toggleKeyBtn.onclick = function () {
+                var isClosed = keyDrawer.style.display === 'none';
+                keyDrawer.style.display = isClosed ? 'block' : 'none';
+                toggleKeyBtn.textContent = isClosed ? '✕ Tutup Pengaturan' : '⚙️ Pengaturan Key';
+            };
+        }
 
         async function fetchDynamicModels(quiet) {
             var apiKey = keyInput ? keyInput.value.trim() : '';
