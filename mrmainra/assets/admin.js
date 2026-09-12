@@ -1331,7 +1331,9 @@
         var panel = $('#aiAssistantPanel');
         var testBtn = $('#testGeminiBtn');
         var saveKeyBtn = $('#saveGeminiKeyBtn');
+        var refreshModelsBtn = $('#refreshAiModelsBtn');
         var generateBtn = $('#generateAiPostBtn');
+        var modelSelect = $('#aiModelSelect');
         var keyInput = $('#geminiApiKeyInput');
         var fb = $('#geminiTestFeedback');
 
@@ -1349,25 +1351,76 @@
             }
         });
 
+        async function fetchDynamicModels(quiet) {
+            var apiKey = keyInput ? keyInput.value.trim() : '';
+            if (refreshModelsBtn) refreshModelsBtn.textContent = '⏳';
+
+            var res = await sb.functions.invoke('ai-social-assistant', {
+                body: { action: 'list_models', apiKey: apiKey }
+            }).catch(function (e) { return { error: e }; });
+
+            if (refreshModelsBtn) refreshModelsBtn.textContent = '🔄';
+
+            if (res.error || !res.data || !res.data.models || !res.data.models.length) {
+                if (!quiet) {
+                    var errMsg = (res.error && res.error.message) || (res.data && res.data.message) || 'Gagal mengambil daftar model.';
+                    toast(errMsg, true);
+                }
+                return;
+            }
+
+            var currentVal = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
+            var models = res.data.models;
+
+            if (modelSelect) {
+                modelSelect.innerHTML = models.map(function (m) {
+                    var label = m.displayName || m.id;
+                    if (m.id === 'gemini-2.0-flash') label += ' ★ Rekomendasi';
+                    else if (m.id === 'gemini-1.5-flash') label += ' (Cepat)';
+                    else if (m.id === 'gemini-1.5-pro') label += ' (Kreatif)';
+                    return '<option value="' + esc(m.id) + '">' + esc(label) + '</option>';
+                }).join('');
+
+                if (models.some(function (m) { return m.id === currentVal; })) {
+                    modelSelect.value = currentVal;
+                } else if (models.some(function (m) { return m.id === 'gemini-2.0-flash'; })) {
+                    modelSelect.value = 'gemini-2.0-flash';
+                }
+            }
+
+            if (!quiet) {
+                toast(models.length + ' model Gemini terbaru disinkronkan! ✓');
+            }
+        }
+
+        if (refreshModelsBtn) {
+            refreshModelsBtn.onclick = function () {
+                fetchDynamicModels(false);
+            };
+        }
+
         if (openBtn) {
             openBtn.onclick = function () {
                 var isHidden = panel.style.display === 'none';
                 panel.style.display = isHidden ? 'block' : 'none';
-                openBtn.textContent = isHidden ? '✕ Tutup AI' : '✨ AI Writer (Gemini)';
+                openBtn.textContent = isHidden ? '✕ Tutup AI' : '✨ AI Writer';
+                if (isHidden && keyInput && keyInput.value) {
+                    fetchDynamicModels(true);
+                }
             };
         }
 
         if (closeBtn) {
             closeBtn.onclick = function () {
                 panel.style.display = 'none';
-                if (openBtn) openBtn.textContent = '✨ AI Writer (Gemini)';
+                if (openBtn) openBtn.textContent = '✨ AI Writer';
             };
         }
 
         if (testBtn) {
             testBtn.onclick = async function () {
                 var apiKey = keyInput ? keyInput.value.trim() : '';
-                var model = $('#aiModelSelect') ? $('#aiModelSelect').value : 'gemini-1.5-flash';
+                var model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
                 if (!apiKey) {
                     toast('Mohon masukkan Gemini API Key terlebih dahulu.', true);
                     return;
@@ -1382,7 +1435,7 @@
                 }).catch(function (e) { return { error: e }; });
 
                 testBtn.disabled = false;
-                testBtn.textContent = '⚡ Test Model';
+                testBtn.textContent = '⚡ Test';
 
                 if (res.error) {
                     var errTxt = (res.error && res.error.message) || String(res.error);
@@ -1393,7 +1446,8 @@
 
                 var msg = (res.data && res.data.message) || 'Koneksi Sukses!';
                 if (fb) { fb.style.display = 'block'; fb.textContent = '✓ ' + msg; fb.style.color = 'var(--mainra-success)'; }
-                toast('Koneksi Gemini API Valid ✓');
+                toast('Koneksi model ' + model + ' valid! ✓');
+                fetchDynamicModels(true);
             };
         }
 
@@ -1415,7 +1469,7 @@
                 }).catch(function (e) { return { error: e }; });
 
                 saveKeyBtn.disabled = false;
-                saveKeyBtn.textContent = '💾 Simpan Key';
+                saveKeyBtn.textContent = '💾 Simpan';
 
                 if (res.error) {
                     toast('Gagal menyimpan key: ' + (res.error.message || res.error), true);
@@ -1423,13 +1477,14 @@
                 }
 
                 toast('Gemini API Key tersimpan di sistem ✓');
+                fetchDynamicModels(true);
             };
         }
 
         if (generateBtn) {
             generateBtn.onclick = async function () {
                 var apiKey = keyInput ? keyInput.value.trim() : '';
-                var model = $('#aiModelSelect') ? $('#aiModelSelect').value : 'gemini-1.5-flash';
+                var model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
                 var tone = $('#aiToneSelect') ? $('#aiToneSelect').value : '';
                 var customPrompt = $('#aiCustomInstruction') ? $('#aiCustomInstruction').value.trim() : '';
                 var titleVal = $('#postTitle') ? $('#postTitle').value.trim() : '';
@@ -1451,7 +1506,7 @@
                 }).catch(function (e) { return { error: e }; });
 
                 generateBtn.disabled = false;
-                generateBtn.textContent = '✨ Generate Postingan dengan Gemini';
+                generateBtn.textContent = '✨ Generate Postingan Otomatis';
 
                 if (res.error) {
                     toast('AI Error: ' + (res.error.message || res.error), true);
@@ -1468,7 +1523,7 @@
                         $('#postCharCount').textContent = data.caption.length + ' / 1000';
                         wireLivePreview();
                     }
-                    toast('Postingan berhasil dibuat oleh Gemini AI! ✨');
+                    toast('Postingan dibuat dengan model ' + (res.data.modelUsed || model) + '! ✨');
                 }
             };
         }

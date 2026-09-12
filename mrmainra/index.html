@@ -9,7 +9,7 @@
 <title>Admin — Mainra Games</title>
 <link rel="icon" type="image/png" href="../Assets/img/LogoMainraGames.png">
 <link rel="stylesheet" href="../Assets/css/mainra.css?v=3.4">
-<link rel="stylesheet" href="assets/admin.css?v=2.8">
+<link rel="stylesheet" href="assets/admin.css?v=2.9">
 </head>
 <body class="admin-body">
 
@@ -371,11 +371,15 @@
                                     </select>
                                 </label>
                                 <label style="font-size:.78rem; color:var(--mainra-muted); margin:0">Model:
-                                    <select id="aiModelSelect" style="width:100%; margin-top:.2rem; font-size:.78rem; padding:.3rem .5rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
-                                        <option value="gemini-1.5-flash">gemini-1.5-flash (Fast)</option>
-                                        <option value="gemini-1.5-pro">gemini-1.5-pro (Creative)</option>
-                                        <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-                                    </select>
+                                    <div style="display:flex; gap:.25rem; margin-top:.2rem">
+                                        <select id="aiModelSelect" style="flex:1; font-size:.78rem; padding:.3rem .5rem; border-radius:var(--radius-sm); background:var(--mainra-panel-solid); color:var(--mainra-ink); border:1px solid var(--mainra-line);">
+                                            <option value="gemini-2.0-flash">gemini-2.0-flash (Terbaru - Rekomendasi)</option>
+                                            <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
+                                            <option value="gemini-1.5-flash">gemini-1.5-flash (Fast)</option>
+                                            <option value="gemini-1.5-pro">gemini-1.5-pro (Creative)</option>
+                                        </select>
+                                        <button type="button" class="btn-admin ghost small" id="refreshAiModelsBtn" title="Fetch model terbaru dari Google API" style="padding:.2rem .45rem; font-size:.74rem">🔄</button>
+                                    </div>
                                 </label>
                             </div>
 
@@ -667,6 +671,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../Assets/js/supabase-config.js"></script>
 <script src="../Assets/js/supabase-client.js"></script>
-<script src="assets/admin.js"></script>
+<script src="assets/admin.js?v=2.9"></script>
 </body>
 </html>
