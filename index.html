@@ -15,27 +15,74 @@
     <meta name="theme-color" content="#0b111c">
     <link rel="canonical" href="https://mainragames.com/">
 
-    <!-- Open Graph -->
-    <meta property="og:title" content="Mainra Games - Studio & Community">
-    <meta property="og:description" content="A game development studio and community dedicated to bringing ideas to life.">
+    <!-- Open Graph / Facebook -->
+    <meta property="og:title" content="Mainra Games - Studio &amp; Community">
+    <meta property="og:description" content="Indie game development studio creating engaging mobile, casual, and multiplayer games. Explore our live games on Google Play Store.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://mainragames.com/">
     <meta property="og:site_name" content="Mainra Games">
     <meta property="og:locale" content="en_US">
+    <meta property="og:locale:alternate" content="id_ID">
     <meta property="og:image" content="https://mainragames.com/Assets/img/LogoMainraGames.png">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:image:alt" content="Mainra Games Studio Logo">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Mainra Games - Studio & Community">
-    <meta name="twitter:description" content="A game development studio and community dedicated to bringing ideas to life.">
+    <meta name="twitter:title" content="Mainra Games - Studio &amp; Community">
+    <meta name="twitter:description" content="Indie game development studio creating engaging mobile, casual, and multiplayer games. Explore our live games on Google Play Store.">
     <meta name="twitter:image" content="https://mainragames.com/Assets/img/LogoMainraGames.png">
+    <meta name="twitter:image:alt" content="Mainra Games Studio Logo">
     <meta name="twitter:site" content="@mainragames">
+    <meta name="twitter:creator" content="@mainragames">
 
     <!-- Image/Logo meta -->
     <meta name="image" content="Assets/img/LogoMainraGames.png">
     <meta itemprop="image" content="Assets/img/LogoMainraGames.png">
     <link rel="apple-touch-icon" href="Assets/img/LogoMainraGames.png">
     <link rel="icon" type="image/png" sizes="192x192" href="Assets/img/LogoMainraGames.png">
+
+    <!-- Structured Data / JSON-LD for Google Search & Rich Snippets -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://mainragames.com/#organization",
+          "name": "Mainra Games",
+          "url": "https://mainragames.com/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://mainragames.com/Assets/img/LogoMainraGames.png",
+            "width": 512,
+            "height": 512
+          },
+          "sameAs": [
+            "https://play.google.com/store/apps/dev?id=6814346565652097883",
+            "https://github.com/MainraGames"
+          ],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer support",
+            "email": "mainragames@gmail.com",
+            "availableLanguage": ["Indonesian", "English"]
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://mainragames.com/#website",
+          "url": "https://mainragames.com/",
+          "name": "Mainra Games",
+          "description": "Indie game development studio & community.",
+          "publisher": {
+            "@id": "https://mainragames.com/#organization"
+          }
+        }
+      ]
+    }
+    </script>
 
     <link rel="preconnect" href="https://play-lh.googleusercontent.com" crossorigin>
     <link rel="stylesheet" href="Assets/css/mainra.css?v=3.4">
