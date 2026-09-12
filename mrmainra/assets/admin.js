@@ -1365,26 +1365,34 @@
         }
         sb = window.supabaseClient;
 
-        $('#loginForm').addEventListener('submit', doLogin);
-        $('#logoutBtn').addEventListener('click', function () { sb.auth.signOut().then(function () { location.reload(); }); });
+        function on(sel, evt, handler) {
+            var el = $(sel);
+            if (el) el.addEventListener(evt, handler);
+        }
+
+        on('#loginForm', 'submit', doLogin);
+        on('#logoutBtn', 'click', function () { sb.auth.signOut().then(function () { location.reload(); }); });
         $$('.admin-nav button').forEach(function (b) { b.addEventListener('click', function () { selectTab(b.dataset.tab); }); });
-        $('#newGameBtn').addEventListener('click', function () { openGameModal(null); });
-        $('#gmClose').addEventListener('click', function () { $('#gameModal').close(); });
-        $('#gmCancel').addEventListener('click', function () { $('#gameModal').close(); });
-        $('#gameForm').addEventListener('submit', saveGame);
-        $('#refreshStoreBtn').addEventListener('click', function () { callFunction('sync-playstore'); });
-        $('#hideFeaturedBtn').addEventListener('click', hideFeatured);
-        $('#exportJsonBtn').addEventListener('click', exportJson);
+        on('#newGameBtn', 'click', function () { openGameModal(null); });
+        on('#gmClose', 'click', function () { $('#gameModal').close(); });
+        on('#gmCancel', 'click', function () { $('#gameModal').close(); });
+        on('#gameForm', 'submit', saveGame);
+        on('#refreshStoreBtn', 'click', function () { callFunction('sync-playstore'); });
+        on('#hideFeaturedBtn', 'click', hideFeatured);
+        on('#exportJsonBtn', 'click', exportJson);
         
-        $('#syncAnalyticsBtn').addEventListener('click', function () {
-            var gid = $('#syncAnalyticsBtn').dataset.gid;
+        on('#syncAnalyticsBtn', 'click', function () {
+            var btn = $('#syncAnalyticsBtn');
+            var gid = btn ? btn.dataset.gid : null;
             syncTabAnalytics(gid || null);
         });
-        $('#analyticsGameFilter').addEventListener('change', renderAnalyticsTab);
+        on('#analyticsGameFilter', 'change', renderAnalyticsTab);
+        
         var backBtn = $('#backToOverviewBtn');
         if (backBtn) {
             backBtn.addEventListener('click', function () {
-                $('#analyticsGameFilter').value = '';
+                var agf = $('#analyticsGameFilter');
+                if (agf) agf.value = '';
                 $$('.scope-pill').forEach(function (p) {
                     var active = (p.dataset.scope || '') === '';
                     p.classList.toggle('active', active);
@@ -1394,23 +1402,20 @@
             });
         }
 
-        $('#rpClose').addEventListener('click', function () { $('#replyModal').close(); });
-        $('#rpCancel').addEventListener('click', function () { $('#replyModal').close(); });
-        $('#rpSaveDraft').addEventListener('click', saveReplyDraft);
-        $('#rpPostGoogle').addEventListener('click', postReplyToGoogle);
+        on('#rpClose', 'click', function () { $('#replyModal').close(); });
+        on('#rpCancel', 'click', function () { $('#replyModal').close(); });
+        on('#rpSaveDraft', 'click', saveReplyDraft);
+        on('#rpPostGoogle', 'click', postReplyToGoogle);
         
-        var rgf = $('#reviewGameFilter');
-        if (rgf) rgf.addEventListener('change', renderReviews);
-        var rsf = $('#reviewStateFilter');
-        if (rsf) rsf.addEventListener('change', renderReviews);
-        var srb = $('#syncReviewsBtn');
-        if (srb) srb.addEventListener('click', function () { callFunction('sync-reviews'); });
-        $('#syncGamesBtn').addEventListener('click', function () { callFunction('sync-playstore'); });
+        on('#reviewGameFilter', 'change', renderReviews);
+        on('#reviewStateFilter', 'change', renderReviews);
+        on('#syncReviewsBtn', 'click', function () { callFunction('sync-reviews'); });
+        on('#syncGamesBtn', 'click', function () { callFunction('sync-playstore'); });
 
-        $('#newAdminBtn').addEventListener('click', openAddAdminModal);
-        $('#admClose').addEventListener('click', function () { $('#adminUserModal').close(); });
-        $('#admCancel').addEventListener('click', function () { $('#adminUserModal').close(); });
-        $('#adminUserForm').addEventListener('submit', submitNewAdmin);
+        on('#newAdminBtn', 'click', openAddAdminModal);
+        on('#admClose', 'click', function () { $('#adminUserModal').close(); });
+        on('#admCancel', 'click', function () { $('#adminUserModal').close(); });
+        on('#adminUserForm', 'submit', submitNewAdmin);
 
         sb.auth.onAuthStateChange(function (event, session) {
             if (event === 'SIGNED_OUT') {
