@@ -493,6 +493,29 @@
                                     </div>
                                 </div>
 
+                                <!-- Schedule & Timing Controls -->
+                                <div style="background:rgba(255,255,255,0.02); border:1px solid var(--admin-border-subtle); border-radius:var(--radius-sm); padding:.65rem .85rem;">
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.4rem;">
+                                        <label style="font-size:.82rem; font-weight:600; color:var(--mainra-white); margin:0; display:flex; align-items:center; gap:.4rem;">
+                                            <span>📅</span> Waktu Publikasi:
+                                        </label>
+                                        <div style="display:flex; gap:.35rem;">
+                                            <button type="button" class="btn-admin ghost small" id="scheduleNowModeBtn" style="padding:.15rem .55rem; font-size:.72rem; border-color:var(--mainra-orange); color:var(--mainra-orange)">⚡ Kirim Sekarang</button>
+                                            <button type="button" class="btn-admin ghost small" id="scheduleLaterModeBtn" style="padding:.15rem .55rem; font-size:.72rem">🕒 Jadwalkan Nanti</button>
+                                        </div>
+                                    </div>
+                                    <div id="scheduleTimePickerBox" style="display:none; margin-top:.5rem; padding-top:.5rem; border-top:1px dashed var(--admin-border-subtle);">
+                                        <div style="display:flex; align-items:center; gap:.6rem; flex-wrap:wrap;">
+                                            <label style="font-size:.78rem; color:var(--mainra-muted); margin:0; flex:1; min-width:200px;">Pilih Tanggal &amp; Jam Tayang:
+                                                <input type="datetime-local" id="postScheduleTime" style="width:100%; margin-top:.25rem; font-size:.82rem; padding:.45rem .65rem; background:var(--admin-bg-surface); border:1px solid var(--admin-border-subtle); border-radius:var(--radius-sm); color:var(--mainra-white);">
+                                            </label>
+                                            <div style="font-size:.72rem; color:var(--mainra-muted); line-height:1.3; flex:1; min-width:180px;">
+                                                Buffer akan otomatis menerbitkan postingan ini ke antrean sosial media sesuai jadwal yang ditentukan.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div style="margin-top:.4rem; display:flex; justify-content:flex-end;">
                                     <button type="submit" class="btn-admin" id="broadcastSubmitBtn" style="width:100%; justify-content:center; padding:.7rem 1.4rem; font-size:.95rem; font-weight:700">
                                         🚀 Terbitkan Berita &amp; Broadcast Sekarang
@@ -553,10 +576,17 @@
                         </div>
                     </div>
 
-                    <!-- Broadcast History Feed -->
+                    <!-- Broadcast History & Scheduled Calendar Feed -->
                     <div class="card" style="padding:0; overflow:hidden;">
                         <div class="broadcast-card-header">
-                            <h3 style="margin:0; font-size:.98rem">Riwayat Broadcast Sosial Media</h3>
+                            <div style="display:flex; align-items:center; gap:.5rem;">
+                                <h3 style="margin:0; font-size:.98rem">Kalender &amp; Riwayat Broadcast</h3>
+                                <div style="display:flex; gap:.25rem;">
+                                    <button type="button" class="filter-chip active" id="filterBroadcastAllBtn" style="padding:.12rem .5rem; font-size:.7rem">Semua</button>
+                                    <button type="button" class="filter-chip" id="filterBroadcastScheduledBtn" style="padding:.12rem .5rem; font-size:.7rem">🕒 Terjadwal</button>
+                                    <button type="button" class="filter-chip" id="filterBroadcastPublishedBtn" style="padding:.12rem .5rem; font-size:.7rem">✓ Terbit</button>
+                                </div>
+                            </div>
                             <span id="broadcastHistoryCount" class="badge ok" style="font-size:.72rem">-- post</span>
                         </div>
                         <div id="broadcastHistoryList" style="padding:1.1rem;">
@@ -734,6 +764,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../Assets/js/supabase-config.js"></script>
 <script src="../Assets/js/supabase-client.js"></script>
-<script src="assets/admin.js?v=4.0"></script>
+<script src="assets/admin.js?v=4.1"></script>
 </body>
 </html>

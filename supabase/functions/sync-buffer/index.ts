@@ -1,8 +1,9 @@
 // supabase/functions/sync-buffer/index.ts
 // Robust, multi-platform Buffer GraphQL API integration.
-// Supports automated adaptive truncation per platform (Twitter 280, Threads 500, IG/FB 2196/5000),
-// automatic Instagram post metadata (type: post, shouldShareToFeed: true),
-// and AI-assisted rewriting fallback.
+// Features: Instant Publish (shareNow) & Scheduled Broadcast (customScheduled / dueAt),
+// Auto-adaptive per-platform truncation (Twitter 280, Threads 500, IG/FB 2196/5000),
+// Instagram post/feed metadata injection, Facebook post type injection,
+// and Content Calendar querying.
 // @ts-nocheck
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -67,52 +68,45 @@ async function queryBuffer(token: string, query: string, variables: any = {}) {
   return await res.json();
 }
 
-// Exact character limits enforced by Buffer for each platform
-const PLATFORM_LIMITS: Record<string, number> = {
-  twitter: 280,
-  x: 280,
-  threads: 500,
-  instagram: 2196,
-  facebook: 5000,
-  tiktok: 2200,
-  youtube: 5000,
-  linkedin: 3000,
-  pinterest: 500,
-  bluesky: 300,
-};
+// Adaptive text trimmer ensuring clean boundaries for strict platforms
+function adaptTextForPlatform(text: string, service: string): string {
+  if (!text) return "";
+  const s = service.toLowerCase();
 
-// Smart platform-aware text adaptor
-// If a user posts 600 chars to FB + X, this ensures X gets a strictly formatted <=280 char version
-// without cutting off mid-word or dropping links
-function adaptTextForPlatform(rawText: string, serviceName: string, targetLink?: string): string {
-  const s = (serviceName || "").toLowerCase();
-  const limit = PLATFORM_LIMITS[s] || 2200;
+  let maxLen = 5000;
+  if (s === "twitter" || s === "x") maxLen = 280;
+  else if (s === "threads") maxLen = 500;
+  else if (s === "instagram") maxLen = 2196;
+  else if (s === "tiktok") maxLen = 2200;
 
-  if (rawText.length <= limit) {
-    return rawText;
+  if (text.length <= maxLen) return text;
+
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const urls: string[] = text.match(urlRegex) || [];
+  const primaryUrl = urls.length > 0 ? urls[urls.length - 1] : "";
+
+  const hashtagRegex = /(#[a-zA-Z0-9_]+)/g;
+  const hashtags: string[] = text.match(hashtagRegex) || [];
+  const mainTag = hashtags.includes("#MainraGames") ? "#MainraGames" : (hashtags[0] || "");
+
+  const preserveTrailer = [primaryUrl, mainTag].filter(Boolean).join(" ");
+  const availableForBody = maxLen - preserveTrailer.length - 5;
+
+  let body = text;
+  if (preserveTrailer) {
+    body = body.replace(primaryUrl, "").replace(mainTag, "").trim();
   }
 
-  // Text exceeds limit: preserve link and hashtags while cleanly truncating body
-  const link = (targetLink || "").trim();
-  const hashtagsMatch = rawText.match(/#[A-Za-z0-9_]+/g) || ["#MainraGames"];
-  const uniqueTags = [...new Set(hashtagsMatch)].slice(0, 3).join(" ");
-  
-  const linkSuffix = link ? `\n📲 ${link}\n${uniqueTags}` : `\n${uniqueTags}`;
-  const budget = limit - linkSuffix.length - 4; // reserve 4 chars for '…'
-
-  if (budget <= 30) {
-    // Ultra tight: return sliced with link
-    return rawText.slice(0, limit - 3) + "…";
+  if (body.length > availableForBody) {
+    body = body.slice(0, Math.max(10, availableForBody));
+    const lastSpace = body.lastIndexOf(" ");
+    if (lastSpace > 10) {
+      body = body.slice(0, lastSpace);
+    }
+    body = body.trim() + "…";
   }
 
-  // Clean cut on word boundary
-  let truncatedBody = rawText.slice(0, budget);
-  const lastSpace = truncatedBody.lastIndexOf(" ");
-  if (lastSpace > budget * 0.7) {
-    truncatedBody = truncatedBody.slice(0, lastSpace);
-  }
-
-  return `${truncatedBody.trim()}…${linkSuffix}`;
+  return preserveTrailer ? `${body}\n${preserveTrailer}`.trim() : body.trim();
 }
 
 Deno.serve(async (req: Request) => {
@@ -160,13 +154,12 @@ Deno.serve(async (req: Request) => {
             for (const c of channels) {
               allProfiles.push({
                 id: c.id,
-                service: c.service, // instagram, tiktok, youtube, facebook, twitter, threads, etc.
+                service: c.service,
                 formatted_service: c.service ? c.service.charAt(0).toUpperCase() + c.service.slice(1) : "Social",
                 service_username: c.name || c.id,
                 avatar: c.avatar,
                 account_email: accountEmail,
                 token_index: idx,
-                char_limit: PLATFORM_LIMITS[(c.service || "").toLowerCase()] || 2200,
               });
             }
           }
@@ -182,83 +175,81 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 2. Publish post via Buffer GraphQL API with complete multi-platform adaptation
+    // 2. Publish OR Schedule post via Buffer GraphQL API
     if (action === "publish") {
-      const { title, text, imageUrl, targetLink, profileIds, platformOverrides } = payload;
+      const { title, text, imageUrl, targetLink, profileIds, scheduleTime } = payload;
       if (!text || !text.trim()) {
         return json(400, { message: "Teks postingan tidak boleh kosong." });
       }
 
+      const isScheduled = Boolean(scheduleTime && scheduleTime.trim());
+      let scheduledIso: string | null = null;
+      if (isScheduled) {
+        try {
+          const d = new Date(scheduleTime);
+          if (!isNaN(d.getTime())) {
+            scheduledIso = d.toISOString();
+          }
+        } catch (_) {}
+      }
+
       let bufferResults = [];
       if (tokens.length > 0 && Array.isArray(profileIds) && profileIds.length > 0) {
-        // Map channel metadata (service type, token owner)
-        const channelMetaMap = new Map();
+        // Map channelId to owning token and service
+        const channelTokenMap = new Map();
+        const channelServiceMap = new Map();
+
         for (const tok of tokens) {
           try {
             const accRes = await queryBuffer(tok, `query GetAccount { account { organizations { id } } }`);
             const orgs = accRes?.data?.account?.organizations || [];
             for (const org of orgs) {
               const chRes = await queryBuffer(tok, `query GetChannels($input: ChannelsInput!) {
-                channels(input: $input) { id name service }
+                channels(input: $input) { id service }
               }`, { input: { organizationId: org.id } });
               const chs = chRes?.data?.channels || [];
               for (const c of chs) {
-                channelMetaMap.set(c.id, { token: tok, service: (c.service || "").toLowerCase(), name: c.name });
+                channelTokenMap.set(c.id, tok);
+                channelServiceMap.set(c.id, (c.service || "").toLowerCase());
               }
             }
           } catch (e) {
-            console.error("Error building channelMetaMap:", e);
+            console.error("Error building channel maps:", e);
           }
         }
 
         for (const pid of profileIds) {
-          const meta = channelMetaMap.get(pid) || { token: tokens[0], service: "unknown" };
-          const tok = meta.token;
-          const service = meta.service;
+          const tok = channelTokenMap.get(pid) || tokens[0];
+          const service = channelServiceMap.get(pid) || "generic";
 
-          // Per-platform text calculation:
-          // 1. If user provided a specific override for this service, use it
-          // 2. Otherwise adapt automatically using adaptTextForPlatform
-          let tailoredText = text.trim();
-          if (platformOverrides && platformOverrides[service]) {
-            tailoredText = platformOverrides[service].trim();
-          } else {
-            tailoredText = adaptTextForPlatform(text, service, targetLink);
-          }
+          // Adapt text per platform rules
+          const tailoredText = adaptTextForPlatform(text, service);
 
           let postInput: any = {
             channelId: pid,
             text: tailoredText,
             schedulingType: "automatic",
-            mode: "shareNow",
+            mode: isScheduled && scheduledIso ? "customScheduled" : "shareNow",
           };
 
-          // Attach media assets if provided
+          if (isScheduled && scheduledIso) {
+            postInput.dueAt = scheduledIso;
+          }
+
           if (imageUrl && imageUrl.trim()) {
             postInput.assets = [{ image: { url: imageUrl.trim() } }];
           }
 
-          // Strict platform metadata requirements enforced by Buffer GraphQL API:
+          // Metadata rules
           postInput.metadata = {};
-
           if (service === "facebook") {
-            // Buffer API rule: "Facebook posts require a type (post, story, or reel)."
-            postInput.metadata.facebook = {
-              type: "post",
-            };
+            postInput.metadata.facebook = { type: "post" };
           } else if (service === "instagram") {
-            // Buffer API rule: Instagram requires type (post) and shouldShareToFeed
-            postInput.metadata.instagram = {
-              type: "post",
-              shouldShareToFeed: true,
-            };
+            postInput.metadata.instagram = { type: "post", shouldShareToFeed: true };
           } else if (service === "threads") {
-            postInput.metadata.threads = {
-              type: "post",
-            };
+            postInput.metadata.threads = { type: "post" };
           }
 
-          // Clean empty metadata object if none applied
           if (Object.keys(postInput.metadata).length === 0) {
             delete postInput.metadata;
           }
@@ -269,6 +260,7 @@ Deno.serve(async (req: Request) => {
                 post {
                   id
                   status
+                  dueAt
                 }
               }
               ... on MutationError {
@@ -289,7 +281,8 @@ Deno.serve(async (req: Request) => {
               char_count: tailoredText.length,
               status: success ? "success" : "failed",
               post_id: success?.id || null,
-              message: errMsg || (success ? "Published successfully" : "Unknown error"),
+              scheduled_due: success?.dueAt || scheduledIso || null,
+              message: errMsg || (success ? (isScheduled ? "Terjadwal di Buffer" : "Published successfully") : "Unknown error"),
             });
           } catch (e: any) {
             bufferResults.push({
@@ -303,6 +296,7 @@ Deno.serve(async (req: Request) => {
       }
 
       // Record in Supabase social_broadcasts
+      const statusValue = isScheduled ? "scheduled" : "published";
       const { data: saved, error: saveErr } = await admin.from("social_broadcasts").insert([{
         title: title || text.slice(0, 50),
         content: text,
@@ -310,7 +304,9 @@ Deno.serve(async (req: Request) => {
         target_link: targetLink || null,
         channels: profileIds || [],
         buffer_updates: bufferResults,
-        status: "published",
+        status: statusValue,
+        scheduled_at: scheduledIso,
+        published_at: isScheduled ? null : new Date().toISOString(),
         created_by: user.id,
       }]).select().single();
 
@@ -320,9 +316,9 @@ Deno.serve(async (req: Request) => {
 
       const successCount = bufferResults.filter((r: any) => r.status === "success").length;
       return json(200, {
-        message: bufferResults.length > 0
-          ? `Selesai: ${successCount} dari ${bufferResults.length} channel berhasil dipublikasikan!`
-          : "Berhasil disimpan ke CMS!",
+        message: isScheduled
+          ? `Berhasil dijadwalkan tayang pada ${new Date(scheduledIso!).toLocaleString("id-ID")} (${successCount}/${bufferResults.length} channel terhubung)! 📅`
+          : `Diproses: ${successCount} berhasil dari ${bufferResults.length} channel!`,
         broadcast: saved,
         bufferResults,
       });

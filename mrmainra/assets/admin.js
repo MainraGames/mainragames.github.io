@@ -1218,6 +1218,7 @@
             loadBufferProfiles();
             renderQuickGameChips();
             wireSocialTemplates();
+            wireScheduleControls();
             initAiAssistant();
             wireLivePreview();
         } else if (name === 'admins') {
@@ -1887,33 +1888,35 @@
         }
     }
 
-    async function loadSocialBroadcasts() {
+    var broadcastFilterMode = 'all'; // 'all', 'scheduled', 'published'
+
+    function renderBroadcastHistoryFeed() {
         var box = $('#broadcastHistoryList');
         var countBadge = $('#broadcastHistoryCount');
         if (!box) return;
 
-        box.innerHTML = '<div class="muted">Memuat riwayat pengumuman…</div>';
+        var filtered = broadcastsList.filter(function (b) {
+            if (broadcastFilterMode === 'scheduled') return b.status === 'scheduled';
+            if (broadcastFilterMode === 'published') return b.status === 'published';
+            return true;
+        });
 
-        var res = await sb.from('social_broadcasts')
-            .select('*')
-            .order('published_at', { ascending: false })
-            .limit(20);
+        if (countBadge) countBadge.textContent = filtered.length + ' post';
 
-        if (res.error) {
-            box.innerHTML = '<div class="muted">Gagal memuat riwayat: ' + esc(res.error.message) + '</div>';
+        if (!filtered.length) {
+            var emptyMsg = broadcastFilterMode === 'scheduled'
+                ? 'Belum ada postingan yang dijadwalkan tayang.'
+                : (broadcastFilterMode === 'published'
+                    ? 'Belum ada postingan yang telah terbit.'
+                    : 'Belum ada riwayat broadcast. Buat postingan pertama Anda!');
+            box.innerHTML = '<div class="muted" style="text-align:center; padding:1.5rem">' + esc(emptyMsg) + '</div>';
             return;
         }
 
-        broadcastsList = res.data || [];
-        if (countBadge) countBadge.textContent = broadcastsList.length + ' post';
-
-        if (!broadcastsList.length) {
-            box.innerHTML = '<div class="muted" style="text-align:center; padding:1.5rem">Belum ada broadcast yang dipublikasikan. Buat postingan pertama di formulir sebelah kiri!</div>';
-            return;
-        }
-
-        box.innerHTML = broadcastsList.map(function (b) {
-            var dateStr = b.published_at ? new Date(b.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+        box.innerHTML = filtered.map(function (b) {
+            var isScheduled = b.status === 'scheduled';
+            var timeRaw = isScheduled ? (b.scheduled_at || b.published_at) : b.published_at;
+            var dateStr = timeRaw ? new Date(timeRaw).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
             var channelsCount = Array.isArray(b.channels) ? b.channels.length : 0;
             var updates = Array.isArray(b.buffer_updates) ? b.buffer_updates : [];
             var okCount = updates.filter(function (u) { return u.status === 'success'; }).length;
@@ -1921,29 +1924,121 @@
             var channelPills = updates.map(function (u) {
                 var s = (u.service || '').toLowerCase();
                 var icon = getPlatformBrandIcon(s);
-
                 var isOk = u.status === 'success';
-                var tip = isOk ? (u.text_used ? 'Terbit: ' + u.char_count + ' karakter' : 'Sukses') : (u.message || 'Gagal');
+                var tip = isOk ? (isScheduled ? 'Terjadwal di ' + s : 'Terbit: ' + (u.char_count || '') + ' char') : (u.message || 'Gagal');
                 return '<span class="char-tag ' + (isOk ? 'is-safe' : 'is-over') + '" title="' + esc(tip) + '">' +
                     icon + ' ' + (isOk ? '✓' : '✗') +
                 '</span>';
             }).join(' ');
 
-            return '<div style="border-bottom:1px solid var(--mainra-line); padding:1rem 0;">' +
+            return '<div style="border-bottom:1px solid var(--admin-border-subtle); padding:1rem 0;">' +
                 '<div style="display:flex; justify-content:space-between; align-items:baseline; gap:.5rem; flex-wrap:wrap;">' +
-                    '<h4 style="margin:0; font-size:.98rem; color:var(--mainra-white)">' + esc(b.title) + '</h4>' +
-                    '<span class="muted" style="font-size:.78rem">' + esc(dateStr) + '</span>' +
+                    '<div style="display:flex; align-items:center; gap:.4rem;">' +
+                        (isScheduled ? '<span class="badge warn" style="font-size:.68rem">🕒 Jadwal: ' + esc(dateStr) + '</span>' : '') +
+                        '<h4 style="margin:0; font-size:.98rem; color:var(--mainra-white)">' + esc(b.title) + '</h4>' +
+                    '</div>' +
+                    '<span class="muted" style="font-size:.78rem">' + (isScheduled ? 'Antrean Buffer' : esc(dateStr)) + '</span>' +
                 '</div>' +
                 '<p style="margin:.5rem 0 .4rem; font-size:.88rem; line-height:1.45; color:var(--mainra-ink)">' + esc(b.content) + '</p>' +
                 (b.image_url ? '<div style="margin:.4rem 0;"><img src="' + esc(b.image_url) + '" alt="" style="max-height:120px; border-radius:var(--radius-sm); border:1px solid var(--mainra-line);" onerror="this.style.display=\'none\'"></div>' : '') +
                 '<div style="display:flex; gap:.6rem; align-items:center; margin-top:.4rem; flex-wrap:wrap;">' +
-                    '<span class="badge ok" style="font-size:.72rem">Web Published</span>' +
-                    (channelsCount > 0 ? '<span class="badge ' + (okCount > 0 ? 'ok' : 'warn') + '" style="font-size:.72rem">🚀 ' + okCount + '/' + channelsCount + ' Channel Terkirim</span>' : '<span class="badge warn" style="font-size:.72rem">Web Only</span>') +
+                    (isScheduled
+                        ? '<span class="badge warn" style="font-size:.72rem">🕒 Antrean Kalender</span>'
+                        : '<span class="badge ok" style="font-size:.72rem">Web Published</span>') +
+                    (channelsCount > 0
+                        ? '<span class="badge ' + (okCount > 0 ? 'ok' : 'warn') + '" style="font-size:.72rem">🚀 ' + okCount + '/' + channelsCount + ' Channel ' + (isScheduled ? 'Terjadwal' : 'Terkirim') + '</span>'
+                        : '<span class="badge warn" style="font-size:.72rem">Web Only</span>') +
                     (channelPills ? '<div style="display:inline-flex; gap:.25rem; align-items:center">' + channelPills + '</div>' : '') +
                     (b.target_link ? '<a href="' + esc(b.target_link) + '" target="_blank" rel="noopener" style="font-size:.78rem; color:var(--mainra-orange); margin-left:auto">Buka Link ↗</a>' : '') +
                 '</div>' +
             '</div>';
         }).join('');
+    }
+
+    async function loadSocialBroadcasts() {
+        var box = $('#broadcastHistoryList');
+        if (!box) return;
+
+        box.innerHTML = '<div class="muted">Memuat riwayat pengumuman & kalender…</div>';
+
+        var res = await sb.from('social_broadcasts')
+            .select('*')
+            .order('scheduled_at', { ascending: false, nullsFirst: false })
+            .order('published_at', { ascending: false })
+            .limit(30);
+
+        if (res.error) {
+            box.innerHTML = '<div class="muted">Gagal memuat riwayat: ' + esc(res.error.message) + '</div>';
+            return;
+        }
+
+        broadcastsList = res.data || [];
+        renderBroadcastHistoryFeed();
+
+        // Wire filter buttons
+        var btnAll = $('#filterBroadcastAllBtn');
+        var btnSched = $('#filterBroadcastScheduledBtn');
+        var btnPub = $('#filterBroadcastPublishedBtn');
+
+        if (btnAll) btnAll.onclick = function () {
+            broadcastFilterMode = 'all';
+            $$('#tab-social .filter-chip').forEach(function (c) { c.classList.remove('active'); });
+            btnAll.classList.add('active');
+            renderBroadcastHistoryFeed();
+        };
+
+        if (btnSched) btnSched.onclick = function () {
+            broadcastFilterMode = 'scheduled';
+            $$('#tab-social .filter-chip').forEach(function (c) { c.classList.remove('active'); });
+            btnSched.classList.add('active');
+            renderBroadcastHistoryFeed();
+        };
+
+        if (btnPub) btnPub.onclick = function () {
+            broadcastFilterMode = 'published';
+            $$('#tab-social .filter-chip').forEach(function (c) { c.classList.remove('active'); });
+            btnPub.classList.add('active');
+            renderBroadcastHistoryFeed();
+        };
+    }
+
+    var isScheduleMode = false;
+
+    function wireScheduleControls() {
+        var nowBtn = $('#scheduleNowModeBtn');
+        var laterBtn = $('#scheduleLaterModeBtn');
+        var pickerBox = $('#scheduleTimePickerBox');
+        var submitBtn = $('#broadcastSubmitBtn');
+        var timeInput = $('#postScheduleTime');
+
+        if (nowBtn && laterBtn && pickerBox) {
+            nowBtn.onclick = function () {
+                isScheduleMode = false;
+                nowBtn.style.borderColor = 'var(--mainra-orange)';
+                nowBtn.style.color = 'var(--mainra-orange)';
+                laterBtn.style.borderColor = '';
+                laterBtn.style.color = '';
+                pickerBox.style.display = 'none';
+                if (submitBtn) submitBtn.textContent = '🚀 Terbitkan Berita & Broadcast Sekarang';
+            };
+
+            laterBtn.onclick = function () {
+                isScheduleMode = true;
+                laterBtn.style.borderColor = 'var(--mainra-orange)';
+                laterBtn.style.color = 'var(--mainra-orange)';
+                nowBtn.style.borderColor = '';
+                nowBtn.style.color = '';
+                pickerBox.style.display = 'block';
+
+                // Default to +2 hours from now if empty
+                if (timeInput && !timeInput.value) {
+                    var d = new Date(Date.now() + 2 * 60 * 60 * 1000);
+                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                    timeInput.value = d.toISOString().slice(0, 16);
+                }
+                if (submitBtn) submitBtn.textContent = '📅 Jadwalkan Broadcast Konten';
+            };
+        }
     }
 
     async function handleSocialBroadcastSubmit(e) {
@@ -1969,8 +2064,22 @@
             return;
         }
 
+        var scheduleTimeVal = null;
+        if (isScheduleMode) {
+            var timeInput = $('#postScheduleTime');
+            scheduleTimeVal = timeInput ? timeInput.value : '';
+            if (!scheduleTimeVal) {
+                toast('Pilih tanggal dan jam publikasi terlebih dahulu.', true);
+                return;
+            }
+            if (new Date(scheduleTimeVal) <= new Date()) {
+                toast('Waktu jadwal harus lebih dari waktu saat ini.', true);
+                return;
+            }
+        }
+
         submitBtn.disabled = true;
-        submitBtn.textContent = '🚀 Memproses & Menyesuaikan Broadcast…';
+        submitBtn.textContent = isScheduleMode ? '📅 Menjadwalkan Broadcast…' : '🚀 Memproses & Menyesuaikan Broadcast…';
 
         var res = await sb.functions.invoke('sync-buffer', {
             body: {
@@ -1979,7 +2088,8 @@
                 text: content,
                 imageUrl: imageUrl || null,
                 targetLink: targetLink || null,
-                profileIds: checkedProfiles
+                profileIds: checkedProfiles,
+                scheduleTime: scheduleTimeVal
             }
         });
 
