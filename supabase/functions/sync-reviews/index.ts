@@ -250,15 +250,36 @@ Deno.serve(async (req: Request) => {
 
     let fetched = 0;
     for (const pkg of packages) {
-      let rows: any[];
+      const rowsMap = new Map();
+
+      // 1. Fetch from official Google Play API
       if (mode === "developer-api") {
-        const raw = await listApiReviews(token, pkg);
-        if (raw.length === 0) continue;
-        rows = raw.map((r) => mapApiReview(r, pkg));
-      } else {
-        rows = await listScrapedReviews(pkg);
-        if (rows.length === 0) continue;
+        try {
+          const apiRows = await listApiReviews(token, pkg);
+          for (const r of apiRows) {
+            const mapped = mapApiReview(r, pkg);
+            if (mapped && mapped.review_id) rowsMap.set(mapped.review_id, mapped);
+          }
+        } catch (err) {
+          console.error(`listApiReviews error for ${pkg}:`, err);
+        }
       }
+
+      // 2. Fetch from scraper (covers public reviews, multiple locales, and apps with public ratings)
+      try {
+        const scrapedRows = await listScrapedReviews(pkg);
+        for (const r of scrapedRows) {
+          if (r && r.review_id && !rowsMap.has(r.review_id)) {
+            rowsMap.set(r.review_id, r);
+          }
+        }
+      } catch (err) {
+        console.error(`listScrapedReviews error for ${pkg}:`, err);
+      }
+
+      let rows = Array.from(rowsMap.values());
+      if (rows.length === 0) continue;
+
       // Only write reply fields when Google actually has a reply; otherwise leave
       // any draft the admin saved in the dashboard untouched.
       rows = rows.map((row) => {
