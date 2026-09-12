@@ -2226,11 +2226,49 @@
             reader.readAsDataURL(file);
         }
 
-        // 1. Click zone triggers file selector
+        // 1. Click zone triggers file selector (except when clicking direct paste button or remove button)
         zone.onclick = function (e) {
-            if (e.target.closest('#removePastedImageBtn')) return;
+            if (e.target.closest('#removePastedImageBtn') || e.target.closest('#directClipboardBtn')) return;
             if (fileInput) fileInput.click();
         };
+
+        // 1b. Direct button trigger for navigator.clipboard.read() (Explicit User Gesture)
+        var clipBtn = $('#directClipboardBtn');
+        if (clipBtn) {
+            clipBtn.onclick = async function (e) {
+                e.stopPropagation();
+                if (!navigator.clipboard || !navigator.clipboard.read) {
+                    toast('Browser tidak mendukung Clipboard API langsung. Gunakan shortcut Ctrl+V.', true);
+                    return;
+                }
+                try {
+                    clipBtn.disabled = true;
+                    clipBtn.textContent = 'Membaca Clipboard…';
+                    var items = await navigator.clipboard.read();
+                    var found = false;
+                    for (var i = 0; i < items.length; i++) {
+                        var imgType = items[i].types.find(function (t) { return t.startsWith('image/'); });
+                        if (imgType) {
+                            var blob = await items[i].getType(imgType);
+                            if (blob) {
+                                found = true;
+                                processImageFile(blob);
+                                break;
+                            }
+                        }
+                    }
+                    clipBtn.disabled = false;
+                    clipBtn.textContent = '📋 Paste dari Clipboard';
+                    if (!found) {
+                        toast('Tidak ada gambar yang disalin di clipboard saat ini. Salin gambar terlebih dahulu (Ctrl+C / Snipping Tool).', true);
+                    }
+                } catch (err) {
+                    clipBtn.disabled = false;
+                    clipBtn.textContent = '📋 Paste dari Clipboard';
+                    toast('Akses clipboard ditolak atau tidak diizinkan: ' + (err.message || err), true);
+                }
+            };
+        }
 
         if (fileInput) {
             fileInput.onchange = function () {
@@ -2271,17 +2309,19 @@
 
         // 3. Global Clipboard Paste (Ctrl+V anywhere in broadcast form or page when social tab active)
         window.addEventListener('paste', function (e) {
-            // Only process if social tab is visible
+            // Check if user is actively in social tab
             var socialTab = $('#tab-social');
-            if (!socialTab || !socialTab.classList.contains('is-active')) return;
+            if (!socialTab || !socialTab.classList.contains('active')) return;
 
+            // Don't intercept text pastes in title/prompt/key inputs unless it contains an image
             var clipboard = e.clipboardData || window.clipboardData;
             if (!clipboard) return;
 
-            // Priority A: Check clipboard.files
+            var hasImage = false;
+            // Check clipboard.files
             if (clipboard.files && clipboard.files.length > 0) {
                 for (var f = 0; f < clipboard.files.length; f++) {
-                    if (clipboard.files[f].type.indexOf('image') !== -1) {
+                    if (clipboard.files[f].type && clipboard.files[f].type.indexOf('image') !== -1) {
                         e.preventDefault();
                         processImageFile(clipboard.files[f]);
                         return;
@@ -2289,7 +2329,7 @@
                 }
             }
 
-            // Priority B: Check clipboard.items (Direct Snipping Tool / Screenshot buffer)
+            // Check clipboard.items
             var items = clipboard.items;
             if (items) {
                 for (var i = 0; i < items.length; i++) {

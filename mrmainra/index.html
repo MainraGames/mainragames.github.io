@@ -496,10 +496,15 @@
                                         <div>
                                             <!-- Paste & Drop Box -->
                                             <div id="imagePasteZone" style="border:1.5px dashed var(--admin-border-subtle); border-radius:var(--radius-sm); padding:.75rem .6rem; text-align:center; background:rgba(255,255,255,0.015); cursor:pointer; transition:border-color .2s, background .2s;">
-                                                <div id="imagePastePrompt" style="display:flex; flex-direction:column; align-items:center; gap:.25rem;">
+                                                <div id="imagePastePrompt" style="display:flex; flex-direction:column; align-items:center; gap:.35rem;">
                                                     <span style="font-size:1.2rem;">📋 / 📁</span>
-                                                    <span style="font-size:.78rem; color:var(--admin-text-main); font-weight:600;">Klik atau Paste Gambar di Sini (Ctrl+V)</span>
-                                                    <span class="muted small" style="font-size:.68rem;">Mendukung PNG, JPG, WebP otomatis di-upload</span>
+                                                    <span style="font-size:.78rem; color:var(--admin-text-main); font-weight:600;">Klik untuk Upload / Paste (Ctrl+V)</span>
+                                                    <div style="display:flex; gap:.35rem; align-items:center; flex-wrap:wrap; justify-content:center;">
+                                                        <button type="button" class="btn-admin ghost small" id="directClipboardBtn" style="font-size:.72rem; padding:.2rem .6rem; border-color:rgba(255,107,0,.4); color:var(--mainra-orange);">
+                                                            📋 Paste dari Clipboard
+                                                        </button>
+                                                        <span class="muted small" style="font-size:.68rem;">atau tekan Ctrl+V</span>
+                                                    </div>
                                                 </div>
                                                 <div id="imagePastePreviewBox" style="display:none; align-items:center; justify-content:space-between; gap:.5rem;">
                                                     <img id="imagePasteThumb" src="" alt="Thumbnail" style="width:44px; height:44px; border-radius:4px; object-fit:cover; border:1px solid var(--admin-border-subtle);">
@@ -882,6 +887,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../Assets/js/supabase-config.js"></script>
 <script src="../Assets/js/supabase-client.js"></script>
-<script src="assets/admin.js?v=4.8"></script>
+<script src="assets/admin.js?v=4.9"></script>
 </body>
 </html>
