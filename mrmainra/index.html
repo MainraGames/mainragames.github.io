@@ -39,8 +39,7 @@
         </div>
         <nav class="admin-nav">
             <button type="button" data-tab="games">Games</button>
-            <button type="button" data-tab="analytics">Analytics</button>
-            <button type="button" data-tab="reviews">Reviews</button>
+            <button type="button" data-tab="analytics">Analytics &amp; Reviews</button>
             <button type="button" data-tab="admins">Admins</button>
         </nav>
         <div class="admin-user">
@@ -292,7 +291,7 @@
                 <div class="card" style="padding: 0; overflow: hidden;">
                     <div class="analytics-filter-toolbar">
                         <div style="display:flex;align-items:center;gap:.6rem">
-                            <h3 id="singleGameReviewTitle" style="margin: 0; font-size: 1.02rem;">Reviews & Feedback</h3>
+                            <h3 id="singleGameReviewTitle" style="margin: 0; font-size: 1.02rem;">Reviews &amp; Feedback</h3>
                             <span id="singleFeedCount" class="badge ok" style="font-size:.72rem">--</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
@@ -311,22 +310,6 @@
                         <div class="muted">Loading reviews...</div>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <!-- REVIEWS -->
-        <section id="tab-reviews" class="tab">
-            <div class="admin-actions" style="margin-bottom:1rem">
-                <select id="reviewGameFilter" class="filter-select"><option value="">All games</option></select>
-                <select id="reviewStateFilter" class="filter-select">
-                    <option value="">All statuses</option>
-                    <option value="unanswered">Needs reply</option>
-                    <option value="answered">Replied</option>
-                </select>
-                <button type="button" class="btn-admin ghost" id="syncReviewsBtn">↻ Fetch new reviews</button>
-            </div>
-            <div id="reviewsList">
-                <div class="card muted">Loading…</div>
             </div>
         </section>
 

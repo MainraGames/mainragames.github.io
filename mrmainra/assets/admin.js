@@ -1162,9 +1162,10 @@
 
     /* ---------- tabs ---------- */
 
-    var TITLES = { games: 'Games & Featured', analytics: 'Analytics Overview', reviews: 'Reviews', admins: 'Admins' };
+    var TITLES = { games: 'Games & Featured', analytics: 'Analytics & Reviews', admins: 'Admins' };
     function selectTab(name) {
         if (name === 'featured') name = 'games';
+        if (name === 'reviews') name = 'analytics';
         $$('.admin-nav button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
         $$('.tab').forEach(function (t) { t.classList.toggle('active', t.id === 'tab-' + name); });
         $('#tabTitle').textContent = TITLES[name] || name;
@@ -1385,10 +1386,13 @@
         $('#rpSaveDraft').addEventListener('click', saveReplyDraft);
         $('#rpPostGoogle').addEventListener('click', postReplyToGoogle);
         
-        $('#reviewGameFilter').addEventListener('change', renderReviews);
-        $('#reviewStateFilter').addEventListener('change', renderReviews);
+        var rgf = $('#reviewGameFilter');
+        if (rgf) rgf.addEventListener('change', renderReviews);
+        var rsf = $('#reviewStateFilter');
+        if (rsf) rsf.addEventListener('change', renderReviews);
+        var srb = $('#syncReviewsBtn');
+        if (srb) srb.addEventListener('click', function () { callFunction('sync-reviews'); });
         $('#syncGamesBtn').addEventListener('click', function () { callFunction('sync-playstore'); });
-        $('#syncReviewsBtn').addEventListener('click', function () { callFunction('sync-reviews'); });
 
         $('#newAdminBtn').addEventListener('click', openAddAdminModal);
         $('#admClose').addEventListener('click', function () { $('#adminUserModal').close(); });
