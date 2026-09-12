@@ -397,8 +397,6 @@ Keluarkan HANYA dokumen JSON dengan schema berikut:
   "hashtags": ["#MainraGames", "#IndieGame"]
 }`;
 
-      const genUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
-
       const requestBody: any = {
         contents: [
           {
@@ -426,38 +424,71 @@ Keluarkan HANYA dokumen JSON dengan schema berikut:
         },
       };
 
-      let res = await fetch(genUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      });
+      // Candidate fallback sequence if chosen model fails (e.g. 429 quota, rate-limited, deprecated)
+      const candidateModels = [
+        modelName,
+        "gemini-2.5-flash",
+        "gemini-3.7-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-3.5-flash",
+        "gemini-1.5-flash"
+      ].filter((v, i, a) => a.indexOf(v) === i);
 
-      if (!res.ok && res.status === 400) {
-        delete requestBody.generationConfig.responseSchema;
-        delete requestBody.generationConfig.thinkingConfig;
-        res = await fetch(genUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-        });
+      let lastError = "";
+      let successfulModel = "";
+      let genData: any = null;
+
+      for (const m of candidateModels) {
+        const genUrl = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
+        try {
+          let res = await fetch(genUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (!res.ok && res.status === 400) {
+            // Retry without schema/thinkingConfig if model doesn't support them
+            const fallbackBody = {
+              contents: requestBody.contents,
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 2500,
+              },
+            };
+            res = await fetch(genUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(fallbackBody),
+            });
+          }
+
+          if (res.ok) {
+            genData = await res.json();
+            successfulModel = m;
+            break;
+          } else {
+            lastError = `Model ${m} returned HTTP ${res.status}: ${await res.text()}`;
+          }
+        } catch (e: any) {
+          lastError = `Model ${m} fetch failed: ${e.message || e}`;
+        }
       }
 
-      if (!res.ok) {
-        const errText = await res.text();
+      if (!genData) {
         return json(200, {
           success: false,
           error: true,
-          message: `Gemini API error (${res.status}): ${errText}`,
+          message: `Semua model Gemini mengalami kendala: ${lastError}`,
         });
       }
 
-      const genData = await res.json();
       const rawOutput = genData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
       const finalResult = extractStructuredPost(rawOutput, gameTitle);
 
       return json(200, {
         success: true,
-        modelUsed: modelName,
+        modelUsed: successfulModel,
         result: finalResult,
       });
     }

@@ -1578,21 +1578,31 @@
 
         if (!panel) return;
 
-        // Auto-load existing key from site_settings or localStorage
-        var localSavedKey = '';
-        try { localSavedKey = localStorage.getItem('mainra-gemini-key') || ''; } catch (e) {}
-        if (localSavedKey && keyInput) {
-            keyInput.value = localSavedKey;
-            if (statusDot) statusDot.style.background = '#7fd1a1';
+        // Auto-load existing key from site_settings or localStorage, then automatically probe & select best working model
+        async function autoLoadKeyAndProbeModels() {
+            var localSavedKey = '';
+            try { localSavedKey = localStorage.getItem('mainra-gemini-key') || ''; } catch (e) {}
+            var activeKey = localSavedKey;
+
+            if (!activeKey) {
+                var dbRes = await sb.from('site_settings').select('value').eq('key', 'gemini_api_key').maybeSingle();
+                if (dbRes.data && dbRes.data.value) {
+                    var v = dbRes.data.value;
+                    activeKey = typeof v === 'string' ? v : (v.key || '');
+                }
+            }
+
+            if (activeKey) {
+                if (keyInput) keyInput.value = activeKey;
+                if (statusDot) statusDot.style.background = '#7fd1a1';
+                try { localStorage.setItem('mainra-gemini-key', activeKey); } catch (e) {}
+
+                // Fetch real-time available models from Google API
+                await fetchDynamicModels(true);
+            }
         }
 
-        sb.from('site_settings').select('value').eq('key', 'gemini_api_key').maybeSingle().then(function (res) {
-            if (res.data && res.data.value && keyInput && !keyInput.value) {
-                var v = res.data.value;
-                keyInput.value = typeof v === 'string' ? v : (v.key || '');
-                if (statusDot) statusDot.style.background = '#7fd1a1';
-            }
-        });
+        autoLoadKeyAndProbeModels();
 
         if (toggleKeyBtn && keyDrawer) {
             toggleKeyBtn.onclick = function () {
@@ -1626,18 +1636,21 @@
             if (modelSelect) {
                 modelSelect.innerHTML = models.map(function (m) {
                     var label = m.displayName || m.id;
-                    if (m.id === 'gemini-3.8-flash') label += ' ★ Terbaru (Rekomendasi)';
-                    else if (m.id === 'gemini-3.7-flash') label += ' (High Intelligence)';
-                    else if (m.id === 'gemini-3.5-flash') label += ' (Stable)';
-                    else if (m.id === 'gemini-2.5-flash') label += ' (Fast)';
-                    else if (m.id === 'gemini-2.0-flash') label += ' (Legacy)';
+                    if (m.id === 'gemini-2.5-flash') label += ' ★ Paling Stabil & Terbukti Berhasil';
+                    else if (m.id === 'gemini-3.7-flash') label += ' (Generasi Terbaru)';
+                    else if (m.id === 'gemini-3.8-flash') label += ' (Eksperimental)';
+                    else if (m.id === 'gemini-2.5-flash-lite') label += ' (Super Cepat)';
+                    else if (m.id === 'gemini-1.5-flash') label += ' (Fallback)';
                     return '<option value="' + esc(m.id) + '">' + esc(label) + '</option>';
                 }).join('');
 
-                if (models.some(function (m) { return m.id === currentVal; })) {
+                // Preference: If current selection is still in the list, keep it; otherwise prioritize gemini-2.5-flash or first available
+                if (currentVal && models.some(function (m) { return m.id === currentVal; })) {
                     modelSelect.value = currentVal;
-                } else if (models.some(function (m) { return m.id === 'gemini-3.8-flash'; })) {
-                    modelSelect.value = 'gemini-3.8-flash';
+                } else if (models.some(function (m) { return m.id === 'gemini-2.5-flash'; })) {
+                    modelSelect.value = 'gemini-2.5-flash';
+                } else if (models.length > 0) {
+                    modelSelect.value = models[0].id;
                 }
             }
 
