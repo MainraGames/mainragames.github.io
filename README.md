@@ -22,6 +22,7 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
 - `Assets/css/mainra.css` — Gaya visual website.
 - `Assets/img/` — Folder berisi gambar dan ikon website.
 - `supabase/` — Migration SQL, seed, dan Edge Functions (`sync-playstore`, `sync-reviews`, `sync-buffer`, `ai-social-assistant`, `manage-admins`).
+- `supabase/migrations/0010_contact_messages.sql` — Tabel pesan masuk formulir kontak dengan Row Level Security (RLS).
 - `tools/sync-supabase.js` — Mirror JSON → Supabase (insert-only, aman untuk edit admin).
 - `tools/pull-supabase.js` — Bangun ulang `games-data.json` dari Supabase.
 - `tools/sync-playstore-reviews.js` — Tarik review Play Store & posting balasan admin (butuh Play Developer API).
