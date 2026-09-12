@@ -1180,6 +1180,7 @@
         textEl.oninput = updateCount;
         updateCount();
 
+        // Wire Presets Buttons
         $('#rpPresets').innerHTML = PRESETS.map(function (p, i) {
             return '<button class="btn ghost small" type="button" data-preset="' + i + '" style="font-size:.78rem;padding:.25rem .55rem">' + esc(p.label) + '</button>';
         }).join('');
@@ -1189,6 +1190,52 @@
                 updateCount();
             });
         });
+
+        // Wire AI Auto-Localize Reply Button
+        var autoLocalizeBtn = $('#rpAutoLocalizeBtn');
+        if (autoLocalizeBtn) {
+            autoLocalizeBtn.onclick = async function () {
+                var playerLang = row.lang || 'id';
+                var currentDraft = textEl.value.trim();
+                var langMeta = LANG_NAMES[playerLang] || { name: playerLang.toUpperCase() };
+
+                autoLocalizeBtn.disabled = true;
+                autoLocalizeBtn.textContent = '✨ Membuat balasan (' + (langMeta.name || playerLang) + ')…';
+
+                try {
+                    var apiKey = localStorage.getItem('mainra-gemini-key') || '';
+                    var res = await sb.functions.invoke('ai-social-assistant', {
+                        body: {
+                            action: 'localize_reply',
+                            client_gemini_key: apiKey,
+                            reviewText: row.content || '',
+                            rating: row.star_rating || 5,
+                            playerLang: playerLang,
+                            authorName: row.author_name || 'Pemain',
+                            gameTitle: gameName,
+                            replyDraft: currentDraft
+                        }
+                    });
+
+                    if (res.error || !res.data || !res.data.success) {
+                        var errMsg = (res.data && res.data.message) || (res.error && res.error.message) || 'Gagal menghasilkan balasan AI.';
+                        throw new Error(errMsg);
+                    }
+
+                    var localizedReply = res.data.localizedReply || '';
+                    if (localizedReply) {
+                        textEl.value = localizedReply;
+                        updateCount();
+                        toast('Balasan resmi berhasil disesuaikan ke bahasa ' + (langMeta.name || playerLang) + '! ✓');
+                    }
+                } catch (err) {
+                    toast('Auto-localize gagal: ' + (err.message || err), true);
+                } finally {
+                    autoLocalizeBtn.disabled = false;
+                    autoLocalizeBtn.textContent = '✨ AI Auto-Localize Reply';
+                }
+            };
+        }
 
         var banner = $('#rpStatusBanner');
         var btnText = $('#rpBtnText');

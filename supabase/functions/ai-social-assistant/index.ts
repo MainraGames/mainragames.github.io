@@ -275,7 +275,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Action: Translate Review / Text
+    // Action: Translate Review / Text OR Auto-Draft Localized Reply
     if (action === "translate") {
       const textToTranslate = payload.text || "";
       const target = payload.targetLang || "id";
@@ -294,8 +294,8 @@ Deno.serve(async (req: Request) => {
       try {
         const modelName = "gemini-2.5-flash";
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
-        const prompt = `Terjemahkan ulasan game pemain berikut secara natural dan akurat ke dalam Bahasa Indonesia (bahasa target: ${target}).
-JANGAN menambahkan pembuka, penutup, atau tanda kutip. Cukup kembalikan HANYA teks hasil terjemahannya saja:
+        const prompt = `Terjemahkan teks ulasan atau balasan game berikut secara natural, ramah, dan akurat ke dalam bahasa target: "${target}".
+JANGAN menambahkan kalimat pengantar, penutup, atau tanda kutip pembungkus. Kembalikan HANYA teks hasil terjemahannya saja:
 
 ${textToTranslate}`;
 
@@ -317,13 +317,77 @@ ${textToTranslate}`;
           return json(200, {
             success: true,
             translatedText: translatedOut.trim(),
-            detectedLang: payload.sourceLang || "fa",
+            detectedLang: payload.sourceLang || target,
           });
         }
       } catch (err: any) {
         console.error("AI translate error:", err);
       }
       return json(200, { success: false, error: true, message: "Gagal menerjemahkan via AI." });
+    }
+
+    // Action: Auto-Localize & Generate Reply tailored to player language
+    if (action === "localize_reply") {
+      const { reviewText, rating, playerLang, authorName, gameTitle, replyDraft } = payload;
+      if (!geminiKey) {
+        return json(200, {
+          success: false,
+          error: true,
+          message: "Gemini API Key belum dikonfigurasi.",
+        });
+      }
+
+      try {
+        const modelName = "gemini-2.5-flash";
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
+        const targetLang = playerLang || "id";
+        
+        const prompt = `Kamu adalah Customer Relations & Game Community Manager profesional dari studio game indie "Mainra Games" (email: mainragames@gmail.com).
+Tugasmu adalah membuat atau menerjemahkan balasan resmi developer di Google Play Store untuk seorang pemain.
+
+Konteks Ulasan:
+- Nama Pengulas: ${authorName || "Pemain"}
+- Judul Game: ${gameTitle || "Game Mainra"}
+- Bintang/Rating: ${rating || 5} dari 5 bintang
+- Bahasa Pengguna: ${targetLang}
+- Isi Ulasan Pemain: "${reviewText || "Bagus"}"
+${replyDraft ? `- Konsep Balasan Admin (Bahasa Indonesia/Inggris): "${replyDraft}"` : ""}
+
+Instruksi Wajib:
+1. Tulis balasan dalam BAHASA ASLI PENGGUNA (${targetLang}) secara sopan, hangat, ramah, dan profesional.
+2. Jika pemain memberikan rating 5 bintang atau ulasan positif: ucapkan terima kasih yang tulus, sampaikan bahwa developer senang mereka menikmati gamenya, dan update baru sedang disiapkan.
+3. Jika pemain memberikan rating 1-3 bintang atau keluhan bug: minta maaf atas ketidaknyamanannya, jelaskan bahwa tim developer mencatat masalah tersebut dan perbaikan akan hadir di update berikutnya, serta cantumkan email mainragames@gmail.com.
+4. Panjang balasan MAKSIMAL 320 karakter (karena batas Google Play Store adalah 350 karakter).
+5. Jangan gunakan tanda kutip pembungkus, jangan ada salam robotik yang kaku. Langsung teks balasan yang siap diposting ke Play Store.`;
+
+        const gRes = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              maxOutputTokens: 500,
+              thinkingConfig: { thinkingBudget: 0 },
+            },
+          }),
+        });
+
+        if (gRes.ok) {
+          const gData = await gRes.json();
+          let localizedText = gData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          localizedText = localizedText.trim().replace(/^["']|["']$/g, "");
+          return json(200, {
+            success: true,
+            localizedReply: localizedText,
+            targetLang: targetLang
+          });
+        } else {
+          const errBody = await gRes.text();
+          return json(200, { success: false, error: true, message: `Google Gemini error: ${errBody}` });
+        }
+      } catch (err: any) {
+        return json(200, { success: false, error: true, message: err.message || String(err) });
+      }
     }
 
     // Action: Test Model Connection

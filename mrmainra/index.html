@@ -787,9 +787,14 @@
 
     <div style="margin-top:.9rem">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">
-            <label for="rpText" style="font-weight:600;font-size:.84rem;color:var(--mainra-ink);margin:0">
-                Your Official Reply
-            </label>
+            <div style="display:flex;align-items:center;gap:.5rem">
+                <label for="rpText" style="font-weight:600;font-size:.84rem;color:var(--mainra-ink);margin:0">
+                    Your Official Reply
+                </label>
+                <button type="button" class="btn-admin ghost small" id="rpAutoLocalizeBtn" style="font-size:.72rem;padding:.15rem .5rem;border-color:rgba(192,132,252,.45);color:#c084fc;font-weight:600" title="Buat balasan otomatis dalam bahasa pemain menggunakan AI">
+                    ✨ AI Auto-Localize Reply
+                </button>
+            </div>
             <span id="rpCharCount" class="muted small" style="font-family:monospace;font-size:.8rem">0 / 350</span>
         </div>
         <textarea id="rpText" rows="3" maxlength="350" placeholder="Type your response to the player here..." style="width:100%;resize:vertical;font-family:inherit;line-height:1.45;padding:.6rem .8rem"></textarea>
@@ -887,6 +892,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../Assets/js/supabase-config.js"></script>
 <script src="../Assets/js/supabase-client.js"></script>
-<script src="assets/admin.js?v=5.1"></script>
+<script src="assets/admin.js?v=5.2"></script>
 </body>
 </html>
