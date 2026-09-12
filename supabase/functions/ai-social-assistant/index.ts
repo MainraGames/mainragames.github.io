@@ -131,17 +131,24 @@ Deno.serve(async (req: Request) => {
           };
         });
 
-      // Priority ranking: prioritize modern 2.0 and 1.5 flash/pro models
+      // Priority ranking based on Google official release tiers:
+      // Gemini 3.8 Flash, 3.7 Flash, 3.5 Flash, 3.1 Pro, 2.5 Flash, 2.0 Flash
       textModels.sort((a: any, b: any) => {
         const getScore = (id: string) => {
-          if (id === "gemini-2.0-flash") return 100;
-          if (id === "gemini-2.0-flash-lite" || id === "gemini-2.0-flash-lite-preview-02-05") return 95;
-          if (id === "gemini-1.5-flash") return 90;
-          if (id === "gemini-1.5-flash-latest") return 85;
-          if (id === "gemini-1.5-pro") return 80;
-          if (id === "gemini-1.5-pro-latest") return 75;
+          if (id === "gemini-3.8-flash") return 150;
+          if (id === "gemini-3.7-flash") return 140;
+          if (id === "gemini-3.6-flash") return 135;
+          if (id === "gemini-3.5-flash") return 130;
+          if (id === "gemini-3.1-pro-preview" || id === "gemini-3.1-pro") return 120;
+          if (id === "gemini-3-flash-preview") return 115;
+          if (id.includes("3.")) return 110;
+          if (id === "gemini-2.5-flash") return 100;
+          if (id === "gemini-2.5-pro") return 95;
+          if (id === "gemini-2.0-flash") return 90;
+          if (id === "gemini-2.0-flash-lite") return 85;
+          if (id.includes("2.5")) return 80;
           if (id.includes("2.0")) return 70;
-          if (id.includes("1.5")) return 60;
+          if (id.includes("1.5")) return 50;
           return 10;
         };
         return getScore(b.id) - getScore(a.id);
@@ -159,7 +166,7 @@ Deno.serve(async (req: Request) => {
         return json(400, { message: "Gemini API Key belum diisi. Masukkan API key terlebih dahulu." });
       }
 
-      let modelName = (payload.model || "gemini-2.0-flash").replace(/^models\//, "");
+      let modelName = (payload.model || "gemini-3.8-flash").replace(/^models\//, "");
       const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
 
       const res = await fetch(testUrl, {
@@ -193,7 +200,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const { gameTitle, topic, tone, targetLink, customPrompt } = payload;
-      let modelName = (payload.model || "gemini-2.0-flash").replace(/^models\//, "");
+      let modelName = (payload.model || "gemini-3.8-flash").replace(/^models\//, "");
 
       const systemInstruction = `Kamu adalah Social Media Manager & Copywriter profesional untuk studio game indie "Mainra Games".
 Tugasmu adalah menulis postingan media sosial yang menarik, kreatif, dan mengundang interaksi pemain (engagement) untuk Facebook, Twitter/X, Instagram, Threads, dan TikTok.

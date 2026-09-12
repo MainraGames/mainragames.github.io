@@ -1369,22 +1369,24 @@
                 return;
             }
 
-            var currentVal = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
+            var currentVal = modelSelect ? modelSelect.value : 'gemini-3.8-flash';
             var models = res.data.models;
 
             if (modelSelect) {
                 modelSelect.innerHTML = models.map(function (m) {
                     var label = m.displayName || m.id;
-                    if (m.id === 'gemini-2.0-flash') label += ' ★ Rekomendasi';
-                    else if (m.id === 'gemini-1.5-flash') label += ' (Cepat)';
-                    else if (m.id === 'gemini-1.5-pro') label += ' (Kreatif)';
+                    if (m.id === 'gemini-3.8-flash') label += ' ★ Terbaru (Rekomendasi)';
+                    else if (m.id === 'gemini-3.7-flash') label += ' (High Intelligence)';
+                    else if (m.id === 'gemini-3.5-flash') label += ' (Stable)';
+                    else if (m.id === 'gemini-2.5-flash') label += ' (Fast)';
+                    else if (m.id === 'gemini-2.0-flash') label += ' (Legacy)';
                     return '<option value="' + esc(m.id) + '">' + esc(label) + '</option>';
                 }).join('');
 
                 if (models.some(function (m) { return m.id === currentVal; })) {
                     modelSelect.value = currentVal;
-                } else if (models.some(function (m) { return m.id === 'gemini-2.0-flash'; })) {
-                    modelSelect.value = 'gemini-2.0-flash';
+                } else if (models.some(function (m) { return m.id === 'gemini-3.8-flash'; })) {
+                    modelSelect.value = 'gemini-3.8-flash';
                 }
             }
 
@@ -1420,7 +1422,7 @@
         if (testBtn) {
             testBtn.onclick = async function () {
                 var apiKey = keyInput ? keyInput.value.trim() : '';
-                var model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
+                var model = modelSelect ? modelSelect.value : 'gemini-3.8-flash';
                 if (!apiKey) {
                     toast('Mohon masukkan Gemini API Key terlebih dahulu.', true);
                     return;
@@ -1484,7 +1486,7 @@
         if (generateBtn) {
             generateBtn.onclick = async function () {
                 var apiKey = keyInput ? keyInput.value.trim() : '';
-                var model = modelSelect ? modelSelect.value : 'gemini-2.0-flash';
+                var model = modelSelect ? modelSelect.value : 'gemini-3.8-flash';
                 var tone = $('#aiToneSelect') ? $('#aiToneSelect').value : '';
                 var customPrompt = $('#aiCustomInstruction') ? $('#aiCustomInstruction').value.trim() : '';
                 var titleVal = $('#postTitle') ? $('#postTitle').value.trim() : '';
