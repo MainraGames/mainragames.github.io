@@ -603,10 +603,13 @@
     /* ---------- sync actions (Edge Function, needs Google service account) ---------- */
 
     async function callFunction(name, body) {
+        toast('Syncing with Play Store…');
         var res = await sb.functions.invoke(name, { body: body || {} });
         if (res.error) {
             var msg = String(res.error.message || res.error);
-            if (msg.indexOf('not found') !== -1 || msg.indexOf('404') !== -1) {
+            if (msg.indexOf('Failed to send a request') !== -1) {
+                toast(name + ': Network/Session issue. Please try signing out and signing back in.', true);
+            } else if (msg.indexOf('not found') !== -1 || msg.indexOf('404') !== -1) {
                 toast('Edge Function "' + name + '" is not deployed yet — see README (Admin) section.', true);
             } else {
                 toast(name + ' failed: ' + msg, true);
