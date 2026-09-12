@@ -16,13 +16,20 @@ class GamesLoader {
     }
 
     async loadGames() {
-        // Primary source: Supabase CMS data (when client is configured), fallback: static JSON.
+        // Primary source: Supabase CMS data (with 4-second timeout to prevent blocking), fallback: static JSON.
         try {
             if (window.supabaseClient) {
-                const [gamesRes, settingsRes] = await Promise.all([
+                const fetchPromise = Promise.all([
                     window.supabaseClient.from('games').select('*').order('sort_order', { ascending: true }).order('title'),
                     window.supabaseClient.from('site_settings').select('value').eq('key', 'highlight').maybeSingle()
                 ]);
+
+                // Timeout fallback after 4s in case of degraded network
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Supabase request timeout')), 4000)
+                );
+
+                const [gamesRes, settingsRes] = await Promise.race([fetchPromise, timeoutPromise]);
                 if (!gamesRes.error && Array.isArray(gamesRes.data) && gamesRes.data.length > 0) {
                     this.games = gamesRes.data;
                     this.highlight = (settingsRes && !settingsRes.error && settingsRes.data && settingsRes.data.value) || null;
@@ -31,7 +38,7 @@ class GamesLoader {
                 if (gamesRes.error) console.warn('Supabase games unavailable, falling back to JSON:', gamesRes.error.message);
             }
         } catch (error) {
-            console.warn('Supabase load failed, falling back to JSON:', error);
+            console.warn('Supabase load failed or timed out, falling back to JSON:', error);
         }
 
         // Fallback ke file JSON

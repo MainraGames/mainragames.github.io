@@ -2,8 +2,9 @@
   "games": [
     {
       "id": "com.MainraGames.Popit3DFidget",
+      "appId": "com.MainraGames.Popit3DFidget",
       "title": "Pop It 3D Fidget: Multiplayer",
-      "description": "Enjoy bubble popping in 3D with intelligent AI ready for a challenge!",
+      "description": "Nikmati meletuskan gelembung dalam 3D dengan AI cerdas yang siap menghadapi tantangan!",
       "image": "https://play-lh.googleusercontent.com/rPO9jpkgZs0_ih8GjwxGev-_D3P5AUZwF0UNTrNaR4jBwqMBIVtWBGrIFnvwne_Vb-Aa-moZWgKu_pTrKBsO9A",
       "screenshots": [
         "https://play-lh.googleusercontent.com/VN4Y5RFS0c3kuSEmOFecfACOINHO04wEvUEUKrLpMDzhOrJTHLxypK56eVk8U1lMOnwLj7V8LL1V5QH0Lc2CaA",
@@ -13,19 +14,45 @@
         "https://play-lh.googleusercontent.com/-Aak5dk7s0q_sFmhpu6qBDytI_87yhWAPiQqhAOhdfcjAUgZFRXIS20hM1pkB2GWrPzBv1tCGX5pv9tZODGiGw",
         "https://play-lh.googleusercontent.com/Vo8UZyyhy650EaqCQQULfnaw6Ma-JwLfKUJpZUV7IctS87spi6D9wHCwEuylaWoG7rPP4aTlCpfhHt9WRvb-"
       ],
-      "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.Popit3DFidget&hl=en&gl=us",
-      "category": "Casual",
+      "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.Popit3DFidget&hl=id&gl=id",
+      "category": "Kasual",
       "status": "Released",
       "releaseDate": "2026-08-07",
       "featured": true,
       "platform": "Android",
       "rating": null,
-      "appId": "com.MainraGames.Popit3DFidget"
+      "installs": "50+",
+      "sort_order": 0
+    },
+    {
+      "id": "com.mainragames.indogamedev",
+      "appId": "com.mainragames.indogamedev",
+      "title": "IndoGameDev",
+      "description": "Pusat informasi, database komunitas, dan kolaborasi game developer Indonesia.",
+      "image": "https://play-lh.googleusercontent.com/QfR_7iYMWpmza9BvndzdMdPKYeVnRP3zWrsMYY2YQarV_3EDtx06J5oUhI38tbyhcIrbbQphFEuGywrsMjcY4A",
+      "screenshots": [
+        "https://play-lh.googleusercontent.com/18tvyLPrw6t59_FVgir7Uhal1SbLP_iys3whRmtbJykn9Tt-2FEEj2E5Exj7_wZGEAK4wx1Uca-bLy1a6rTi",
+        "https://play-lh.googleusercontent.com/Z1X3XviuAoqJ2pe-dwgIyrsc8oQktTbX5Z81XtrkfEYuWfHVE9onAvBCosYWH5ArI3qhlYG1vridaBsT5Rmx9g",
+        "https://play-lh.googleusercontent.com/ah2G6k1loHWXYKgvD4RWoHxoFeMOWlzBJgfJ7bY19Qce-QhA5UEr13tCM4cXvPqljRV--l5ljAn8jhNg-2NeNQ",
+        "https://play-lh.googleusercontent.com/emndc0oCOpyaIquTCPJpJvavc37khcXy9Pka_z6m2EHcsFJrsmLoVSOnTq6F2-85zVM-DY3khgzUvc_n9LM6pg",
+        "https://play-lh.googleusercontent.com/fyQ_OYWUytfjlRD6sXPocYEcUHAdalLHLu6-tkqL2SStZxcSfDjuF0Fug1bdsqtz1VtF-7xEAOTa2zvRVKPI7t8",
+        "https://play-lh.googleusercontent.com/CRt1JKAL2DEQIqRqSD59XZGnJBx86aXuIebWzbl-dHpmakmqD3fZahkLm6R3jjSEYAURwghJj0llMxolIRc-zg"
+      ],
+      "playLink": "https://play.google.com/store/apps/details?id=com.mainragames.indogamedev&hl=id&gl=id",
+      "category": "Alat",
+      "status": "Released",
+      "releaseDate": "2026-09-04",
+      "featured": true,
+      "platform": "Android",
+      "rating": null,
+      "installs": "1+",
+      "sort_order": 1
     },
     {
       "id": "com.MainraGames.SquishyJellyMerge",
+      "appId": "com.MainraGames.SquishyJellyMerge",
       "title": "Squishy Jelly Merge",
-      "description": "Relaxing swipe puzzle – merge same-color jellies and keep the board clear.",
+      "description": "Gabungkan jeli warna untuk menikmati keseruan tanpa akhir Jelly Merge!",
       "image": "https://play-lh.googleusercontent.com/YINHW0xX1h0L4sNemnda47EK6e5pFIdfMU4yCG5D8v1ekKW5l7NXKdRfbcre_sK041MADFj-CFXz_ho8437i",
       "screenshots": [
         "https://play-lh.googleusercontent.com/Dtfe5R2UmXeWnzsWVNeCdLh0wNT5LD2Pl3E0d-V01z7d6IEFEq1QU-EcYDMWa7L_4KBDZHm-OjfP7IL1tY4EOw",
@@ -39,19 +66,49 @@
         "https://play-lh.googleusercontent.com/YMdlY994DcbhTSk6wmndoj4N0MMMBkKLdlKT3wEw1ap8b9bKu5ljABYBgU6JMhS2QVpLDnxiTF04j_2wBAhalA",
         "https://play-lh.googleusercontent.com/jmPVwGCDQKGzIjue17BtMG8Nh3WCwoU0b6nZwvWNP0mI2VWxvH54-roxx9RLlwcCUaJGhH-L4RUy5Ke7PtRMjg"
       ],
-      "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.SquishyJellyMerge&hl=en&gl=us",
-      "category": "Casual",
+      "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.SquishyJellyMerge&hl=id&gl=id",
+      "category": "Kasual",
       "status": "Released",
       "releaseDate": "2026-07-31",
       "featured": true,
       "platform": "Android",
       "rating": null,
-      "appId": "com.MainraGames.SquishyJellyMerge"
+      "installs": "1.000+",
+      "sort_order": 1
+    },
+    {
+      "id": "com.algaproduction.litterallydiving",
+      "appId": "com.algaproduction.litterallydiving",
+      "title": "Litterally Diving",
+      "description": "Bergabunglah dengan Ally dalam misi membersihkan lautan dari tumpukan sampah!",
+      "image": "https://play-lh.googleusercontent.com/TpDsELFVDDgeV8kKESshsrbXEvZ7-f_jZVRd5ZJo5wFHRv7wfBlwZcGY8pkvrj9AGs-YkKqauatnvtbIMy4kl00",
+      "screenshots": [
+        "https://play-lh.googleusercontent.com/36SJnSYfmNb0GeGx-EA7JUclpg-ciX_Dkpnf1-Fhi-ggFzl0uF0aROC69ut8whJk3U2PPB6DR9cscOnrpHw9aUQ",
+        "https://play-lh.googleusercontent.com/N9rqk_m8YfSpoEVjz0gYXYu9_PzoehxCi68jwpqVwZ5c3OocEvhPGzn7NR6h4YG_r3irjWSCcUbtRm1z1X7Te9E",
+        "https://play-lh.googleusercontent.com/t4pAu7nh_JzgPB42VGy7socGpcvxi1FHMUUP5j2W6c_n9cTA98mm8s1ULFv1RVfPOcnkKlY6uM4BOCFtHwdKfA",
+        "https://play-lh.googleusercontent.com/_H0t57-Yn-HVjqFSl5_PTEg7rPw2vnI4SjV4ZNOlaJHP9ktZI7vdsGcsnDPRNNYCCWrA95EK29jICAUNMBdztSM",
+        "https://play-lh.googleusercontent.com/vlI1F6VNwZORbETFiXnrOdgwRmP7scjhUY7TnyYcUuqkTSFq6AJ-Tp1U26fZmoR_FgnCanPRjGeaferdaBi3ZA",
+        "https://play-lh.googleusercontent.com/o2PE7WhJx-w89_VsphsyU4EPa0qo1TklSRxsTMJJAsFpbsSTRyY9JvFD3q_Ifl1bmiSKHe5dLtStA_8cWH2qiA",
+        "https://play-lh.googleusercontent.com/LJwTjFSif0hTeJBfZZaUaIMNKKmg9B64tn5jiTmadqrzuKJXEukwpI_u8l5C60DfMCd4b9TCHnUYKB_-xxNXT-c",
+        "https://play-lh.googleusercontent.com/CJ-HHkxyAs-2_G1y6oa3MmxqyzuuEoZxbAunZpEJc-gamtEBrqrTWUCgSVTvIbk-rSMZjDH6u07c3pwKWS2V_A"
+      ],
+      "playLink": "https://play.google.com/store/apps/details?id=com.algaproduction.litterallydiving&hl=id&gl=id",
+      "category": "Kasual",
+      "status": "Released",
+      "releaseDate": "2026-02-22",
+      "featured": true,
+      "platform": "Android",
+      "rating": 5.0,
+      "ratings_count": 11,
+      "reviews_count": 4,
+      "installs": "50+",
+      "sort_order": 2
     },
     {
       "id": "com.Mainra.GamePengenalanBinatang",
+      "appId": "com.Mainra.GamePengenalanBinatang",
       "title": "Pengenalan Binatang",
-      "description": "Animal introduction game for school students studying in the world of Animals",
+      "description": "Game pengenalan hewan untuk siswa sekolah yang belajar di dunia Binatang",
       "image": "https://play-lh.googleusercontent.com/MFXdAccA-SAMQX9dkyBxKcqE47s07T7ib7sT449BUJdYDH2PkVWAwY71aVdHHHQT_2JIEvw-vFyms3TA9ffF",
       "screenshots": [
         "https://play-lh.googleusercontent.com/fWrl0cEpOVz0_AYHrtXlqXHK4QeGxDlAgsGnI-hvq6Avtb5vaZNzKUd-NQa9YXYU_EyeTwXaGl2t5NmgNY2B4XQ",
@@ -62,27 +119,20 @@
         "https://play-lh.googleusercontent.com/HqncI3Za5y7SyKPvz60eURDJFEak3K3ain8cbo4Bd1RfTXeBOW_3nawTu-A4fq8rz_aQUFjL7s3R2ZtvNHM1",
         "https://play-lh.googleusercontent.com/HHWWf3LKf9yJ7xYvq_9YcdpmPNzPxlfG2Vo_G657sVV4OQzGUNiTf2WC6b0YNwJJK80-2xrZDFZOrFLJPTuw3g"
       ],
-      "playLink": "https://play.google.com/store/apps/details?id=com.Mainra.GamePengenalanBinatang&hl=en&gl=us",
-      "category": "Educational",
+      "playLink": "https://play.google.com/store/apps/details?id=com.Mainra.GamePengenalanBinatang&hl=id&gl=id",
+      "category": "Edukasi",
       "status": "Released",
       "releaseDate": "2025-11-12",
       "featured": true,
       "platform": "Android",
       "rating": null,
-      "appId": "com.Mainra.GamePengenalanBinatang"
+      "installs": "100+",
+      "sort_order": 2
     }
   ],
   "highlight": {
-    "stats": {
-      "worlds": "5+",
-      "gameplay": "50+",
-      "characters": "25+"
-    },
     "active": true,
-    "gameId": "com.MainraGames.Popit3DFidget",
-    "youtubeUrl": "",
-    "customTitle": "Pop It 3D Fidget: Multiplayer",
-    "lastUpdated": "2026-09-11T02:17:21.059Z",
-    "customDescription": "Experience Pop It in a new format with Pop It 3D Fidget: A Two-Player Game with AI! You don't have to look for opponents, the intelligent AI is ready to challenge you in every level. Enjoy the relaxing bubble burst gameplay in 3D graphics, while practicing strategies against the AI that is always ready to provide challenges.Key Features:🧠 Challenge the Intelligent AI: Play against a responsive AI that can customize your abilities.🎮 Exciting 3D Explosions: Experience the satisfaction of bursting bubbles in a colorful 3D world.🌟 Relaxing Gameplay: Perfect for de-stressing—pop bubbles anytime, anywhere.🏅 Daily Challenges: Complete daily challenges to earn rewards and unlock new items.🔥 Unique Pop It Shapes: Discover and unlock a variety of interesting 3D Pop It designs.Start playing now with Pop It 3D Fidget-a game suitable for all ages, whenever you want to relax or hone your AI-fighting skills!"
+    "gameId": "com.MainraGames.SquishyJellyMerge",
+    "lastUpdated": "2026-09-11T22:56:52.145Z"
   }
 }
