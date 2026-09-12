@@ -195,6 +195,38 @@ Deno.serve(async (req: Request) => {
   const body = await req.json().catch(() => ({}));
   const onlyAppId = typeof body.appId === "string" && body.appId.trim() ? body.appId.trim() : "";
 
+  // Direct single-reply post/update directly to Google Play:
+  if (body.action === "reply") {
+    const { reviewId, appId, replyText } = body;
+    if (!reviewId || !appId || !replyText) {
+      return json(400, { message: "reviewId, appId, and replyText are required" });
+    }
+    const saRaw = (Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "").trim();
+    if (!saRaw) {
+      return json(400, { message: "Google service account key is not configured" });
+    }
+    const token = await accessToken(JSON.parse(saRaw));
+    const res = await fetch(`${API}/applications/${appId}/reviews/${reviewId}:reply`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ replyText }),
+    });
+    if (!res.ok) {
+      const errTxt = await res.text();
+      return json(res.status, { message: `Google Play API error: ${errTxt}` });
+    }
+    const sentAt = new Date().toISOString();
+    await admin.from("game_reviews").upsert([{
+      review_id: reviewId,
+      game_id: appId,
+      reply_text: replyText,
+      reply_timestamp: Date.now(),
+      replySentAt: sentAt,
+    }], { onConflict: "review_id" });
+
+    return json(200, { message: "Reply posted to Google Play Store successfully!", replySentAt: sentAt });
+  }
+
   try {
     let packages: string[] = [];
     if (onlyAppId) {

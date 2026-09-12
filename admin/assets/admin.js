@@ -564,39 +564,142 @@
 
     function openReply(row) {
         replyingTo = row;
-        $('#rpContext').innerHTML = '<div class="card" style="margin:0"><strong>' + esc(row.author_name) + '</strong> ' +
-            '<span style="color:var(--mainra-gold)">' + starStr(row.star_rating) + '</span>' +
-            '<p style="margin:.5rem 0 0">' + esc(row.content || '—') + '</p></div>';
-        $('#rpText').value = row.reply_text || '';
+        var isPlayStore = row.source === 'playstore';
+        
+        // Context box: author, stars, game name, content
+        var gameObj = games.find(function (g) { return g.id === row.game_id; });
+        var gameName = gameObj ? gameObj.title : (row.game_id || 'Game');
+        
+        $('#rpBadge').textContent = isPlayStore ? 'Google Play Store' : 'Local Review';
+        $('#rpContext').innerHTML = 
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.35rem">' +
+                '<strong>' + esc(row.author_name || 'Anonymous') + '</strong>' +
+                '<span style="color:var(--mainra-gold);font-size:1.05rem">' + starStr(row.star_rating) + '</span>' +
+            '</div>' +
+            '<div class="muted small" style="margin-bottom:.5rem">' + esc(gameName) + (row.device ? ' · ' + esc(row.device) : '') + (row.versionCode ? ' (v' + esc(row.versionCode) + ')' : '') + '</div>' +
+            '<p style="margin:0;font-size:.9rem;color:var(--mainra-ink);line-height:1.45">' + esc(row.content || '—') + '</p>';
+        
+        var replyVal = row.reply_text || '';
+        var charEl = $('#rpCharCount');
+        var textEl = $('#rpText');
+        textEl.value = replyVal;
+        
+        function updateCount() {
+            var len = textEl.value.length;
+            charEl.textContent = len + ' / 350';
+            charEl.style.color = len > 330 ? 'var(--mainra-accent-hover)' : '';
+        }
+        textEl.oninput = updateCount;
+        updateCount();
+
         $('#rpPresets').innerHTML = PRESETS.map(function (p, i) {
-            return '<button class="btn ghost small" type="button" data-preset="' + i + '">' + esc(p.label) + '</button>';
+            return '<button class="btn ghost small" type="button" data-preset="' + i + '" style="font-size:.78rem;padding:.25rem .55rem">' + esc(p.label) + '</button>';
         }).join('');
         $$('[data-preset]').forEach(function (b) {
-            b.addEventListener('click', function () { $('#rpText').value = PRESETS[Number(b.dataset.preset)].text; });
+            b.addEventListener('click', function () {
+                textEl.value = PRESETS[Number(b.dataset.preset)].text;
+                updateCount();
+            });
         });
-        var isPlayStore = row.source === 'playstore';
+
+        var banner = $('#rpStatusBanner');
+        var btnText = $('#rpBtnText');
+        var btnIcon = $('#rpBtnIcon');
+
+        if (row.replySentAt) {
+            banner.style.display = 'block';
+            banner.style.background = 'rgba(127,209,161,.1)';
+            banner.style.border = '1px solid rgba(127,209,161,.3)';
+            banner.style.color = 'var(--mainra-success)';
+            var dateStr = new Date(row.replySentAt).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+            banner.innerHTML = '✓ <strong>Published to Play Store:</strong> ' + esc(dateStr) + '<br><span class="muted small" style="color:var(--mainra-muted)">Editing will update your live response on Google Play.</span>';
+            btnText.textContent = 'Update on Google Play';
+            btnIcon.textContent = '🔄';
+        } else if (row.reply_text) {
+            banner.style.display = 'block';
+            banner.style.background = 'rgba(255,179,0,.1)';
+            banner.style.border = '1px solid rgba(255,179,0,.3)';
+            banner.style.color = 'var(--mainra-gold)';
+            banner.innerHTML = '⏳ <strong>Draft saved locally:</strong> Not yet published to Google Play.';
+            btnText.textContent = 'Post to Google Play';
+            btnIcon.textContent = '🚀';
+        } else {
+            banner.style.display = 'none';
+            btnText.textContent = 'Post to Google Play';
+            btnIcon.textContent = '🚀';
+        }
+
         $('#rpNote').textContent = isPlayStore
-            ? 'Saved as your reply draft. The sync job (Fetch new reviews / daily Action) posts it to Google Play automatically — Google allows one reply per review.'
-            : 'Reply stored locally in the dashboard database.';
+            ? (row.replySentAt
+                ? 'When you click "Update on Google Play", your edited reply is immediately published and updated live on the Play Store listing.'
+                : 'When you click "Post to Google Play", your reply is immediately published to Google Play.')
+            : 'Stored in the database for this game.';
+
         $('#replyModal').showModal();
     }
 
-    async function saveReply() {
+    async function saveReplyDraft() {
         if (!replyingTo) return;
         var text = $('#rpText').value.trim();
-        var patch = text ? { reply_text: text, reply_timestamp: Date.now() } : { reply_text: null, reply_timestamp: null };
+        var patch = text ? { reply_text: text, reply_timestamp: Date.now() } : { reply_text: null, reply_timestamp: null, replySentAt: null };
         var res = await sb.from('game_reviews').update(patch).eq('review_id', replyingTo.review_id);
-        if (res.error) { toast('Save failed: ' + res.error.message, true); return; }
+        if (res.error) { toast('Save draft failed: ' + res.error.message, true); return; }
         replyingTo.reply_text = patch.reply_text;
         replyingTo.reply_timestamp = patch.reply_timestamp;
+        if (!text) replyingTo.replySentAt = null;
         $('#replyModal').close();
-        toast('Reply saved ✓');
+        toast('Reply draft saved ✓');
         
-        // Refresh both lists to keep them in sync
         var gameId = replyingTo.game_id;
         loadReviews();
         if (gameId && $('#tab-analytics').classList.contains('active')) {
             loadTabReviews(gameId);
+        }
+    }
+
+    async function postReplyToGoogle() {
+        if (!replyingTo) return;
+        var text = $('#rpText').value.trim();
+        if (!text) {
+            toast('Please enter a reply before posting.', true);
+            return;
+        }
+        var btn = $('#rpPostGoogle');
+        var btnText = $('#rpBtnText');
+        var origText = btnText.textContent;
+        btn.disabled = true;
+        btnText.textContent = 'Posting to Play Store…';
+
+        try {
+            var res = await sb.functions.invoke('sync-reviews', {
+                body: {
+                    action: 'reply',
+                    reviewId: replyingTo.review_id,
+                    appId: replyingTo.game_id,
+                    replyText: text
+                }
+            });
+            if (res.error) {
+                var errStr = String(res.error.message || res.error);
+                toast('Post to Play Store failed: ' + errStr, true);
+                return;
+            }
+            var data = res.data || {};
+            replyingTo.reply_text = text;
+            replyingTo.replySentAt = data.replySentAt || new Date().toISOString();
+            $('#replyModal').close();
+            toast('✓ Reply successfully posted to Google Play Store!');
+            
+            var gameId = replyingTo.game_id;
+            loadReviews();
+            if (gameId && $('#tab-analytics').classList.contains('active')) {
+                loadTabReviews(gameId);
+            }
+        } catch (e) {
+            toast('Error: ' + e.message, true);
+        } finally {
+            btn.disabled = false;
+            btnText.textContent = origText;
         }
     }
 
@@ -672,7 +775,8 @@
 
         $('#rpClose').addEventListener('click', function () { $('#replyModal').close(); });
         $('#rpCancel').addEventListener('click', function () { $('#replyModal').close(); });
-        $('#rpSave').addEventListener('click', saveReply);
+        $('#rpSaveDraft').addEventListener('click', saveReplyDraft);
+        $('#rpPostGoogle').addEventListener('click', postReplyToGoogle);
         
         $('#reviewGameFilter').addEventListener('change', renderReviews);
         $('#reviewStateFilter').addEventListener('change', renderReviews);

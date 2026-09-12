@@ -343,15 +343,31 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 /* ---------- modals ---------- */
 .admin-modal {
     width: min(680px, calc(100vw - 2rem));
+    max-height: calc(100vh - 3rem);
+    max-height: calc(100dvh - 3rem);
+    overflow-y: auto;
     background: var(--mainra-panel-solid);
     color: var(--mainra-ink);
     border: 1px solid var(--mainra-line);
     border-radius: var(--radius-lg);
     padding: 1.4rem 1.5rem;
+    box-shadow: 0 16px 40px rgba(0,0,0,.6);
 }
-.admin-modal::backdrop { background: rgba(8, 12, 20, .72); backdrop-filter: blur(3px); }
+.admin-modal::backdrop { background: rgba(8, 12, 20, .78); backdrop-filter: blur(4px); }
 .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .modal-head h3 { margin: 0; }
+
+#replyModal {
+    width: min(580px, calc(100vw - 2rem));
+    max-height: 90vh;
+    max-height: 90dvh;
+    box-sizing: border-box;
+}
+#replyModal .form-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
 /* ---------- toast ---------- */
 .toast {
