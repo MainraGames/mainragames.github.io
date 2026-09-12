@@ -1224,6 +1224,7 @@
 
                     var localizedReply = res.data.localizedReply || '';
                     if (localizedReply) {
+                        localizedReply = String(localizedReply).replace(/\s+/g, " ").trim();
                         textEl.value = localizedReply;
                         updateCount();
                         toast('Balasan resmi berhasil disesuaikan ke bahasa ' + (langMeta.name || playerLang) + '! ✓');

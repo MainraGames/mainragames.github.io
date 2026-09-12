@@ -355,10 +355,11 @@ ${replyDraft ? `- Konsep Balasan Admin (Bahasa Indonesia/Inggris): "${replyDraft
 
 Instruksi Wajib:
 1. Tulis balasan dalam BAHASA ASLI PENGGUNA (${targetLang}) secara sopan, hangat, ramah, dan profesional.
-2. Jika pemain memberikan rating 5 bintang atau ulasan positif: ucapkan terima kasih yang tulus, sampaikan bahwa developer senang mereka menikmati gamenya, dan update baru sedang disiapkan.
-3. Jika pemain memberikan rating 1-3 bintang atau keluhan bug: minta maaf atas ketidaknyamanannya, jelaskan bahwa tim developer mencatat masalah tersebut dan perbaikan akan hadir di update berikutnya, serta cantumkan email mainragames@gmail.com.
-4. Panjang balasan MAKSIMAL 320 karakter (karena batas Google Play Store adalah 350 karakter).
-5. Jangan gunakan tanda kutip pembungkus, jangan ada salam robotik yang kaku. Langsung teks balasan yang siap diposting ke Play Store.`;
+2. WAJIB HANYA 1 PARAGRAF / 1 LINE (SATU BARIS TUNGGAL). DILARANG menggunakan baris baru (line breaks / enter / newline \n), dilarang membuat poin-poin/bullet points.
+3. Jika pemain memberikan rating 5 bintang atau ulasan positif: ucapkan terima kasih yang tulus, sampaikan bahwa developer senang mereka menikmati gamenya, dan update baru sedang disiapkan.
+4. Jika pemain memberikan rating 1-3 bintang atau keluhan bug: minta maaf atas ketidaknyamanannya, jelaskan bahwa tim developer mencatat masalah tersebut dan perbaikan akan hadir di update berikutnya, serta cantumkan email mainragames@gmail.com.
+5. Panjang balasan MAKSIMAL 320 karakter (karena batas Google Play Store adalah 350 karakter).
+6. Jangan gunakan tanda kutip pembungkus, jangan ada salam robotik yang kaku. Langsung teks balasan 1 baris yang siap diposting ke Play Store.`;
 
         const gRes = await fetch(url, {
           method: "POST",
@@ -375,7 +376,9 @@ Instruksi Wajib:
         if (gRes.ok) {
           const gData = await gRes.json();
           let localizedText = gData?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          localizedText = localizedText.trim().replace(/^["']|["']$/g, "");
+          // Strict formatting: enforce single-line (1 paragraph only) and strip redundant quotes/newlines
+          localizedText = localizedText.replace(/[
+\n]+/g, " ").replace(/\s{2,}/g, " ").trim().replace(/^["']|["']$/g, "");
           return json(200, {
             success: true,
             localizedReply: localizedText,
