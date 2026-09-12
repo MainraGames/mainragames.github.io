@@ -12,10 +12,13 @@
 
 /* ---------- login ---------- */
 .login-wrap {
-    display: grid;
+    display: none;
     min-height: 100vh;
     place-items: center;
     padding: 2rem 1rem;
+}
+.login-wrap.is-active {
+    display: grid;
 }
 
 .login-card {

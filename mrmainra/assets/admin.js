@@ -39,26 +39,39 @@
     /* ---------- auth ---------- */
 
     function showShell(user) {
-        $('#loginView').style.display = 'none';
+        var loginView = $('#loginView');
+        if (loginView) {
+            loginView.classList.remove('is-active');
+            loginView.style.display = 'none';
+        }
         $('#adminShell').classList.add('is-on');
         $('#who').textContent = user.email || 'admin';
         loadAll();
     }
 
+    function showLogin() {
+        $('#adminShell').classList.remove('is-on');
+        var loginView = $('#loginView');
+        if (loginView) {
+            loginView.classList.add('is-active');
+            loginView.style.display = 'grid';
+        }
+    }
+
     async function checkAdmin(user) {
-        if (!user) { $('#loginView').style.display = 'grid'; return; }
+        if (!user) { showLogin(); return; }
         var res = await sb.from('admin_users').select('user_id').eq('user_id', user.id).maybeSingle();
         if (res.error) {
             $('#loginError').textContent = 'DB error: ' + res.error.message;
             $('#loginError').classList.remove('hidden');
-            $('#loginView').style.display = 'grid';
+            showLogin();
             return;
         }
         if (!res.data) {
             await sb.auth.signOut();
             $('#loginError').textContent = 'This account is not an admin. Ask an existing admin to grant access.';
             $('#loginError').classList.remove('hidden');
-            $('#loginView').style.display = 'grid';
+            showLogin();
             return;
         }
         showShell(user);
@@ -1312,6 +1325,24 @@
     /* ---------- boot ---------- */
 
     function init() {
+        // Optimistic fast-path: If Supabase auth token exists in localStorage, keep login view hidden
+        try {
+            var hasSavedSession = false;
+            for (var k in localStorage) {
+                if (k.indexOf('sb-') === 0 && k.indexOf('-auth-token') !== -1) {
+                    var raw = localStorage.getItem(k);
+                    if (raw && raw.indexOf('access_token') !== -1) {
+                        hasSavedSession = true;
+                        break;
+                    }
+                }
+            }
+            if (hasSavedSession) {
+                var lv = $('#loginView');
+                if (lv) { lv.style.display = 'none'; lv.classList.remove('is-active'); }
+            }
+        } catch (e) {}
+
         if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
             $('#loginView').style.display = 'grid';
             $('#loginError').textContent = 'Supabase client failed to load. Check network / supabase-config.js.';
@@ -1366,8 +1397,7 @@
 
         sb.auth.onAuthStateChange(function (event, session) {
             if (event === 'SIGNED_OUT') {
-                $('#adminShell').classList.remove('is-on');
-                $('#loginView').style.display = 'grid';
+                showLogin();
             }
         });
 
@@ -1377,7 +1407,13 @@
 
         sb.auth.getSession().then(function (res) {
             var session = res.data && res.data.session;
-            if (session) checkAdmin(session.user);
+            if (session && session.user) {
+                checkAdmin(session.user);
+            } else {
+                showLogin();
+            }
+        }).catch(function () {
+            showLogin();
         });
     }
 
