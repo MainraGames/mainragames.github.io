@@ -368,6 +368,94 @@ Keluarkan HANYA dokumen JSON dengan schema berikut:
       });
     }
 
+    // Action: AI Auto-Fit / Adapt Text for Specific Social Media Character Limits
+    if (action === "adapt_limits") {
+      if (!geminiKey) {
+        return json(400, { message: "Gemini API Key belum dikonfigurasi." });
+      }
+
+      const { text, targetLimit, platform } = payload;
+      if (!text || !text.trim()) {
+        return json(400, { message: "Teks tidak boleh kosong." });
+      }
+
+      const limit = Number(targetLimit) || 280;
+      let modelName = (payload.model || "gemini-3.8-flash").replace(/^models\//, "");
+
+      const adaptPrompt = `Kamu adalah Social Media Editor profesional.
+Tugasmu adalah memadatkan dan menulis ulang postingan berikut agar panjangnya MAKSIMAL ${limit} KARAKTER untuk platform ${platform || "Twitter/X dan Threads"}.
+
+Syarat WAJIB:
+1. Total panjang caption akhir HARUS KURANG DARI ATAU SAMA DENGAN ${limit} karakter (sangat ketat!).
+2. Pertahankan pesan inti, antusiasme, link, dan minimal 1 hashtag penting (#MainraGames).
+3. Buang kata-kata bertele-tele dan gunakan emoji secara efisien.
+
+Teks Asli:
+"""${text.trim()}"""
+
+Keluarkan HANYA JSON murni dengan format:
+{
+  "caption": "Teks hasil pemadatan di bawah ${limit} karakter",
+  "charCount": 123
+}`;
+
+      const genUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${geminiKey}`;
+
+      const reqBody: any = {
+        contents: [{ role: "user", parts: [{ text: adaptPrompt }] }],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 600,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              caption: { type: "STRING" },
+              charCount: { type: "INTEGER" },
+            },
+            required: ["caption"],
+          },
+        },
+      };
+
+      let res = await fetch(genUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reqBody),
+      });
+
+      if (!res.ok && res.status === 400) {
+        delete reqBody.generationConfig.responseSchema;
+        res = await fetch(genUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(reqBody),
+        });
+      }
+
+      if (!res.ok) {
+        const errTxt = await res.text();
+        return json(res.status, { message: `Gemini API error (${res.status}): ${errTxt}` });
+      }
+
+      const data = await res.json();
+      const rawRes = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      let adaptedCaption = text;
+      try {
+        const p = JSON.parse(rawRes.replace(/^```json\s*/i, "").replace(/```$/i, "").trim());
+        if (p.caption) adaptedCaption = p.caption.trim();
+      } catch {
+        adaptedCaption = rawRes.trim();
+      }
+
+      return json(200, {
+        success: true,
+        caption: adaptedCaption,
+        charCount: adaptedCaption.length,
+        modelUsed: modelName,
+      });
+    }
+
     return json(400, { message: `Aksi '${action}' tidak dikenali.` });
   } catch (err: any) {
     return json(500, { message: `Internal server error: ${err.message}` });

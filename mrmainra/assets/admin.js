@@ -1209,6 +1209,61 @@
         }
     }
 
+    function updateSocialLimitIndicators(len) {
+        var postCharCount = $('#postCharCount');
+        if (postCharCount) postCharCount.textContent = len + ' / 2200';
+
+        var tagX = $('#charTagX');
+        var valX = $('#valTagX');
+        var tagTh = $('#charTagThreads');
+        var valTh = $('#valTagThreads');
+        var tagIg = $('#charTagIg');
+        var valIg = $('#valTagIg');
+        var tagTt = $('#charTagTiktok');
+        var valTt = $('#valTagTiktok');
+        var warnLbl = $('#charWarningLabel');
+
+        var remX = 280 - len;
+        var remTh = 500 - len;
+        var remIg = 2200 - len;
+        var remTt = 2200 - len;
+
+        if (valX) valX.textContent = remX >= 0 ? remX : (remX);
+        if (tagX) {
+            tagX.classList.toggle('is-over', remX < 0);
+            tagX.classList.toggle('is-safe', remX >= 0 && len > 0);
+        }
+
+        if (valTh) valTh.textContent = remTh >= 0 ? remTh : (remTh);
+        if (tagTh) {
+            tagTh.classList.toggle('is-over', remTh < 0);
+            tagTh.classList.toggle('is-safe', remTh >= 0 && len > 0);
+        }
+
+        if (valIg) valIg.textContent = remIg >= 0 ? remIg : (remIg);
+        if (tagIg) {
+            tagIg.classList.toggle('is-over', remIg < 0);
+            tagIg.classList.toggle('is-safe', remIg >= 0 && len > 0);
+        }
+
+        if (valTt) valTt.textContent = remTt >= 0 ? remTt : (remTt);
+        if (tagTt) {
+            tagTt.classList.toggle('is-over', remTt < 0);
+            tagTt.classList.toggle('is-safe', remTt >= 0 && len > 0);
+        }
+
+        if (warnLbl) {
+            if (remX < 0 || remTh < 0) {
+                var overList = [];
+                if (remX < 0) overList.push('X/Twitter (' + Math.abs(remX) + ' char over)');
+                if (remTh < 0) overList.push('Threads (' + Math.abs(remTh) + ' char over)');
+                warnLbl.innerHTML = '<span style="color:#f87171">⚠️ Melebihi batas ' + overList.join(', ') + '. Gunakan tombol <b>AI Auto-Fit</b>.</span>';
+            } else {
+                warnLbl.textContent = len > 0 ? '✓ Aman untuk semua platform yang dipilih.' : '';
+            }
+        }
+    }
+
     function wireLivePreview() {
         var contentInput = $('#postContent');
         var imgInput = $('#postImage');
@@ -1228,6 +1283,7 @@
                 var txt = (contentInput && contentInput.value.trim()) || '';
                 previewText.textContent = txt || 'Tulis pesan di sebelah kiri untuk melihat pratinjau langsung postingan media sosial Anda…';
                 previewText.style.color = txt ? 'var(--mainra-white)' : 'var(--mainra-muted)';
+                updateSocialLimitIndicators(contentInput ? contentInput.value.length : 0);
             }
 
             if (previewImage) {
@@ -1597,10 +1653,81 @@
                     // Clean and set caption without JSON debris
                     if (finalCaption && contentInput) {
                         contentInput.value = finalCaption;
-                        $('#postCharCount').textContent = finalCaption.length + ' / 1000';
                         wireLivePreview();
                     }
                     toast('Postingan dibuat dengan model ' + (res.data.modelUsed || model) + '! ✨');
+                }
+            };
+        }
+
+        // AI Auto-Fit / Adaptive Limiter logic
+        var autoFitBtn = $('#aiAutoFitBtn');
+        if (autoFitBtn) {
+            autoFitBtn.onclick = async function () {
+                var contentInput = $('#postContent');
+                var currentTxt = contentInput ? contentInput.value.trim() : '';
+                if (!currentTxt) {
+                    toast('Tulis atau generate caption terlebih dahulu sebelum disesuaikan.', true);
+                    return;
+                }
+
+                // Check which channels are currently checked to determine strictness
+                var checkedChannels = Array.from($$('#bufferChannelsList input[type="checkbox"]:checked')).map(function (cb) {
+                    var label = cb.closest('.channel-select-pill');
+                    return label ? label.textContent.toLowerCase() : '';
+                });
+
+                var hasX = checkedChannels.some(function (c) { return c.includes('twitter') || c.includes('x'); });
+                var hasThreads = checkedChannels.some(function (c) { return c.includes('threads'); });
+
+                var targetLimit = 280;
+                var targetPlatform = 'Twitter/X (280 karakter)';
+
+                if (hasX) {
+                    targetLimit = 280;
+                    targetPlatform = 'Twitter/X (280 karakter)';
+                } else if (hasThreads) {
+                    targetLimit = 500;
+                    targetPlatform = 'Threads (500 karakter)';
+                } else {
+                    targetLimit = 280;
+                    targetPlatform = 'Twitter/X & Threads';
+                }
+
+                if (currentTxt.length <= targetLimit) {
+                    toast('Teks saat ini (' + currentTxt.length + ' char) sudah memenuhi batas ' + targetPlatform + '! ✓');
+                    return;
+                }
+
+                var apiKey = keyInput ? keyInput.value.trim() : '';
+                var model = modelSelect ? modelSelect.value : 'gemini-3.8-flash';
+
+                autoFitBtn.disabled = true;
+                autoFitBtn.innerHTML = '<span>⏳ Memadatkan teks…</span>';
+
+                var res = await sb.functions.invoke('ai-social-assistant', {
+                    body: {
+                        action: 'adapt_limits',
+                        apiKey: apiKey,
+                        model: model,
+                        text: currentTxt,
+                        targetLimit: targetLimit,
+                        platform: targetPlatform
+                    }
+                }).catch(function (e) { return { error: e }; });
+
+                autoFitBtn.disabled = false;
+                autoFitBtn.innerHTML = '<span>✨ AI Sesuaikan Format Platform</span>';
+
+                if (res.error) {
+                    toast('Gagal menyesuaikan teks: ' + (res.error.message || res.error), true);
+                    return;
+                }
+
+                if (res.data && res.data.caption) {
+                    contentInput.value = res.data.caption;
+                    wireLivePreview();
+                    toast('Caption dipadatkan menjadi ' + res.data.caption.length + ' karakter untuk ' + targetPlatform + '! ✓');
                 }
             };
         }

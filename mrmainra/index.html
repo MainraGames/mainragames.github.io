@@ -9,7 +9,7 @@
 <title>Admin — Mainra Games</title>
 <link rel="icon" type="image/png" href="../Assets/img/LogoMainraGames.png">
 <link rel="stylesheet" href="../Assets/css/mainra.css?v=3.4">
-<link rel="stylesheet" href="assets/admin.css?v=3.1">
+<link rel="stylesheet" href="assets/admin.css?v=3.2">
 </head>
 <body class="admin-body">
 
@@ -423,21 +423,38 @@
                                     <input type="text" id="postTitle" placeholder="Misal: Update Pop It 3D Versi 1.2 Resmi Rilis!" required maxlength="120" style="width:100%; margin-top:.3rem; font-size:.85rem; padding:.55rem .75rem">
                                 </label>
 
-                                <!-- Caption with Quick Templates -->
+                                <!-- Caption with Quick Templates & Adaptive Trimmer -->
                                 <div>
                                     <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.3rem">
                                         <label for="postContent" style="margin:0; font-size:.82rem; color:var(--mainra-muted)">Isi Caption Sosial Media</label>
-                                        <span id="postCharCount" class="muted small" style="font-family:monospace; font-size:.75rem">0 / 1000</span>
+                                        <span id="postCharCount" class="muted small" style="font-family:monospace; font-size:.75rem">0 / 2200</span>
                                     </div>
-                                    <div style="display:flex; align-items:center; gap:.4rem; margin-bottom:.4rem; flex-wrap:wrap">
-                                        <span class="muted small" style="font-size:.72rem">Template Cepat:</span>
-                                        <div class="template-btn-group">
-                                            <button type="button" class="template-btn" data-tmpl="update">🚀 Update Rilis</button>
-                                            <button type="button" class="template-btn" data-tmpl="milestone">🎉 Milestone</button>
-                                            <button type="button" class="template-btn" data-tmpl="promo">🎮 Ajak Main</button>
+                                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:.4rem; flex-wrap:wrap; gap:.4rem">
+                                        <div style="display:flex; align-items:center; gap:.4rem; flex-wrap:wrap">
+                                            <span class="muted small" style="font-size:.72rem">Template:</span>
+                                            <div class="template-btn-group">
+                                                <button type="button" class="template-btn" data-tmpl="update">🚀 Update Rilis</button>
+                                                <button type="button" class="template-btn" data-tmpl="milestone">🎉 Milestone</button>
+                                                <button type="button" class="template-btn" data-tmpl="promo">🎮 Ajak Main</button>
+                                            </div>
                                         </div>
+                                        <!-- AI Auto-Fit Button -->
+                                        <button type="button" class="ai-fit-btn" id="aiAutoFitBtn" title="Gunakan Gemini AI untuk memadatkan teks agar lolos batas karakter platform (X: 280, Threads: 500)">
+                                            <span>✨ AI Sesuaikan Format Platform</span>
+                                        </button>
                                     </div>
-                                    <textarea id="postContent" rows="5" placeholder="Tulis caption pengumuman untuk Instagram, Twitter/X, Facebook, TikTok, Threads..." required maxlength="1000" style="width:100%; resize:vertical; line-height:1.5; font-size:.88rem; padding:.6rem .8rem"></textarea>
+                                    <textarea id="postContent" rows="5" placeholder="Tulis caption pengumuman untuk Instagram, Twitter/X, Facebook, TikTok, Threads..." required maxlength="2200" style="width:100%; resize:vertical; line-height:1.5; font-size:.88rem; padding:.6rem .8rem"></textarea>
+                                    
+                                    <!-- Dynamic Platform Limits Indicator -->
+                                    <div class="char-limit-bar">
+                                        <div class="char-pill-tags">
+                                            <span id="charTagX" class="char-tag" title="Batas X/Twitter: 280 karakter">🐦 X: <b id="valTagX">280</b></span>
+                                            <span id="charTagThreads" class="char-tag" title="Batas Threads: 500 karakter">🧵 Threads: <b id="valTagThreads">500</b></span>
+                                            <span id="charTagIg" class="char-tag" title="Batas Instagram: 2200 karakter">📸 IG / FB: <b id="valTagIg">2200</b></span>
+                                            <span id="charTagTiktok" class="char-tag" title="Batas TikTok: 2200 karakter">🎵 TikTok: <b id="valTagTiktok">2200</b></span>
+                                        </div>
+                                        <span id="charWarningLabel" class="muted small" style="font-size:.72rem"></span>
+                                    </div>
                                 </div>
 
                                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:.75rem;">
@@ -693,6 +710,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../Assets/js/supabase-config.js"></script>
 <script src="../Assets/js/supabase-client.js"></script>
-<script src="assets/admin.js?v=3.2"></script>
+<script src="assets/admin.js?v=3.3"></script>
 </body>
 </html>
