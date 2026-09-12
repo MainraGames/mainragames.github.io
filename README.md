@@ -8,7 +8,7 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
 - ✅ Daftar game yang responsif
 - ✅ Desain modern untuk desktop dan mobile
 - ✅ Data game dinamis dari Supabase (fallback ke JSON lokal)
-- ✅ Dashboard admin di `/admin/` untuk kelola game, highlight, dan balasan review
+- ✅ Dashboard admin di `/mrmainra/` untuk kelola game, highlight, dan balasan review
 
 ## Struktur File
 - `index.html` — Halaman utama menampilkan highlight dan 3 game terbaru.
@@ -17,7 +17,7 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
 - `Assets/js/games-loader.js` — Logika untuk memuat data game (Supabase → fallback JSON) dan merendernya.
 - `Assets/js/supabase-config.js` — URL project + publishable key Supabase (nilai publik, aman untuk browser).
 - `Assets/js/supabase-client.js` — Inisialisasi `window.supabaseClient`.
-- `admin/index.html` + `admin/assets/admin.js|admin.css` — Dashboard admin (login Supabase Auth, RLS gated).
+- `mrmainra/index.html` + `mrmainra/assets/admin.js|admin.css` — Dashboard admin (login Supabase Auth, RLS gated).
 - `Assets/js/nav.js` — Kontrol navigasi dan menu mobile.
 - `Assets/css/mainra.css` — Gaya visual website.
 - `Assets/img/` — Folder berisi gambar dan ikon website.
@@ -32,7 +32,7 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
 1. **Sumber kebenaran data game adalah Supabase** (project `mainragames.com`, table `games`, `game_reviews`, `site_settings`, `admin_users`).
 2. Halaman publik membaca langsung dari Supabase via publishable key; bila gagal/offline, fallback ke `Assets/data/games-data.json`.
 3. GitHub Actions harian (`update-games.yml`): scrape Play Store → mirror game baru ke Supabase (insert-only) → tarik konten terbaru dari Supabase untuk membangun ulang `games-data.json` → commit bila berubah.
-4. Dashboard admin (`/admin/`) dipakai untuk edit game, atur featured/highlight, dan membalas review. akses dibatasi RLS: hanya user yang terdaftar di `public.admin_users`.
+4. Dashboard admin (`/mrmainra/`) dipakai untuk edit game, atur featured/highlight, dan membalas review. akses dibatasi RLS: hanya user yang terdaftar di `public.admin_users`.
 5. Balasan review untuk game Play Store disimpan sebagai draft di `game_reviews.reply_text`; job sync (Actions atau tombol Fetch) mem-posting-nya ke Google Play via Play Developer API bila `GOOGLE_SERVICE_ACCOUNT_JSON` diset.
 
 ## Setup Admin & Supabase
@@ -46,7 +46,7 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
    - `SUPABASE_SECRET_KEY` = service role key (`sb_secret_…` / legacy `service_role`) — **jangan pernah** ditulis ke file repo.
    - `GOOGLE_SERVICE_ACCOUNT_JSON` (opsional, untuk auto-post reply): JSON service account dari Google Cloud yang di-invite di Play Console dengan permission "Reply to reviews" lalu: `supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON=...` untuk Edge Function juga.
 3. Deploy ulang Edge Functions bila diubah: `supabase functions deploy sync-playstore --no-verify-jwt && supabase functions deploy sync-reviews --no-verify-jwt`.
-4. Dashboard: buka `https://mainragames.github.io/admin/` (atau `https://mainragames.com/admin/` setelah deploy) dan login.
+4. Dashboard: buka `https://mainragames.github.io/mrmainra/` (atau `https://mainragames.com/mrmainra/` setelah deploy) dan login.
 
 ## AdMob sellers.json dan app-ads.txt
 
