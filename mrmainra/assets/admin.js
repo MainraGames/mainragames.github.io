@@ -1065,6 +1065,9 @@
     }
 
     function renderReviews() {
+        // Legacy container fallback (deprecated in favor of subtab-analytics & loadTabReviews)
+        var box = $('#reviewsList');
+        if (!box) return;
         var rgf = $('#reviewGameFilter');
         var gid = rgf ? rgf.value : '';
         var state = reviewStateFilterValue();
@@ -1074,47 +1077,26 @@
             if (state === 'answered' && !(r.reply_text || '').trim()) return false;
             return true;
         });
-        var box = $('#reviewsList');
-        if (!box) return;
         if (!list.length) {
-            box.innerHTML = '<div class="card muted">No reviews match. Click “Fetch new reviews” to pull the latest from the Play Store, or add reviews manually in Supabase.</div>';
+            box.innerHTML = '<div class="card muted">No reviews match.</div>';
             return;
         }
         box.innerHTML = list.map(function (r, i) {
             var g = games.find(function (x) { return String(x.id) === String(r.game_id); });
             var answered = (r.reply_text || '').trim();
-            var transBoxId = 'trans_rev_' + i;
-            var hasForeignContent = r.content && r.content.trim() && r.lang !== 'id';
-
             return '<div class="card">' +
                 '<div class="actions" style="justify-content:space-between;align-items:flex-start;gap:1rem">' +
                     '<div style="min-width:0;flex:1">' +
                         '<div style="display:flex;align-items:center;gap:.55rem;flex-wrap:wrap">' +
                             '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
                             '<span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
-                            getLangBadge(r.lang) +
-                            (r.device ? ' <span class="muted" style="font-size:.78rem;background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;">📱 ' + esc(r.device) + '</span>' : '') +
                             (g ? '<span class="muted" style="font-size:.85rem">· ' + esc(g.title) + '</span>' : '') +
-                            (r.review_timestamp ? '<span class="muted" style="font-size:.85rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
                         '</div>' +
-                        (r.device ? '<div class="muted small" style="margin-top:.25rem">' + esc(r.device) + (r.versionCode ? ' · App v' + esc(r.versionCode) : '') + '</div>' : '') +
                         '<p style="margin:.6rem 0 0;font-size:.95rem;line-height:1.45">' + esc(r.content || '—') + '</p>' +
-                        (hasForeignContent ?
-                            '<div>' +
-                                '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-lang="' + esc(r.lang || '') + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
-                                '<div id="' + transBoxId + '" class="trans-box" style="display:none"></div>' +
-                            '</div>' : '') +
-                        (answered ? '<p style="margin:.7rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--mainra-success);background:rgba(127,209,161,.06)"><span class="muted" style="font-size:.78rem">Mainra Games replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
                     '</div>' +
-                    '<div class="actions"><button class="btn ' + (answered ? 'ghost' : '') + ' small" data-reply="' + i + '" type="button">' + (answered ? 'Edit reply' : 'Reply') + '</button></div>' +
                 '</div>' +
             '</div>';
         }).join('');
-        // map filtered index back to full row
-        $$('[data-reply]').forEach(function (b) {
-            b.addEventListener('click', function () { openReply(list[Number(b.dataset.reply)]); });
-        });
-        wireTranslationButtons();
     }
 
     var PRESETS = [
@@ -3109,9 +3091,6 @@
         on('#rpCancel', 'click', function () { $('#replyModal').close(); });
         on('#rpSaveDraft', 'click', saveReplyDraft);
         on('#rpPostGoogle', 'click', postReplyToGoogle);
-        
-        if ($('#reviewGameFilter')) on('#reviewGameFilter', 'change', renderReviews);
-        if ($('#reviewStateFilter')) on('#reviewStateFilter', 'change', renderReviews);
         on('#syncGamesBtn', 'click', function () { callFunction('sync-playstore'); });
 
         on('#newAdminBtn', 'click', openAddAdminModal);
