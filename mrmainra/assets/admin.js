@@ -1238,6 +1238,7 @@
             var s = (p.service || '').toLowerCase();
             if (s === 'facebook') icon = '📘';
             else if (s === 'twitter' || s === 'x') icon = '🐦';
+            else if (s === 'threads') icon = '🧵';
             else if (s === 'instagram') icon = '📸';
             else if (s === 'tiktok') icon = '🎵';
             else if (s === 'youtube') icon = '▶️';
