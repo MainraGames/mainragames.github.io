@@ -32,10 +32,13 @@ function b64url(buf: ArrayBuffer | Uint8Array | string): string {
   return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-/** Decode the service-account private key: keep base64 characters only. */
+/** Decode the service-account private key: extract base64 DER body. */
 function decodePrivateKey(pem: string): Uint8Array {
-  const body = String(pem).replace(/[^A-Za-z0-9+/=]/g, "");
-  return Uint8Array.from(atob(body), (c) => c.charCodeAt(0));
+  const clean = pem.replace(/-----BEGIN[^-]+-----/g, "").replace(/-----END[^-]+-----/g, "").replace(/\s+/g, "");
+  const bin = atob(clean);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
 }
 
 async function signJwt(sa: any) {
@@ -126,9 +129,9 @@ async function listApiReviews(token: string, packageName: string) {
   const out: any[] = [];
   let pageToken = "";
   do {
-    const qs = new URLSearchParams({ packageName, maxResults: "50" });
+    const qs = new URLSearchParams({ maxResults: "50" });
     if (pageToken) qs.set("token", pageToken);
-    const res = await fetch(`${API}/reviews?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(`${API}/applications/${packageName}/reviews?${qs}`, { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) {
       console.error(`list ${packageName}: ${res.status} ${await res.text()}`);
       break;
@@ -255,7 +258,7 @@ Deno.serve(async (req: Request) => {
       const errors: string[] = [];
       for (const row of pending || []) {
         const res = await fetch(`${API}/applications/${row.game_id}/reviews/${row.review_id}:reply`, {
-          method: "PUT",
+          method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
           body: JSON.stringify({ replyText: row.reply_text }),
         });
