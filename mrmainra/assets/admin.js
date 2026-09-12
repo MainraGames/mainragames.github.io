@@ -374,7 +374,17 @@
         }
     }
 
-    function renderDistributionBars(containerId, sentimentBadgeId, reviewList) {
+    var overviewFilterMode = 'all';
+    var singleFilterMode = 'all';
+
+    function filterReviewItems(items, mode) {
+        if (mode === 'unreplied') return items.filter(function (r) { return !(r.reply_text || '').trim(); });
+        if (mode === '5star') return items.filter(function (r) { return Number(r.star_rating) === 5; });
+        if (mode === 'critical') return items.filter(function (r) { return Number(r.star_rating) < 5 && Number(r.star_rating) > 0; });
+        return items;
+    }
+
+    function renderDistributionBars(containerId, sentimentBadgeId, reviewList, onStarClick) {
         var counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
         var totalRated = 0;
         var positiveCount = 0;
@@ -414,7 +424,7 @@
         var html = [5, 4, 3, 2, 1].map(function (star) {
             var c = counts[star] || 0;
             var widthPct = totalRated > 0 ? ((c / totalRated) * 100).toFixed(1) : 0;
-            return '<div class="rating-dist-row">' +
+            return '<div class="rating-dist-row clickable-dist-row" data-dist-star="' + star + '" title="Click to filter ' + star + '-star reviews">' +
                 '<span class="rating-star-lbl">' + star + ' ★</span>' +
                 '<div class="rating-bar-track">' +
                     '<div class="rating-bar-fill bar-' + star + '" style="width:' + widthPct + '%"></div>' +
@@ -424,6 +434,15 @@
         }).join('');
 
         container.innerHTML = html;
+
+        if (onStarClick) {
+            container.querySelectorAll('[data-dist-star]').forEach(function (row) {
+                row.addEventListener('click', function () {
+                    var s = Number(row.dataset.distStar);
+                    onStarClick(s);
+                });
+            });
+        }
     }
 
     function renderLanguageGrid(containerId, countBadgeId, reviewList) {
@@ -552,41 +571,74 @@
         var feedBox = $('#overviewLatestReviews');
         if (!reviews.length) {
             feedBox.innerHTML = '<div class="muted">No reviews recorded yet. Click "Sync from Play Store" above to fetch latest reviews.</div>';
+            if ($('#overviewFeedCount')) $('#overviewFeedCount').textContent = '0';
         } else {
-            var recent10 = reviews.slice(0, 6);
-            feedBox.innerHTML = recent10.map(function (r, i) {
-                var g = games.find(function (x) { return String(x.id) === String(r.game_id); });
-                var answered = (r.reply_text || '').trim();
-                var transBoxId = 'trans_feed_' + i;
-                var hasForeignContent = r.content && r.content.trim() && r.lang !== 'id';
+            function updateOverviewFeed() {
+                var filtered = filterReviewItems(reviews, overviewFilterMode);
+                if ($('#overviewFeedCount')) $('#overviewFeedCount').textContent = filtered.length + ' shown';
 
-                return '<div class="review-item" style="border-bottom:1px solid var(--mainra-line);padding:.9rem 0">' +
-                    '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap">' +
-                        '<div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap">' +
-                            '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
-                            ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
-                            getLangBadge(r.lang) +
-                            (g ? ' <span class="muted" style="font-size:.8rem">on ' + esc(g.title) + '</span>' : '') +
-                            (r.review_timestamp ? ' <span class="muted" style="font-size:.8rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
+                if (!filtered.length) {
+                    feedBox.innerHTML = '<div class="muted" style="text-align:center;padding:1.5rem">No reviews match the "' + esc(overviewFilterMode) + '" filter.</div>';
+                    return;
+                }
+
+                var displayItems = filtered.slice(0, 8);
+                feedBox.innerHTML = displayItems.map(function (r, i) {
+                    var g = games.find(function (x) { return String(x.id) === String(r.game_id); });
+                    var answered = (r.reply_text || '').trim();
+                    var transBoxId = 'trans_feed_' + i;
+                    var hasForeignContent = r.content && r.content.trim() && r.lang !== 'id';
+
+                    return '<div class="review-item" style="border-bottom:1px solid var(--mainra-line);padding:.9rem 0">' +
+                        '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:.5rem;flex-wrap:wrap">' +
+                            '<div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap">' +
+                                '<strong>' + esc(r.author_name || 'Anonymous') + '</strong>' +
+                                ' <span style="color:var(--mainra-gold)">' + starStr(r.star_rating) + '</span>' +
+                                getLangBadge(r.lang) +
+                                (g ? ' <span class="muted" style="font-size:.8rem">on ' + esc(g.title) + '</span>' : '') +
+                                (r.review_timestamp ? ' <span class="muted" style="font-size:.8rem">· ' + new Date(r.review_timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) + '</span>' : '') +
+                            '</div>' +
+                            '<button class="btn-admin ghost" style="font-size:.75rem;padding:.2rem .6rem" data-reply-overview="' + i + '" type="button">' +
+                                (answered ? '✎ Edit reply' : '↩ Reply') +
+                            '</button>' +
                         '</div>' +
-                        '<button class="btn-admin ghost" style="font-size:.75rem;padding:.2rem .6rem" data-reply-overview="' + i + '" type="button">' +
-                            (answered ? '✎ Edit reply' : '↩ Reply') +
-                        '</button>' +
-                    '</div>' +
-                    '<p style="margin:.45rem 0 0;font-size:.92rem;color:var(--mainra-white)">' + esc(r.content || '—') + '</p>' +
-                    (hasForeignContent ?
-                        '<div>' +
-                            '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
-                            '<div id="' + transBoxId + '" class="trans-box" style="display:none"></div>' +
-                        '</div>' : '') +
-                    (answered ? '<p style="margin:.6rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--mainra-success);background:rgba(127,209,161,.06);font-size:.85rem"><span class="muted" style="font-size:.75rem">Mainra replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
-                '</div>';
-            }).join('');
+                        '<p style="margin:.45rem 0 0;font-size:.92rem;color:var(--mainra-white)">' + esc(r.content || '—') + '</p>' +
+                        (hasForeignContent ?
+                            '<div>' +
+                                '<button type="button" class="btn-trans" data-trans-btn data-trans-target="' + transBoxId + '" data-trans-text="' + esc(r.content) + '">🌐 Terjemahkan ke Indonesia</button>' +
+                                '<div id="' + transBoxId + '" class="trans-box" style="display:none"></div>' +
+                            '</div>' : '') +
+                        (answered ? '<p style="margin:.6rem 0 0;padding:.6rem .8rem;border-left:3px solid var(--mainra-success);background:rgba(127,209,161,.06);font-size:.85rem"><span class="muted" style="font-size:.75rem">Mainra replied:</span><br>' + esc(r.reply_text) + '</p>' : '') +
+                    '</div>';
+                }).join('');
 
-            $$('[data-reply-overview]').forEach(function (btn) {
-                btn.addEventListener('click', function () { openReply(recent10[Number(btn.dataset.replyOverview)]); });
+                $$('[data-reply-overview]').forEach(function (btn) {
+                    btn.addEventListener('click', function () { openReply(displayItems[Number(btn.dataset.replyOverview)]); });
+                });
+                wireTranslationButtons();
+            }
+
+            updateOverviewFeed();
+
+            // Wire filter chips
+            $$('#overviewFeedFilters .filter-chip').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    $$('#overviewFeedFilters .filter-chip').forEach(function (c) { c.classList.remove('active'); });
+                    chip.classList.add('active');
+                    overviewFilterMode = chip.dataset.filter;
+                    updateOverviewFeed();
+                });
             });
-            wireTranslationButtons();
+
+            // Wire star bar clicks to filter overview
+            renderDistributionBars('overviewRatingBars', 'overviewRatingSentiment', reviews, function (clickedStar) {
+                overviewFilterMode = clickedStar === 5 ? '5star' : 'critical';
+                $$('#overviewFeedFilters .filter-chip').forEach(function (c) {
+                    c.classList.toggle('active', c.dataset.filter === overviewFilterMode);
+                });
+                updateOverviewFeed();
+                feedBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
         }
     }
 
@@ -608,23 +660,42 @@
         }
 
         // Render Single Game Distribution Bars and Audience Languages
-        renderDistributionBars('singleRatingBars', 'singleRatingSentiment', gReviews);
+        renderDistributionBars('singleRatingBars', 'singleRatingSentiment', gReviews, function (clickedStar) {
+            singleFilterMode = clickedStar === 5 ? '5star' : 'critical';
+            $$('#singleFeedFilters .filter-chip').forEach(function (c) {
+                c.classList.toggle('active', c.dataset.filter === singleFilterMode);
+            });
+            loadTabReviews(g.id);
+            var box = $('#tabReviewsList');
+            if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
         renderLanguageGrid('singleLangGrid', 'singleLangCount', gReviews);
     }
 
     async function loadTabReviews(gameId) {
         var box = $('#tabReviewsList');
+        var countBadge = $('#singleFeedCount');
         var res = await sb.from('game_reviews')
             .select('*')
             .eq('game_id', gameId)
             .order('review_timestamp', { ascending: false })
-            .limit(30);
+            .limit(50);
         if (res.error) { box.innerHTML = '<div class="muted">Could not load reviews: ' + esc(res.error.message) + '</div>'; return; }
-        var rows = res.data || [];
-        if (!rows.length) {
+        var allRows = res.data || [];
+        if (!allRows.length) {
             box.innerHTML = '<div class="muted" style="margin:0">No reviews synced yet for this title. Click "Sync from Play Store" above to fetch.</div>';
+            if (countBadge) countBadge.textContent = '0';
             return;
         }
+
+        var rows = filterReviewItems(allRows, singleFilterMode);
+        if (countBadge) countBadge.textContent = rows.length + ' of ' + allRows.length;
+
+        if (!rows.length) {
+            box.innerHTML = '<div class="muted" style="text-align:center;padding:1.5rem">No reviews match the "' + esc(singleFilterMode) + '" filter.</div>';
+            return;
+        }
+
         box.innerHTML = rows.map(function (r, i) {
             var answered = (r.reply_text || '').trim();
             var transBoxId = 'trans_tab_' + i;
@@ -658,6 +729,16 @@
             btn.addEventListener('click', function () { openReply(_rows[Number(btn.dataset.replyTab)]); });
         });
         wireTranslationButtons();
+
+        // Wire single game filter chips
+        $$('#singleFeedFilters .filter-chip').forEach(function (chip) {
+            chip.onclick = function () {
+                $$('#singleFeedFilters .filter-chip').forEach(function (c) { c.classList.remove('active'); });
+                chip.classList.add('active');
+                singleFilterMode = chip.dataset.filter;
+                loadTabReviews(gameId);
+            };
+        });
     }
 
     async function syncTabAnalytics(appId) {

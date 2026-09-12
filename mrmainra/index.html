@@ -9,7 +9,7 @@
 <title>Admin — Mainra Games</title>
 <link rel="icon" type="image/png" href="../Assets/img/LogoMainraGames.png">
 <link rel="stylesheet" href="../Assets/css/mainra.css?v=3.4">
-<link rel="stylesheet" href="assets/admin.css?v=2.4">
+<link rel="stylesheet" href="assets/admin.css?v=2.5">
 </head>
 <body class="admin-body">
 
@@ -194,10 +194,20 @@
                     </div>
                 </div>
 
-                <!-- Recent Activity Feed -->
+                <!-- Recent Activity Feed with Interactive Filter Toolbar -->
                 <div class="card" style="padding:0; overflow:hidden;">
-                    <div style="padding:1rem 1.4rem; border-bottom:1px solid var(--mainra-line);">
-                        <h3 style="margin:0; font-size:1.05rem;">Latest Player Feedback Across All Games</h3>
+                    <div class="analytics-filter-toolbar">
+                        <div style="display:flex;align-items:center;gap:.6rem">
+                            <h3 style="margin:0; font-size:1.02rem;">Latest Player Feedback Across All Games</h3>
+                            <span id="overviewFeedCount" class="badge ok" style="font-size:.72rem">--</span>
+                        </div>
+                        <div class="filter-chip-group" id="overviewFeedFilters">
+                            <span class="muted small" style="font-size:.76rem;margin-right:.2rem">Filter:</span>
+                            <button type="button" class="filter-chip active" data-filter="all">All</button>
+                            <button type="button" class="filter-chip" data-filter="unreplied">Needs Reply</button>
+                            <button type="button" class="filter-chip" data-filter="5star">5 ★</button>
+                            <button type="button" class="filter-chip" data-filter="critical">&lt; 5 ★</button>
+                        </div>
                     </div>
                     <div id="overviewLatestReviews" style="padding:1.2rem;">
                         <div class="muted">Loading feedback…</div>
@@ -265,9 +275,21 @@
                 </div>
 
                 <div class="card" style="padding: 0; overflow: hidden;">
-                    <div style="padding: 1rem 1.4rem; border-bottom: 1px solid var(--mainra-line); display:flex; justify-content:space-between; align-items:center;">
-                        <h3 id="singleGameReviewTitle" style="margin: 0; font-size: 1.05rem;">Reviews & Feedback</h3>
-                        <button type="button" class="btn-admin ghost small" id="backToOverviewBtn">← Back to Overview</button>
+                    <div class="analytics-filter-toolbar">
+                        <div style="display:flex;align-items:center;gap:.6rem">
+                            <h3 id="singleGameReviewTitle" style="margin: 0; font-size: 1.02rem;">Reviews & Feedback</h3>
+                            <span id="singleFeedCount" class="badge ok" style="font-size:.72rem">--</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:.8rem;flex-wrap:wrap">
+                            <div class="filter-chip-group" id="singleFeedFilters">
+                                <span class="muted small" style="font-size:.76rem;margin-right:.2rem">Filter:</span>
+                                <button type="button" class="filter-chip active" data-filter="all">All</button>
+                                <button type="button" class="filter-chip" data-filter="unreplied">Needs Reply</button>
+                                <button type="button" class="filter-chip" data-filter="5star">5 ★</button>
+                                <button type="button" class="filter-chip" data-filter="critical">&lt; 5 ★</button>
+                            </div>
+                            <button type="button" class="btn-admin ghost small" id="backToOverviewBtn">← Back to Overview</button>
+                        </div>
                     </div>
                     <div id="tabReviewsList" style="padding: 1.4rem;">
                         <div class="muted">Loading reviews...</div>
