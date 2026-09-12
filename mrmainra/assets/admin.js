@@ -1848,6 +1848,26 @@
         box.innerHTML = broadcastsList.map(function (b) {
             var dateStr = b.published_at ? new Date(b.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
             var channelsCount = Array.isArray(b.channels) ? b.channels.length : 0;
+            var updates = Array.isArray(b.buffer_updates) ? b.buffer_updates : [];
+            var okCount = updates.filter(function (u) { return u.status === 'success'; }).length;
+
+            var channelPills = updates.map(function (u) {
+                var s = (u.service || '').toLowerCase();
+                var icon = '🌐';
+                if (s === 'facebook') icon = '📘';
+                else if (s === 'twitter' || s === 'x') icon = '🐦';
+                else if (s === 'threads') icon = '🧵';
+                else if (s === 'instagram') icon = '📸';
+                else if (s === 'tiktok') icon = '🎵';
+                else if (s === 'youtube') icon = '▶️';
+
+                var isOk = u.status === 'success';
+                var tip = isOk ? (u.text_used ? 'Terbit: ' + u.char_count + ' karakter' : 'Sukses') : (u.message || 'Gagal');
+                return '<span class="char-tag ' + (isOk ? 'is-safe' : 'is-over') + '" title="' + esc(tip) + '">' +
+                    icon + ' ' + (isOk ? '✓' : '✗') +
+                '</span>';
+            }).join(' ');
+
             return '<div style="border-bottom:1px solid var(--mainra-line); padding:1rem 0;">' +
                 '<div style="display:flex; justify-content:space-between; align-items:baseline; gap:.5rem; flex-wrap:wrap;">' +
                     '<h4 style="margin:0; font-size:.98rem; color:var(--mainra-white)">' + esc(b.title) + '</h4>' +
@@ -1857,8 +1877,9 @@
                 (b.image_url ? '<div style="margin:.4rem 0;"><img src="' + esc(b.image_url) + '" alt="" style="max-height:120px; border-radius:var(--radius-sm); border:1px solid var(--mainra-line);" onerror="this.style.display=\'none\'"></div>' : '') +
                 '<div style="display:flex; gap:.6rem; align-items:center; margin-top:.4rem; flex-wrap:wrap;">' +
                     '<span class="badge ok" style="font-size:.72rem">Web Published</span>' +
-                    (channelsCount > 0 ? '<span class="badge ok" style="font-size:.72rem">🚀 Broadcast ke ' + channelsCount + ' Channel</span>' : '<span class="badge warn" style="font-size:.72rem">Web Only</span>') +
-                    (b.target_link ? '<a href="' + esc(b.target_link) + '" target="_blank" rel="noopener" style="font-size:.78rem; color:var(--mainra-orange)">Buka Link ↗</a>' : '') +
+                    (channelsCount > 0 ? '<span class="badge ' + (okCount > 0 ? 'ok' : 'warn') + '" style="font-size:.72rem">🚀 ' + okCount + '/' + channelsCount + ' Channel Terkirim</span>' : '<span class="badge warn" style="font-size:.72rem">Web Only</span>') +
+                    (channelPills ? '<div style="display:inline-flex; gap:.25rem; align-items:center">' + channelPills + '</div>' : '') +
+                    (b.target_link ? '<a href="' + esc(b.target_link) + '" target="_blank" rel="noopener" style="font-size:.78rem; color:var(--mainra-orange); margin-left:auto">Buka Link ↗</a>' : '') +
                 '</div>' +
             '</div>';
         }).join('');
@@ -1882,8 +1903,13 @@
             return;
         }
 
+        if (checkedProfiles.length === 0) {
+            toast('Pilih minimal 1 channel sosial media tujuan.', true);
+            return;
+        }
+
         submitBtn.disabled = true;
-        submitBtn.textContent = 'Memposting…';
+        submitBtn.textContent = '🚀 Memproses & Menyesuaikan Broadcast…';
 
         var res = await sb.functions.invoke('sync-buffer', {
             body: {
@@ -1897,19 +1923,30 @@
         });
 
         submitBtn.disabled = false;
-        submitBtn.textContent = '🚀 Publish Berita & Broadcast';
+        submitBtn.textContent = '🚀 Terbitkan Berita & Broadcast Sekarang';
 
         if (res.error) {
             toast('Gagal broadcast: ' + (res.error.message || res.error), true);
             return;
         }
 
-        toast((res.data && res.data.message) || 'Broadcast berhasil ✓');
+        var results = (res.data && res.data.bufferResults) || [];
+        var failedList = results.filter(function (r) { return r.status === 'failed'; });
+
+        if (failedList.length > 0 && failedList.length === results.length) {
+            toast('Peringatan: Gagal mempublikasikan ke channel Buffer. Cek pesan error di riwayat.', true);
+        } else if (failedList.length > 0) {
+            toast('Sebagian channel berhasil (' + (results.length - failedList.length) + '/' + results.length + '). Detail tersimpan di riwayat. ⚠️');
+        } else {
+            toast((res.data && res.data.message) || 'Broadcast berhasil dipublikasikan ke semua platform! ✓');
+        }
+
         $('#postTitle').value = '';
         $('#postContent').value = '';
         $('#postImage').value = '';
         $('#postLink').value = '';
-        $('#postCharCount').textContent = '0 karakter';
+        updateSocialLimitIndicators(0);
+        wireLivePreview();
         loadSocialBroadcasts();
     }
 
