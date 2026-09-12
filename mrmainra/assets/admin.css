@@ -1082,6 +1082,28 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
 }
 
 /* Channel selection pills */
+/* ---------- Brand SVG Icons in UI Elements ---------- */
+.platform-brand-icon {
+    display: inline-block;
+    vertical-align: -3px;
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+}
+.char-tag .platform-brand-icon {
+    width: 13px;
+    height: 13px;
+    vertical-align: -2px;
+    margin-right: 2px;
+}
+.preview-tab-btn .platform-brand-icon {
+    width: 15px;
+    height: 15px;
+    vertical-align: -2px;
+    margin-right: 4px;
+}
+/* ---------- end brand icons ---------- */
+
 .channel-pill-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
