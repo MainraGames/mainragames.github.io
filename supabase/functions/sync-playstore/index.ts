@@ -67,6 +67,7 @@ Deno.serve(async (req: Request) => {
       featured: i < 3,
       platform: "Android",
       rating: typeof app.score === "number" ? app.score : null,
+      installs: app.installs || null,
       appId: app.appId,
       sort_order: i,
     }));

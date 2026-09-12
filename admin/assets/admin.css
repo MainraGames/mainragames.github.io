@@ -93,13 +93,14 @@
     word-break: break-all;
 }
 
-.admin-main { padding: 1.6rem 2rem 3rem; min-width: 0; }
+.admin-main { padding: 2.2rem 2rem 3rem; min-width: 0; }
 .admin-topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1.2rem;
+    margin-bottom: 1.4rem;
+    padding-top: .4rem;
 }
 .admin-topbar h2 { margin: 0; font-size: 1.3rem; }
 
@@ -326,7 +327,7 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
     .admin-user { margin-top: 0; margin-left: auto; display: flex; align-items: center; gap: .8rem; }
     .field-grid { grid-template-columns: 1fr; }
     .field-grid .span2 { grid-column: span 1; }
-    .admin-main { padding: 1.2rem 1rem 2.5rem; }
+    .admin-main { padding: 1.8rem 1rem 2.5rem; }
     .card-table, .card { overflow-x: auto; }
 }
 

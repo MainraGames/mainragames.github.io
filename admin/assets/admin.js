@@ -293,6 +293,7 @@
         var select = $('#analyticsGameFilter');
         select.value = id;
         renderAnalyticsTab();
+        window.scrollTo({ top: 0, behavior: 'auto' });
     }
 
     function renderAnalyticsTab() {
@@ -494,11 +495,12 @@
 
     /* ---------- tabs ---------- */
 
-    var TITLES = { games: 'Games', featured: 'Featured & Site', reviews: 'Reviews' };
+    var TITLES = { games: 'Games', featured: 'Featured & Site', analytics: 'Analytics', reviews: 'Reviews' };
     function selectTab(name) {
         $$('.admin-nav button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
         $$('.tab').forEach(function (t) { t.classList.toggle('active', t.id === 'tab-' + name); });
         $('#tabTitle').textContent = TITLES[name] || name;
+        window.scrollTo({ top: 0, behavior: 'auto' });
         try { localStorage.setItem('mainra-admin-tab', name); } catch (e) {}
     }
 
@@ -524,20 +526,11 @@
         $('#hideFeaturedBtn').addEventListener('click', hideFeatured);
         $('#exportJsonBtn').addEventListener('click', exportJson);
         
-        $('#amClose').addEventListener('click', function () { $('#analyticsModal').close(); });
-        $('#amDoneBtn').addEventListener('click', function () { $('#analyticsModal').close(); });
-        $('#amFetchReviewsBtn').addEventListener('click', function (e) {
-            e.preventDefault();
-            var gid = $('#amFetchReviewsBtn').dataset.gid;
-            if(gid) syncTabAnalytics(gid);
-        });
-        
-        $('#analyticsGameFilter').addEventListener('change', renderAnalyticsTab);
-        $('#syncAnalyticsBtn').addEventListener('click', function (e) {
-            e.preventDefault();
+        $('#syncAnalyticsBtn').addEventListener('click', function () {
             var gid = $('#syncAnalyticsBtn').dataset.gid;
-            if(gid) syncTabAnalytics(gid);
+            if (gid) syncTabAnalytics(gid);
         });
+        $('#analyticsGameFilter').addEventListener('change', renderAnalyticsTab);
 
         $('#rpClose').addEventListener('click', function () { $('#replyModal').close(); });
         $('#rpCancel').addEventListener('click', function () { $('#replyModal').close(); });
