@@ -267,19 +267,33 @@
 
     function renderFeaturedGrid() {
         var box = $('#featuredGrid');
+        var badge = $('#featuredStatusBadge');
         if (!games.length) {
-            box.innerHTML = '<div class="card muted">No games yet. Click “Refresh from Play Store”.</div>';
+            box.innerHTML = '<div class="muted" style="padding:1rem">Belum ada game. Klik “Refresh Play Store”.</div>';
+            if (badge) { badge.className = 'badge warn'; badge.textContent = 'Kosong'; }
             return;
         }
         var currentId = (highlight && highlight.gameId) || '';
         var isActive = !!(highlight && highlight.active);
+
+        if (badge) {
+            if (isActive && currentId) {
+                var activeGame = games.find(function(x) { return x.id === currentId; });
+                badge.className = 'badge ok';
+                badge.textContent = 'Aktif: ' + (activeGame ? activeGame.title.split(':')[0] : 'Ya');
+            } else {
+                badge.className = 'badge warn';
+                badge.textContent = 'Nonaktif / Hidden';
+            }
+        }
+
         box.innerHTML = games.map(function (g, i) {
             var picked = String(g.id) === String(currentId) && isActive;
             return '<button type="button" class="feat-card' + (picked ? ' picked' : '') + '" data-feat="' + i + '">' +
                 '<img class="feat-icon" src="' + esc(icon256(g.image)) + '" alt="" loading="lazy" onerror="this.src=\'../Assets/img/LogoMainraGames.png\'">' +
                 '<span class="feat-name">' + esc(g.title) + '</span>' +
                 '<span class="feat-meta">' + esc(g.category || '') + (g.rating != null ? ' · ★ ' + esc(g.rating) : '') + '</span>' +
-                (picked ? '<span class="badge ok feat-badge">Featured</span>' : '') +
+                (picked ? '<span class="badge ok feat-badge">Featured di Web</span>' : '') +
             '</button>';
         }).join('');
         $$('[data-feat]').forEach(function (b) {
@@ -1135,8 +1149,9 @@
 
     /* ---------- tabs ---------- */
 
-    var TITLES = { games: 'Games', featured: 'Featured & Site', analytics: 'Analytics Overview', reviews: 'Reviews', admins: 'Admins' };
+    var TITLES = { games: 'Games & Featured', analytics: 'Analytics Overview', reviews: 'Reviews', admins: 'Admins' };
     function selectTab(name) {
+        if (name === 'featured') name = 'games';
         $$('.admin-nav button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
         $$('.tab').forEach(function (t) { t.classList.toggle('active', t.id === 'tab-' + name); });
         $('#tabTitle').textContent = TITLES[name] || name;

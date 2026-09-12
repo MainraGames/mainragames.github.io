@@ -39,7 +39,6 @@
         </div>
         <nav class="admin-nav">
             <button type="button" data-tab="games">Games</button>
-            <button type="button" data-tab="featured">Featured</button>
             <button type="button" data-tab="analytics">Analytics</button>
             <button type="button" data-tab="reviews">Reviews</button>
             <button type="button" data-tab="admins">Admins</button>
@@ -56,36 +55,50 @@
             <div class="admin-actions" id="tabActions"></div>
         </div>
 
-        <!-- GAMES -->
+        <!-- GAMES & FEATURED -->
         <section id="tab-games" class="tab">
-            <div class="admin-actions" style="margin-bottom:1rem">
-                <button type="button" class="btn-admin" id="newGameBtn">+ Add Game</button>
-                <button type="button" class="btn-admin ghost" id="syncGamesBtn">↻ Sync from Play Store</button>
+            <!-- Homepage Featured Showcase Banner & Selector -->
+            <div class="card" style="margin-bottom:1.5rem; border-color: rgba(255,107,0,.3); background: linear-gradient(180deg, rgba(255,107,0,.04) 0%, rgba(14,23,42,.6) 100%);">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:1rem; flex-wrap:wrap; gap:.8rem;">
+                    <div>
+                        <div style="display:flex; align-items:center; gap:.5rem;">
+                            <span style="color:var(--mainra-orange); font-size:1.15rem">🌟</span>
+                            <h3 style="margin:0; font-size:1.1rem">Homepage Featured Game</h3>
+                            <span id="featuredStatusBadge" class="badge ok" style="font-size:.75rem">Active</span>
+                        </div>
+                        <p class="muted" style="margin:.3rem 0 0; font-size:.85rem">
+                            Pilih game yang ingin ditampilkan sebagai sorotan utama di halaman depan website.
+                        </p>
+                    </div>
+                    <div style="display:flex; gap:.5rem;">
+                        <button type="button" class="btn-admin ghost small" id="refreshStoreBtn" title="Refresh Play Store details">↻ Refresh Play Store</button>
+                        <button type="button" class="btn-admin ghost small" id="hideFeaturedBtn">Sembunyikan Featured</button>
+                    </div>
+                </div>
+                <div id="featuredGrid" class="featured-grid">
+                    <div class="card muted">Memuat featured games…</div>
+                </div>
+            </div>
+
+            <!-- Games Catalog Table Section -->
+            <div class="admin-actions" style="margin-bottom:1rem; justify-content:space-between; align-items:center;">
+                <div style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
+                    <button type="button" class="btn-admin" id="newGameBtn">+ Add Game</button>
+                    <button type="button" class="btn-admin ghost" id="syncGamesBtn">↻ Sync from Play Store</button>
+                </div>
                 <button type="button" class="btn-admin ghost" id="exportJsonBtn">⤓ Export games-data.json</button>
             </div>
-            <div class="card">
+            <div class="card" style="padding:0; overflow:hidden;">
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th>Icon</th><th>Title</th><th>Category</th><th>Status</th><th>Rating</th><th>Featured</th><th>Actions</th>
+                            <th>Icon</th><th>Title</th><th>Category</th><th>Status</th><th>Rating</th><th>Homepage Featured</th><th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="gamesTbody">
                         <tr><td colspan="7" class="muted">Loading…</td></tr>
                     </tbody>
                 </table>
-            </div>
-        </section>
-
-        <!-- FEATURED -->
-        <section id="tab-featured" class="tab">
-            <p class="muted" style="margin:0 0 1rem">Pick the game to feature on the homepage. Title, description, screenshots and rating are fetched automatically from the Play Store.</p>
-            <div class="admin-actions" style="margin-bottom:1rem">
-                <button type="button" class="btn-admin ghost" id="refreshStoreBtn">↻ Refresh from Play Store</button>
-                <button type="button" class="btn-admin ghost" id="hideFeaturedBtn">Hide featured section</button>
-            </div>
-            <div id="featuredGrid" class="featured-grid">
-                <div class="card muted">Loading…</div>
             </div>
         </section>
 
