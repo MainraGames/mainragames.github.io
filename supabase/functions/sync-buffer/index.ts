@@ -1,7 +1,9 @@
 // supabase/functions/sync-buffer/index.ts
-// Handles Buffer social media posting & profile discovery for Mainra Games.
+// Modern Buffer GraphQL API integration supporting single or multiple Buffer accounts.
 // @ts-nocheck
 import { createClient } from "npm:@supabase/supabase-js@2";
+
+const BUFFER_GRAPHQL_URL = "https://api.buffer.com";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -35,6 +37,34 @@ async function requireAdmin(req: Request) {
   return { admin, user: data.user, message: "" };
 }
 
+function getBufferTokens(): string[] {
+  const raw = [
+    Deno.env.get("BUFFER_ACCESS_TOKEN"),
+    Deno.env.get("BUFFER_ACCESS_TOKENS"),
+    Deno.env.get("BUFFER_ACCESS_TOKEN_1"),
+    Deno.env.get("BUFFER_ACCESS_TOKEN_2"),
+  ];
+  const list = raw
+    .filter(Boolean)
+    .flatMap((s) => s!.split(","))
+    .map((s) => s.trim())
+    .filter(Boolean);
+  // Deduplicate
+  return [...new Set(list)];
+}
+
+async function queryBuffer(token: string, query: string, variables: any = {}) {
+  const res = await fetch(BUFFER_GRAPHQL_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  return await res.json();
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
@@ -43,15 +73,15 @@ Deno.serve(async (req: Request) => {
   const { admin, user, message } = await requireAdmin(req);
   if (!admin) return json(401, { message });
 
-  const bufferToken = (Deno.env.get("BUFFER_ACCESS_TOKEN") || "").trim();
+  const tokens = getBufferTokens();
 
   try {
     const payload = await req.json().catch(() => ({}));
     const action = payload.action || "get_profiles";
 
-    // 1. Get connected Buffer channels / profiles
+    // 1. Discover all channels from all connected Buffer accounts
     if (action === "get_profiles") {
-      if (!bufferToken) {
+      if (tokens.length === 0) {
         return json(200, {
           configured: false,
           profiles: [],
@@ -59,36 +89,50 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      const res = await fetch("https://api.bufferapp.com/1/profiles.json", {
-        headers: { Authorization: `Bearer ${bufferToken}` },
-      });
+      let allProfiles = [];
+      for (const [idx, tok] of tokens.entries()) {
+        try {
+          // Fetch account & organizations
+          const accRes = await queryBuffer(tok, `query GetAccount { account { id email organizations { id name } } }`);
+          const orgs = accRes?.data?.account?.organizations || [];
+          const accountEmail = accRes?.data?.account?.email || `Buffer Account #${idx + 1}`;
 
-      if (!res.ok) {
-        const err = await res.text();
-        return json(res.status, {
-          configured: true,
-          profiles: [],
-          message: `Buffer API error: ${err}`,
-        });
+          for (const org of orgs) {
+            const chRes = await queryBuffer(tok, `query GetChannels($input: ChannelsInput!) {
+              channels(input: $input) {
+                id
+                name
+                service
+                avatar
+              }
+            }`, { input: { organizationId: org.id } });
+
+            const channels = chRes?.data?.channels || [];
+            for (const c of channels) {
+              allProfiles.push({
+                id: c.id,
+                service: c.service, // instagram, tiktok, youtube, facebook, twitter, etc.
+                formatted_service: c.service ? c.service.charAt(0).toUpperCase() + c.service.slice(1) : "Social",
+                service_username: c.name || c.id,
+                avatar: c.avatar,
+                account_email: accountEmail,
+                token_index: idx,
+              });
+            }
+          }
+        } catch (err) {
+          console.error(`Error querying Buffer token #${idx + 1}:`, err);
+        }
       }
-
-      const profiles = await res.json();
-      const mapped = (profiles || []).map((p: any) => ({
-        id: p.id,
-        service: p.service, // facebook, twitter, instagram, linkedin, etc.
-        formatted_service: p.formatted_service,
-        service_username: p.service_username || p.service_name || p.id,
-        avatar: p.avatar,
-        schedules: p.schedules || [],
-      }));
 
       return json(200, {
         configured: true,
-        profiles: mapped,
+        profiles: allProfiles,
+        total_accounts: tokens.length,
       });
     }
 
-    // 2. Publish a new update to Buffer and record into social_broadcasts
+    // 2. Publish post via Buffer GraphQL API mutation createPost
     if (action === "publish") {
       const { title, text, imageUrl, targetLink, profileIds } = payload;
       if (!text || !text.trim()) {
@@ -96,39 +140,78 @@ Deno.serve(async (req: Request) => {
       }
 
       let bufferResults = [];
-      if (bufferToken && Array.isArray(profileIds) && profileIds.length > 0) {
+      if (tokens.length > 0 && Array.isArray(profileIds) && profileIds.length > 0) {
+        // Find which token owns which channelId by fetching all channels mapping
+        const channelTokenMap = new Map();
+        for (const tok of tokens) {
+          try {
+            const accRes = await queryBuffer(tok, `query GetAccount { account { organizations { id } } }`);
+            const orgs = accRes?.data?.account?.organizations || [];
+            for (const org of orgs) {
+              const chRes = await queryBuffer(tok, `query GetChannels($input: ChannelsInput!) {
+                channels(input: $input) { id }
+              }`, { input: { organizationId: org.id } });
+              const chs = chRes?.data?.channels || [];
+              for (const c of chs) {
+                channelTokenMap.set(c.id, tok);
+              }
+            }
+          } catch (e) {
+            console.error("Error building channelTokenMap:", e);
+          }
+        }
+
         for (const pid of profileIds) {
-          const bodyParams = new URLSearchParams();
-          bodyParams.append("profile_ids[]", pid);
-          bodyParams.append("text", text);
-          bodyParams.append("now", "true"); // broadcast immediately
+          const tok = channelTokenMap.get(pid) || tokens[0];
+          
+          let postInput: any = {
+            channelId: pid,
+            text: text,
+            schedulingType: "automatic",
+            mode: "shareNow", // Immediately publish
+          };
 
+          // Attach media assets if provided
           if (imageUrl && imageUrl.trim()) {
-            bodyParams.append("media[photo]", imageUrl.trim());
-          }
-          if (targetLink && targetLink.trim()) {
-            bodyParams.append("media[link]", targetLink.trim());
+            postInput.assets = [{ image: { url: imageUrl.trim() } }];
           }
 
-          const bRes = await fetch("https://api.bufferapp.com/1/updates/create.json", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${bufferToken}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: bodyParams.toString(),
-          });
+          const mutation = `mutation CreatePost($input: CreatePostInput!) {
+            createPost(input: $input) {
+              ... on PostActionSuccess {
+                post {
+                  id
+                  status
+                }
+              }
+              ... on MutationError {
+                message
+              }
+            }
+          }`;
 
-          const bData = await bRes.json().catch(() => ({}));
-          bufferResults.push({
-            profile_id: pid,
-            status: bRes.ok ? "success" : "failed",
-            response: bData,
-          });
+          try {
+            const mRes = await queryBuffer(tok, mutation, { input: postInput });
+            const success = mRes?.data?.createPost?.post;
+            const errMsg = mRes?.data?.createPost?.message || mRes?.errors?.[0]?.message;
+
+            bufferResults.push({
+              channel_id: pid,
+              status: success ? "success" : "failed",
+              post_id: success?.id || null,
+              message: errMsg || (success ? "Published successfully" : "Unknown error"),
+            });
+          } catch (e: any) {
+            bufferResults.push({
+              channel_id: pid,
+              status: "failed",
+              message: e.message,
+            });
+          }
         }
       }
 
-      // Save to Supabase social_broadcasts table
+      // Record in Supabase social_broadcasts
       const { data: saved, error: saveErr } = await admin.from("social_broadcasts").insert([{
         title: title || text.slice(0, 50),
         content: text,
@@ -141,11 +224,13 @@ Deno.serve(async (req: Request) => {
       }]).select().single();
 
       if (saveErr) {
-        return json(500, { message: `Gagal menyimpan ke database: ${saveErr.message}`, bufferResults });
+        return json(500, { message: `Gagal mencatat di database: ${saveErr.message}`, bufferResults });
       }
 
       return json(200, {
-        message: bufferResults.length > 0 ? "Berhasil diposting ke Buffer dan disimpan ke CMS!" : "Berhasil disimpan ke CMS!",
+        message: bufferResults.length > 0
+          ? `Diproses: ${bufferResults.filter((r: any) => r.status === "success").length} berhasil dari ${bufferResults.length} channel!`
+          : "Berhasil disimpan ke CMS!",
         broadcast: saved,
         bufferResults,
       });

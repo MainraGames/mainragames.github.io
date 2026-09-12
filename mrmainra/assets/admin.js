@@ -1234,10 +1234,19 @@
         }
 
         box.innerHTML = bufferProfiles.map(function (p) {
-            var icon = p.service === 'facebook' ? '📘' : (p.service === 'twitter' ? '🐦' : (p.service === 'instagram' ? '📸' : '🌐'));
+            var icon = '🌐';
+            var s = (p.service || '').toLowerCase();
+            if (s === 'facebook') icon = '📘';
+            else if (s === 'twitter' || s === 'x') icon = '🐦';
+            else if (s === 'instagram') icon = '📸';
+            else if (s === 'tiktok') icon = '🎵';
+            else if (s === 'youtube') icon = '▶️';
+            else if (s === 'linkedin') icon = '💼';
+
             return '<label style="display:flex; align-items:center; gap:.5rem; cursor:pointer; font-size:.85rem; color:var(--mainra-white)">' +
                 '<input type="checkbox" name="buffer_profile" value="' + esc(p.id) + '" checked> ' +
                 '<span>' + icon + ' <strong>' + esc(p.formatted_service || p.service) + '</strong> (' + esc(p.service_username) + ')</span>' +
+                (p.account_email ? ' <span class="muted small" style="font-size:.72rem">· ' + esc(p.account_email) + '</span>' : '') +
             '</label>';
         }).join('');
     }
