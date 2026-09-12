@@ -1545,7 +1545,14 @@
                 testBtn.textContent = '⚡ Test';
 
                 if (res.error) {
-                    var errTxt = (res.error && res.error.message) || String(res.error);
+                    var errorDetail = '';
+                    if (res.error.context && typeof res.error.context.json === 'function') {
+                        try {
+                            var errBody = await res.error.context.json();
+                            errorDetail = errBody.message || '';
+                        } catch (_) {}
+                    }
+                    var errTxt = errorDetail || res.error.message || String(res.error);
                     if (fb) { fb.style.display = 'block'; fb.textContent = '❌ Gagal: ' + errTxt; fb.style.color = '#f87171'; }
                     toast('Uji coba model gagal.', true);
                     return;
@@ -1616,7 +1623,15 @@
                 generateBtn.textContent = '✨ Generate Postingan Otomatis';
 
                 if (res.error) {
-                    toast('AI Error: ' + (res.error.message || res.error), true);
+                    var errorDetail = '';
+                    if (res.error.context && typeof res.error.context.json === 'function') {
+                        try {
+                            var errBody = await res.error.context.json();
+                            errorDetail = errBody.message || '';
+                        } catch (_) {}
+                    }
+                    var msg = errorDetail || res.error.message || String(res.error);
+                    toast('AI Error: ' + msg, true);
                     return;
                 }
 
@@ -1720,7 +1735,15 @@
                 autoFitBtn.innerHTML = '<span>✨ AI Sesuaikan Format Platform</span>';
 
                 if (res.error) {
-                    toast('Gagal menyesuaikan teks: ' + (res.error.message || res.error), true);
+                    var errorDetail = '';
+                    if (res.error.context && typeof res.error.context.json === 'function') {
+                        try {
+                            var errBody = await res.error.context.json();
+                            errorDetail = errBody.message || '';
+                        } catch (_) {}
+                    }
+                    var msg = errorDetail || res.error.message || String(res.error);
+                    toast('Gagal menyesuaikan teks: ' + msg, true);
                     return;
                 }
 

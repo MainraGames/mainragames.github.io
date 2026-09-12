@@ -191,7 +191,10 @@ Deno.serve(async (req: Request) => {
 
       if (!res.ok) {
         const errText = await res.text();
-        return json(res.status, {
+        return json(200, {
+          success: false,
+          error: true,
+          models: [],
           message: `Gagal mengambil daftar model dari Google API (${res.status}): ${errText}`,
         });
       }
@@ -264,7 +267,11 @@ Deno.serve(async (req: Request) => {
 
       if (!res.ok) {
         const errText = await res.text();
-        return json(res.status, { message: `Gagal terhubung ke Gemini API (${res.status}): ${errText}` });
+        return json(200, {
+          success: false,
+          error: true,
+          message: `Gagal terhubung ke Gemini API (${res.status}): ${errText}`,
+        });
       }
 
       const testData = await res.json();
@@ -352,7 +359,11 @@ Keluarkan HANYA dokumen JSON dengan schema berikut:
 
       if (!res.ok) {
         const errText = await res.text();
-        return json(res.status, { message: `Gemini API error (${res.status}): ${errText}` });
+        return json(200, {
+          success: false,
+          error: true,
+          message: `Gemini API error (${res.status}): ${errText}`,
+        });
       }
 
       const genData = await res.json();
@@ -435,7 +446,11 @@ Keluarkan HANYA JSON murni dengan format:
 
       if (!res.ok) {
         const errTxt = await res.text();
-        return json(res.status, { message: `Gemini API error (${res.status}): ${errTxt}` });
+        return json(200, {
+          success: false,
+          error: true,
+          message: `Gemini API error (${res.status}): ${errTxt}`,
+        });
       }
 
       const data = await res.json();
