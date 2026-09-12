@@ -742,7 +742,58 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
     box-shadow: 0 8px 28px rgba(0,0,0,.45);
 }
 
-/* ---------- responsive ---------- */
+/* ---------- social broadcast enhancements ---------- */
+.game-quick-chips {
+    display: flex;
+    gap: .4rem;
+    overflow-x: auto;
+    padding-bottom: .4rem;
+    scrollbar-width: thin;
+}
+.game-chip-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .35rem .65rem;
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid var(--mainra-line);
+    border-radius: var(--radius-md);
+    color: var(--mainra-ink);
+    font-size: .78rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .15s ease;
+}
+.game-chip-btn:hover {
+    border-color: var(--mainra-orange);
+    background: rgba(255, 107, 0, .08);
+}
+.game-chip-btn img {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+.template-btn-group {
+    display: flex;
+    gap: .35rem;
+    flex-wrap: wrap;
+}
+.template-btn {
+    padding: .24rem .55rem;
+    font-size: .75rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid var(--mainra-line);
+    color: var(--mainra-muted);
+    cursor: pointer;
+    transition: all .15s ease;
+}
+.template-btn:hover {
+    color: var(--mainra-ink);
+    background: rgba(255, 255, 255, .1);
+    border-color: var(--mainra-line-strong);
+}
 @media (max-width: 860px) {
     .admin-shell.is-on { grid-template-columns: 1fr; }
     .admin-side {

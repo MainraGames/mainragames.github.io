@@ -1188,12 +1188,80 @@
         } else if (name === 'social') {
             loadSocialBroadcasts();
             loadBufferProfiles();
+            renderQuickGameChips();
+            wireSocialTemplates();
         } else if (name === 'admins') {
             loadAdmins();
         }
     }
 
-    /* ---------- social broadcast & buffer integration ---------- */
+    function renderQuickGameChips() {
+        var box = $('#quickGameChips');
+        if (!box) return;
+        if (!games.length) {
+            box.innerHTML = '<div class="muted small">Belum ada game dimuat.</div>';
+            return;
+        }
+
+        box.innerHTML = games.map(function (g) {
+            return '<button type="button" class="game-chip-btn" data-share-game="' + esc(g.id) + '">' +
+                '<img src="' + esc(icon256(g.image)) + '" alt="" onerror="this.src=\'../Assets/img/LogoMainraGames.png\'">' +
+                '<span>' + esc(g.title.split(':')[0]) + '</span>' +
+            '</button>';
+        }).join('');
+
+        $$('[data-share-game]').forEach(function (btn) {
+            btn.onclick = function () {
+                var gid = btn.dataset.shareGame;
+                var g = games.find(function (x) { return x.id === gid; });
+                if (!g) return;
+
+                var titleInput = $('#postTitle');
+                var contentInput = $('#postContent');
+                var linkInput = $('#postLink');
+                var imgInput = $('#postImage');
+
+                var shortTitle = g.title.split(':')[0].trim();
+                var playLink = g.playLink || ('https://play.google.com/store/apps/details?id=' + g.id);
+
+                titleInput.value = 'Update Terbaru: ' + shortTitle;
+                linkInput.value = playLink;
+                if (g.image) imgInput.value = g.image;
+
+                contentInput.value = '🎮 Mainkan ' + shortTitle + ' sekarang di Google Play Store!\n\n' +
+                    (g.description ? g.description.slice(0, 160) + '…\n\n' : '') +
+                    '📲 Unduh gratis: ' + playLink + '\n#MainraGames #IndieGame #AndroidGames';
+
+                $('#postCharCount').textContent = contentInput.value.length + ' / 1000 karakter';
+                toast('Data game “' + shortTitle + '” berhasil di-isi otomatis! ⚡');
+            };
+        });
+    }
+
+    function wireSocialTemplates() {
+        $$('.template-btn').forEach(function (btn) {
+            btn.onclick = function () {
+                var tmpl = btn.dataset.tmpl;
+                var contentInput = $('#postContent');
+                var titleInput = $('#postTitle');
+                var link = $('#postLink').value.trim() || 'https://mainragames.com';
+                var gameTitle = titleInput.value.replace('Update Terbaru: ', '').trim() || 'Game Mainra Games';
+
+                if (tmpl === 'update') {
+                    contentInput.value = '🚀 Update Terbaru Rilis!\n\nKami baru saja meluncurkan versi terbaru untuk ' + gameTitle + '. Nikmati peningkatan performa, perbaikan bug, dan pengalaman bermain yang lebih seru!\n\nCek sekarang di: ' + link + '\n#MainraGames #GameUpdate #IndieDev';
+                } else if (tmpl === 'milestone') {
+                    contentInput.value = '🎉 Terima Kasih Komunitas!\n\n' + gameTitle + ' terus bertumbuh berkat dukungan luar biasa dari kalian semua. Jangan ragu untuk memberikan ulasan dan saran fitur selanjutnya di Play Store!\n\nMainkan di sini: ' + link + '\n#MainraGames #GamerCommunity #ThankYou';
+                } else if (tmpl === 'promo') {
+                    contentInput.value = '🕹️ Lagi cari game seru untuk mengisi waktu luang?\n\nCobain ' + gameTitle + ' sekarang! Ringan, adiktif, dan cocok dimainkan kapan saja.\n\n📲 Unduh gratis di Google Play: ' + link + '\n#MainraGames #MobileGaming #GameSeru';
+                }
+
+                $('#postCharCount').textContent = contentInput.value.length + ' / 1000 karakter';
+                toast('Template ' + btn.textContent + ' diterapkan! ✓');
+            };
+        });
+    }
+
+    /* ---------- load social broadcasts and buffer profiles ---------- */
 
     var bufferProfiles = [];
     var broadcastsList = [];

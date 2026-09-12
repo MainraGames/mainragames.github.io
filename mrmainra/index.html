@@ -337,17 +337,37 @@
 
                     <form id="socialBroadcastForm">
                         <div style="display:grid; gap:.9rem;">
+                            <!-- Quick Game Selector (Auto-fill) -->
+                            <div style="background:rgba(255,107,0,.05); border:1px solid rgba(255,107,0,.25); border-radius:var(--radius-md); padding:.75rem .9rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.45rem">
+                                    <span style="font-size:.82rem; font-weight:600; color:var(--mainra-orange)">⚡ Quick Share Game:</span>
+                                    <span class="muted small" style="font-size:.74rem">Klik untuk auto-fill link &amp; judul</span>
+                                </div>
+                                <div id="quickGameChips" class="game-quick-chips">
+                                    <div class="muted small">Memuat daftar game…</div>
+                                </div>
+                            </div>
+
                             <label>Judul Berita (Internal / Web)
                                 <input type="text" id="postTitle" placeholder="Misal: Update Pop It 3D Versi 1.2 Resmi Rilis!" required maxlength="120" style="width:100%">
                             </label>
 
-                            <label>
-                                <div style="display:flex; justify-content:space-between; align-items:baseline">
-                                    <span>Teks / Caption Sosial Media</span>
-                                    <span id="postCharCount" class="muted small" style="font-family:monospace; font-size:.76rem">0 karakter</span>
+                            <!-- Caption with Quick Templates -->
+                            <div>
+                                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.35rem">
+                                    <label for="postContent" style="margin:0; font-size:.85rem; color:var(--mainra-muted)">Teks / Caption Sosial Media</label>
+                                    <span id="postCharCount" class="muted small" style="font-family:monospace; font-size:.76rem">0 / 1000 karakter</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:.4rem; margin-bottom:.4rem; flex-wrap:wrap">
+                                    <span class="muted small" style="font-size:.72rem">Template Instan:</span>
+                                    <div class="template-btn-group">
+                                        <button type="button" class="template-btn" data-tmpl="update">🚀 Update Rilis</button>
+                                        <button type="button" class="template-btn" data-tmpl="milestone">🎉 Milestone / Unduhan</button>
+                                        <button type="button" class="template-btn" data-tmpl="promo">🎮 Ajak Main</button>
+                                    </div>
                                 </div>
                                 <textarea id="postContent" rows="4" placeholder="Tulis caption pengumuman untuk Twitter/Facebook/Instagram..." required maxlength="1000" style="width:100%; resize:vertical; line-height:1.4"></textarea>
-                            </label>
+                            </div>
 
                             <label>URL Gambar Banner / Screenshot (Opsional)
                                 <input type="url" id="postImage" placeholder="https://mainragames.com/Assets/img/..." style="width:100%">
