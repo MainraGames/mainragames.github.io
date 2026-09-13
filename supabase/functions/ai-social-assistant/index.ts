@@ -960,6 +960,101 @@ KEMBALIKAN OUTPUT DALAM FORMAT JSON VALID:
       });
     }
 
+    // ── Action: generate_multilingual_aso ─────────────────────────
+    if (action === "generate_multilingual_aso") {
+      if (allKeys.length === 0) return json(200, { success: false, error: true, message: "Gemini API Key belum dikonfigurasi." });
+
+      const { title, shortDescription, fullDescription, languages } = payload;
+      let modelName = (payload.model || "gemini-2.5-flash").replace(/^models\//, "");
+
+      // Target languages to localize (defaults to major Google Play global markets)
+      const targetLangs: string[] = Array.isArray(languages) && languages.length > 0
+        ? languages
+        : ["en-US", "es-419", "pt-BR", "ja-JP", "ko-KR", "de-DE", "fr-FR", "ru-RU", "hi-IN", "id"];
+
+      const prompt = `Kamu adalah pakar ASO (App Store Optimization) dan Lokalisasi Game Mobile Google Play Store internasional.
+Tugasmu adalah melokalisasi dan mengoptimalkan metadata listing game berikut ke dalam bahasa-bahasa target berikut: ${targetLangs.join(", ")}.
+
+DATA ASLI GAME:
+- Judul: ${title}
+- Short Description Asli: ${shortDescription}
+- Full Description Asli: ${(fullDescription || "").slice(0, 1500)}
+
+ATURAN RESMI GOOGLE PLAY STORE PER BAHASA:
+1. Title: MAKSIMAL 30 KARAKTER (Jika bahasa lokal terlalu panjang, singkat judul dengan elegan tetap <= 30 char).
+2. Short Description: MAKSIMAL 80 KARAKTER (Sangat krusial! Bahasa seperti Jerman, Spanyol, dan Rusia cenderung panjang, kamu WAJIB memadatkan kalimatnya agar TEPAT <= 80 karakter).
+3. Full Description: 800 - 2500 karakter dengan format fitur dan emoji yang menarik di negara terkait (maks. 4000).
+
+KEMBALIKAN OUTPUT HANYA BERUPA JSON VALID dengan struktur persis seperti ini (tanpa backticks markdown atau teks lain):
+{
+  "listings": [
+    {
+      "language": "en-US",
+      "title": "...",
+      "shortDescription": "...",
+      "fullDescription": "..."
+    }
+  ]
+}`;
+
+      const result = await callGeminiWithRolling(
+        allKeys, [modelName, "gemini-2.5-flash", "gemini-3.5-flash"],
+        () => ({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.4, maxOutputTokens: 6000, thinkingConfig: { thinkingBudget: 0 } },
+        }),
+        () => ({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.4, maxOutputTokens: 6000 },
+        })
+      );
+
+      if (!result.data) {
+        return json(200, { success: false, error: true, message: `Gemini localization error: ${result.error}` });
+      }
+
+      const raw = (result.data?.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
+      let parsedListings: any[] = [];
+      try {
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          parsedListings = parsed.listings || [];
+        }
+      } catch (err: any) {
+        return json(200, { success: false, error: true, message: `Gagal parsing hasil AI: ${err.message}` });
+      }
+
+      // Strictly enforce Google Play character bounds per language
+      const validatedListings = parsedListings.map((item: any) => {
+        let l = (item.language || "").trim();
+        if (l.toLowerCase() === "id-id") l = "id";
+
+        let t = (item.title || title || "").trim();
+        if (t.length > 30) t = t.slice(0, 30).trim();
+
+        let s = (item.shortDescription || shortDescription || "").trim();
+        if (s.length > 80) s = s.slice(0, 77).trim() + "…";
+
+        let f = (item.fullDescription || fullDescription || "").trim();
+        if (f.length > 4000) f = f.slice(0, 3990).trim() + "…";
+
+        return {
+          language: l,
+          title: t,
+          shortDescription: s,
+          fullDescription: f,
+        };
+      });
+
+      return json(200, {
+        success: true,
+        listings: validatedListings,
+        count: validatedListings.length,
+        modelUsed: result.model
+      });
+    }
+
     // ── Action: adapt_limits ───────────────────────────────────────
     if (action === "adapt_limits") {
       if (allKeys.length === 0) return json(200, { success: false, error: true, message: "Gemini API Key belum dikonfigurasi." });

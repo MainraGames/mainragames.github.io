@@ -209,7 +209,92 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // PULL ACTION: Fetch all listings from Google Play Console
+    // PUSH_ALL ACTION: Push multiple localized listings to Google Play Console
+    if (action === "push_all" || action === "push_bulk") {
+      const { appId, listings, video } = body;
+      if (!appId || !Array.isArray(listings) || listings.length === 0) {
+        return json(400, { message: "appId and an array of listings are required" });
+      }
+
+      const editId = await createEdit(token, appId);
+      try {
+        const dbRows = [];
+        const successLangs = [];
+        const errors = [];
+
+        for (const item of listings) {
+          let lang = (item.language || item.lang || "").trim();
+          if (!lang) continue;
+          if (lang.toLowerCase() === "id-id" || lang.toLowerCase() === "id_id") lang = "id";
+
+          const title = (item.title || "").slice(0, 30);
+          const shortDescription = (item.shortDescription || item.short_description || "").slice(0, 80);
+          const fullDescription = (item.fullDescription || item.full_description || "").slice(0, 4000);
+          const vid = item.video || video || undefined;
+
+          try {
+            const putUrl = `${API}/applications/${appId}/edits/${editId}/listings/${lang}`;
+            const res = await fetch(putUrl, {
+              method: "PUT",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                language: lang,
+                title,
+                shortDescription,
+                fullDescription,
+                video: vid,
+              }),
+            });
+
+            if (!res.ok) {
+              const errBody = await res.text();
+              errors.push(`${lang}: HTTP ${res.status} - ${errBody.slice(0, 100)}`);
+              continue;
+            }
+
+            successLangs.push(lang);
+            dbRows.push({
+              id: `${appId}:${lang}`,
+              game_id: appId,
+              language: lang,
+              title,
+              short_description: shortDescription,
+              full_description: fullDescription,
+              video: vid || null,
+              synced_at: new Date().toISOString(),
+            });
+          } catch (err: any) {
+            errors.push(`${lang}: ${err.message || err}`);
+          }
+        }
+
+        if (successLangs.length === 0) {
+          throw new Error(`Semua bahasa gagal diupdate: ${errors.join("; ")}`);
+        }
+
+        // Commit all successful edits at once
+        await commitEdit(token, appId, editId);
+
+        // Update local database
+        if (dbRows.length > 0) {
+          await admin.from("game_store_listings").upsert(dbRows, { onConflict: "id" });
+        }
+
+        return json(200, {
+          success: true,
+          message: `Berhasil mem-publish listing ke ${successLangs.length} bahasa Google Play (${successLangs.join(", ")})!`,
+          pushedCount: successLangs.length,
+          languages: successLangs,
+          warnings: errors.length > 0 ? errors : undefined,
+        });
+      } catch (err: any) {
+        await deleteEdit(token, appId, editId);
+        throw err;
+      }
+    }
     const onlyAppId = typeof body.appId === "string" && body.appId.trim() ? body.appId.trim() : "";
     let packages: string[] = [];
     if (onlyAppId) {

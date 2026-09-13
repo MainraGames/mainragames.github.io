@@ -521,6 +521,72 @@
         await saveGame(new Event('submit'));
     }
 
+    async function pushGlobalGameListingsToPlayStore() {
+        var form = $('#gameForm');
+        var g = formToGame(new FormData(form));
+        if (!g.id || !g.title) {
+            toast('ID game dan Title wajib diisi', true);
+            return;
+        }
+
+        if (!confirm('AI Gemini akan menerjemahkan, melokalisasi, dan mengoptimalkan Short & Full Description ke 10 bahasa global (en-US, es-419, pt-BR, ja-JP, de-DE, dll) dengan batasan resmi character Google Play, lalu mempublikasikannya sekaligus.\n\nLanjutkan publikasi global?')) {
+            return;
+        }
+
+        var btn = $('#pushGlobalPlayStoreBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '🤖 Mengoptimalkan ASO Global…';
+        }
+        toast('Gemini AI sedang menyusun listing multibahasa sesuai regulasi karakter Google Play…');
+
+        // Step 1: Generate multilingual ASO listings with AI
+        var aiRes = await sb.functions.invoke('ai-social-assistant', {
+            body: {
+                action: 'generate_multilingual_aso',
+                title: g.title,
+                shortDescription: g.short_description || '',
+                fullDescription: g.description || '',
+                languages: ['id', 'en-US', 'es-419', 'pt-BR', 'ja-JP', 'ko-KR', 'de-DE', 'fr-FR', 'ru-RU', 'hi-IN']
+            }
+        });
+
+        if (aiRes.error || !aiRes.data || !aiRes.data.success || !Array.isArray(aiRes.data.listings)) {
+            var errMsg = (aiRes.data && aiRes.data.message) || (aiRes.error && aiRes.error.message) || 'Gagal generate AI';
+            toast('AI Multilingual Error: ' + errMsg, true);
+            if (btn) { btn.disabled = false; btn.textContent = '🌐 Push All Languages (AI ASO)'; }
+            return;
+        }
+
+        var listings = aiRes.data.listings;
+        if (btn) btn.textContent = '🚀 Mem-push ' + listings.length + ' bahasa ke Play Store…';
+        toast('Mengirim pembaruan ' + listings.length + ' bahasa ke Google Play Console…');
+
+        // Step 2: Push bulk listings to Google Play via edits.listings API
+        var pushRes = await sb.functions.invoke('sync-store-listings', {
+            body: {
+                action: 'push_all',
+                appId: g.id,
+                listings: listings,
+                video: g.video_url || ''
+            }
+        });
+
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🌐 Push All Languages (AI ASO)';
+        }
+
+        if (pushRes.error || !pushRes.data || pushRes.data.error) {
+            var pushErr = (pushRes.data && pushRes.data.message) || (pushRes.error && pushRes.error.message) || 'Gagal push listing';
+            toast('Global Push Error: ' + pushErr, true);
+            return;
+        }
+
+        toast(pushRes.data.message + ' ✓');
+        await saveGame(new Event('submit'));
+    }
+
     async function saveGame(e) {
         if (e && typeof e.preventDefault === 'function') e.preventDefault();
         var form = $('#gameForm');
@@ -3387,6 +3453,7 @@
         }
 
         // 1. Try Native Web Share API (Mobile Android/iOS & supported desktop)
+        // In WhatsApp Web Share API: passing file + text automatically puts the image at top with text as its CAPTION!
         if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
             try {
                 await navigator.share({
@@ -3405,16 +3472,16 @@
             }
         }
 
-        // 2. Fallback for Desktop / browsers without file share capability:
-        // Copy image to clipboard so user can instantly Ctrl+V in WhatsApp chat
+        // 2. Desktop Fallback (WhatsApp Web / PC Desktop without File Web Share):
+        // Automatically copy formatted text to clipboard so user pastes image FIRST, then text as caption!
         if (imageFile) {
             var copied = await copyImageBlobToClipboard(imageFile);
             if (copied) {
-                toast('📋 Gambar disalin ke Clipboard! Tekan Ctrl+V di chat WhatsApp.');
+                toast('💡 Tips: Paste (Ctrl+V) gambar dulu ke chat WhatsApp, lalu masukkan teks sebagai caption!');
             }
         }
 
-        // 3. Open WhatsApp with formatted text
+        // Open WhatsApp Web with text prepared
         var waUrl = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(message);
         window.open(waUrl, '_blank', 'noopener,noreferrer');
         if (!imageFile) {
@@ -3913,6 +3980,7 @@
         on('#gmCancel', 'click', function () { $('#gameModal').close(); });
         on('#gameForm', 'submit', saveGame);
         on('#pushToPlayStoreBtn', 'click', pushGameListingToPlayStore);
+        on('#pushGlobalPlayStoreBtn', 'click', pushGlobalGameListingsToPlayStore);
         on('#aiGenerateShortBtn', 'click', function () { generateAsoListingField('short'); });
         on('#aiGenerateFullBtn', 'click', function () { generateAsoListingField('full'); });
         on('#aiTrimShortBtn', 'click', trimShortDescriptionWithAi);
