@@ -201,14 +201,22 @@
             const btn = document.getElementById('contactSubmitBtn');
             const status = document.getElementById('contactFormStatus');
 
-            const name = (form.elements['name']?.value || '').trim();
-            const email = (form.elements['email']?.value || '').trim();
-            const subject = (form.elements['subject']?.value || '').trim();
-            const message = (form.elements['message']?.value || '').trim();
-            const honeypot = (form.elements['website_hp']?.value || '').trim();
+            const validator = window.MainraContactValidation;
+            if (!validator) {
+                console.error('contact-validation.js is not loaded — cannot validate the contact form.');
+                return;
+            }
 
-            // Anti-bot Trap: If honeypot is filled, simulate success silently without saving
-            if (honeypot) {
+            const result = validator.validateContactMessage({
+                name: form.elements['name']?.value,
+                email: form.elements['email']?.value,
+                subject: form.elements['subject']?.value,
+                message: form.elements['message']?.value,
+                website_hp: form.elements['website_hp']?.value,
+            });
+
+            // Anti-bot Trap: a filled honeypot is told it succeeded, but nothing is saved.
+            if (result.honeypot) {
                 form.reset();
                 if (status) {
                     status.style.display = 'block';
@@ -220,16 +228,18 @@
                 return;
             }
 
-            if (!name || !email || !message) {
+            if (!result.valid) {
                 if (status) {
                     status.style.display = 'block';
                     status.style.background = 'rgba(239, 68, 68, 0.15)';
                     status.style.border = '1px solid rgba(239, 68, 68, 0.5)';
                     status.style.color = '#fca5a5';
-                    status.textContent = 'Mohon lengkapi nama, email, dan pesan Anda.';
+                    status.textContent = result.error;
                 }
                 return;
             }
+
+            const { name, email, subject, message } = result.value;
 
             if (btn) {
                 btn.disabled = true;
