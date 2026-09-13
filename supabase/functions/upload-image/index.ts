@@ -43,25 +43,44 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    const { base64Data, mimeType, fileName } = body;
-    if (!base64Data) {
+    const { base64Data, mimeType } = body;
+    if (!base64Data || typeof base64Data !== "string") {
       return json(200, { success: false, error: true, message: "Data gambar kosong." });
+    }
+
+    // Allowlist: a client-chosen content type could park arbitrary files in a public bucket.
+    const ALLOWED_MIME: Record<string, string> = {
+      "image/png": "png",
+      "image/jpeg": "jpg",
+      "image/webp": "webp",
+    };
+    const contentType = String(mimeType || "image/png").split(";")[0].trim().toLowerCase();
+    const cleanExt = ALLOWED_MIME[contentType];
+    if (!cleanExt) {
+      return json(200, { success: false, error: true, message: "Format gambar harus PNG, JPEG, atau WebP." });
     }
 
     // Strip base64 data prefix if present (e.g. data:image/png;base64,...)
     const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, "");
     const binary = Uint8Array.from(atob(cleanBase64), (c) => c.charCodeAt(0));
 
-    const ext = (mimeType || "image/png").split("/")[1] || "png";
-    const cleanExt = ext === "jpeg" ? "jpg" : ext;
-    const finalName = fileName || `broadcast-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${cleanExt}`;
+    if (binary.length === 0) {
+      return json(200, { success: false, error: true, message: "Data gambar kosong." });
+    }
+    if (binary.length > 5 * 1024 * 1024) {
+      return json(200, { success: false, error: true, message: "Ukuran gambar maksimal 5 MB." });
+    }
+
+    // The object name is generated server-side. A client-supplied name combined
+    // with upsert:true let any admin request overwrite any object in the bucket.
+    const finalName = `broadcast-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${cleanExt}`;
 
     const uploadRes = await adminClient.storage
       .from("broadcast-images")
       .upload(finalName, binary, {
-        contentType: mimeType || "image/png",
+        contentType,
         cacheControl: "3600",
-        upsert: true,
+        upsert: false,
       });
 
     if (uploadRes.error) {
@@ -75,6 +94,7 @@ Deno.serve(async (req: Request) => {
       fileName: finalName,
     });
   } catch (err: any) {
-    return json(200, { success: false, error: true, message: "Upload failed: " + (err.message || String(err)) });
+    console.error("upload-image failed:", err?.message || err);
+    return json(200, { success: false, error: true, message: "Upload gambar gagal." });
   }
 });
