@@ -21,6 +21,69 @@ function json(status: number, body: unknown) {
   });
 }
 
+/** Constant-time string comparison (hash first so lengths never leak). */
+async function timingSafeEqual(a: string, b: string): Promise<boolean> {
+  const enc = new TextEncoder();
+  const [ha, hb] = await Promise.all([
+    crypto.subtle.digest("SHA-256", enc.encode(a)),
+    crypto.subtle.digest("SHA-256", enc.encode(b)),
+  ]);
+  const va = new Uint8Array(ha);
+  const vb = new Uint8Array(hb);
+  let diff = 0;
+  for (let i = 0; i < va.length; i++) diff |= va[i] ^ vb[i];
+  return diff === 0;
+}
+
+/**
+ * Authorization gate for the review worker.
+ *
+ * This function is deployed with --no-verify-jwt and spends Gemini quota and
+ * posts replies to Google Play on the owner's behalf, so it must authenticate
+ * its two legitimate callers itself:
+ *   1. pg_cron / pg_net  — shared secret from site_settings.review_queue_secret
+ *   2. the admin dashboard — Bearer JWT whose user is in public.admin_users
+ *
+ * Returns null when the caller is allowed, or a 401 Response when it is not.
+ */
+async function authorize(req: Request): Promise<Response | null> {
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
+
+  const presentedSecret = (req.headers.get("x-worker-secret") || "").trim();
+  if (presentedSecret) {
+    const { data: secretRow } = await admin
+      .from("site_settings")
+      .select("value")
+      .eq("key", "review_queue_secret")
+      .maybeSingle();
+    const expected = typeof secretRow?.value === "string" ? secretRow.value.trim() : "";
+    if (expected && await timingSafeEqual(presentedSecret, expected)) return null;
+  }
+
+  const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (token) {
+    const { data: userData } = await admin.auth.getUser(token);
+    if (userData?.user) {
+      const { data: adm } = await admin
+        .from("admin_users")
+        .select("user_id")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+      if (adm) return null;
+    }
+  }
+
+  return json(401, {
+    success: false,
+    error: true,
+    message: "Unauthorized: a valid x-worker-secret header or admin bearer token is required.",
+  });
+}
+
 function b64url(buf: ArrayBuffer | Uint8Array | string): string {
   const bytes = typeof buf === "string" ? new TextEncoder().encode(buf) : new Uint8Array(buf as ArrayBuffer);
   let bin = "";
@@ -171,6 +234,10 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
   }
+
+  // Authorization gate — runs before any Gemini or Google Play work.
+  const auth = await authorize(req);
+  if (auth) return auth;
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

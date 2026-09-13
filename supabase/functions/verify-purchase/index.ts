@@ -19,6 +19,20 @@ function json(status: number, body: unknown) {
   });
 }
 
+/** Constant-time string comparison (hash first so lengths never leak). */
+async function timingSafeEqual(a: string, b: string): Promise<boolean> {
+  const enc = new TextEncoder();
+  const [ha, hb] = await Promise.all([
+    crypto.subtle.digest("SHA-256", enc.encode(a)),
+    crypto.subtle.digest("SHA-256", enc.encode(b)),
+  ]);
+  const va = new Uint8Array(ha);
+  const vb = new Uint8Array(hb);
+  let diff = 0;
+  for (let i = 0; i < va.length; i++) diff |= va[i] ^ vb[i];
+  return diff === 0;
+}
+
 function b64url(buf: ArrayBuffer | Uint8Array | string): string {
   const bytes = typeof buf === "string" ? new TextEncoder().encode(buf) : new Uint8Array(buf as ArrayBuffer);
   let bin = "";
@@ -105,17 +119,44 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Optional App Signature / Secret verification to protect Google Play quota from abuse
+    // Fail closed: with no configured secret this endpoint would accept
+    // unauthenticated traffic and let anyone burn the Google Play API quota.
     const configuredSecret = (Deno.env.get("IAP_VERIFY_SECRET") || "").trim();
-    if (configuredSecret) {
-      const clientSecret = req.headers.get("x-app-signature") || body.appSignature;
-      if (clientSecret !== configuredSecret) {
-        return json(401, {
-          success: false,
-          error: true,
-          message: "Unauthorized: Invalid or missing x-app-signature header."
-        });
-      }
+    if (!configuredSecret) {
+      console.error("IAP_VERIFY_SECRET is not configured — refusing to verify purchases.");
+      return json(503, {
+        success: false,
+        error: true,
+        message: "Purchase verification is temporarily unavailable."
+      });
+    }
+
+    const presentedSecret = (req.headers.get("x-app-signature") || body.appSignature || "").trim();
+    if (!presentedSecret || !(await timingSafeEqual(presentedSecret, configuredSecret))) {
+      return json(401, {
+        success: false,
+        error: true,
+        message: "Unauthorized: invalid or missing x-app-signature."
+      });
+    }
+
+    // Idempotency: a token already recorded as VALID and acknowledged is
+    // answered from the database, so replays cannot re-spend Google Play quota.
+    const { data: existing } = await adminClient
+      .from("game_purchase_verifications")
+      .select("status, is_acknowledged, order_id")
+      .eq("purchase_token", purchaseToken)
+      .maybeSingle();
+
+    if (existing && existing.status === "VALID" && existing.is_acknowledged) {
+      return json(200, {
+        success: true,
+        valid: true,
+        status: "VALID",
+        isAcknowledged: true,
+        orderId: existing.order_id,
+        alreadyVerified: true
+      });
     }
 
     const sa = JSON.parse(saRaw);
@@ -129,11 +170,12 @@ Deno.serve(async (req) => {
 
     if (!getRes.ok) {
       const errBody = await getRes.text();
+      console.error(`Google Play purchase verification failed (${getRes.status}): ${errBody}`);
       return json(200, {
         success: false,
         error: true,
         status: "INVALID",
-        message: `Google Play purchase verification failed (${getRes.status}): ${errBody}`
+        message: "Google Play rejected this purchase token."
       });
     }
 
@@ -158,7 +200,8 @@ Deno.serve(async (req) => {
         isAcknowledged = true;
         acknowledgeResult = "ACKNOWLEDGED_SUCCESSFULLY";
       } else {
-        acknowledgeResult = `ACKNOWLEDGE_FAILED: ${await ackRes.text()}`;
+        console.error(`Acknowledge failed (${ackRes.status}): ${await ackRes.text()}`);
+        acknowledgeResult = "ACKNOWLEDGE_FAILED";
       }
     }
 
@@ -176,7 +219,18 @@ Deno.serve(async (req) => {
       acknowledged_at: isAcknowledged ? new Date().toISOString() : null,
     };
 
-    await adminClient.from("game_purchase_verifications").upsert([dbRow], { onConflict: "purchase_token" });
+    const { error: upsertErr } = await adminClient
+      .from("game_purchase_verifications")
+      .upsert([dbRow], { onConflict: "purchase_token" });
+
+    if (upsertErr) {
+      console.error("Failed to record purchase verification:", upsertErr.message);
+      return json(500, {
+        success: false,
+        error: true,
+        message: "Gagal mencatat verifikasi pembelian."
+      });
+    }
 
     return json(200, {
       success: true,
@@ -188,6 +242,7 @@ Deno.serve(async (req) => {
       acknowledgeResult
     });
   } catch (err: any) {
-    return json(200, { success: false, error: true, message: `Purchase verification error: ${err.message}` });
+    console.error("Purchase verification error:", err?.message || err);
+    return json(200, { success: false, error: true, message: "Purchase verification failed." });
   }
 });

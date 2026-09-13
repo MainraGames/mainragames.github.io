@@ -18,6 +18,24 @@ function json(status: number, body: unknown) {
   });
 }
 
+/**
+ * Single source of truth for what a Gemini key entry looks like on the wire.
+ * The browser must NEVER receive `key` — only the mask. Add fields here
+ * deliberately; never spread the stored entry into a response.
+ */
+function maskKeyForClient(k: any, idx: number) {
+  const raw = String(k?.key ?? "");
+  return {
+    id: k?.id || `k_${idx}`,
+    idx,
+    label: k?.label,
+    status: k?.status,
+    lastChecked: k?.lastChecked,
+    isPrimary: k?.isPrimary,
+    keyMasked: raw.length > 8 ? "•••" + raw.slice(-8) : "•••",
+  };
+}
+
 async function requireAdmin(req: Request) {
   const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!token) return { admin: null, user: null, message: "Missing authorization token" };
@@ -288,7 +306,7 @@ Deno.serve(async (req: Request) => {
       }, { onConflict: "key" });
 
       if (upsertErr) return json(200, { success: false, error: true, message: upsertErr.message });
-      return json(200, { success: true, keys: formatted, message: `${formatted.length} API Key berhasil disimpan! ✓` });
+      return json(200, { success: true, keys: formatted.map(maskKeyForClient), message: `${formatted.length} API Key berhasil disimpan! ✓` });
     }
 
     // ── Action: save_key (legacy single key — backward compat) ─────
@@ -339,16 +357,8 @@ Deno.serve(async (req: Request) => {
         keys = val;
       }
 
-      // Mask keys for security (show only last 8 chars — NEVER send full key to client)
-      const masked = keys.map((k: any, idx: number) => ({
-        id: k.id || `k_${idx}`,
-        idx,
-        label: k.label,
-        status: k.status,
-        lastChecked: k.lastChecked,
-        isPrimary: k.isPrimary,
-        keyMasked: k.key.length > 8 ? "•••" + k.key.slice(-8) : k.key,
-      }));
+      // Mask keys for security — only the mask ever leaves the server.
+      const masked = keys.map(maskKeyForClient);
 
       return json(200, { success: true, keys: masked });
     }
@@ -448,11 +458,8 @@ Deno.serve(async (req: Request) => {
         updated_at: now,
       }, { onConflict: "key" });
 
-      // Return masked keys
-      const masked = keys.map((k: any) => ({
-        ...k,
-        keyMasked: k.key.length > 8 ? "•••" + k.key.slice(-8) : k.key,
-      }));
+      // Return masked keys — never the raw key
+      const masked = keys.map(maskKeyForClient);
 
       return json(200, {
         success: true,
