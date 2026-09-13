@@ -2,9 +2,9 @@
   "games": [
     {
       "id": "com.MainraGames.Popit3DFidget",
-      "appId": "com.MainraGames.Popit3DFidget",
       "title": "Pop It 3D Fidget: Multiplayer",
-      "description": "Nikmati meletuskan gelembung dalam 3D dengan AI cerdas yang siap menghadapi tantangan!",
+      "short_description": "Enjoy bubble popping in 3D with intelligent AI ready for a challenge!",
+      "description": "Experience Pop It in a new format with Pop It 3D Fidget: A Two-Player Game with AI! You don't have to look for opponents, the intelligent AI is ready to challenge you in every level. Enjoy the relaxing bubble burst gameplay in 3D graphics, while practicing strategies against the AI that is always ready to provide challenges.\n\nKey Features:\n🧠 Challenge the Intelligent AI: Play against a responsive AI that can customize your abilities.\n🎮 Exciting 3D Explosions: Experience the satisfaction of bursting bubbles in a colorful 3D world.\n🌟 Relaxing Gameplay: Perfect for de-stressing—pop bubbles anytime, anywhere.\n🏅 Daily Challenges: Complete daily challenges to earn rewards and unlock new items.\n🔥 Unique Pop It Shapes: Discover and unlock a variety of interesting 3D Pop It designs.\n\nStart playing now with Pop It 3D Fidget-a game suitable for all ages, whenever you want to relax or hone your AI-fighting skills!",
       "image": "https://play-lh.googleusercontent.com/rPO9jpkgZs0_ih8GjwxGev-_D3P5AUZwF0UNTrNaR4jBwqMBIVtWBGrIFnvwne_Vb-Aa-moZWgKu_pTrKBsO9A",
       "screenshots": [
         "https://play-lh.googleusercontent.com/VN4Y5RFS0c3kuSEmOFecfACOINHO04wEvUEUKrLpMDzhOrJTHLxypK56eVk8U1lMOnwLj7V8LL1V5QH0Lc2CaA",
@@ -14,45 +14,20 @@
         "https://play-lh.googleusercontent.com/-Aak5dk7s0q_sFmhpu6qBDytI_87yhWAPiQqhAOhdfcjAUgZFRXIS20hM1pkB2GWrPzBv1tCGX5pv9tZODGiGw",
         "https://play-lh.googleusercontent.com/Vo8UZyyhy650EaqCQQULfnaw6Ma-JwLfKUJpZUV7IctS87spi6D9wHCwEuylaWoG7rPP4aTlCpfhHt9WRvb-"
       ],
-      "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.Popit3DFidget&hl=id&gl=id",
-      "category": "Kasual",
+      "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.Popit3DFidget&hl=en&gl=us",
+      "category": "Casual",
       "status": "Released",
       "releaseDate": "2026-08-07",
       "featured": true,
       "platform": "Android",
       "rating": null,
-      "installs": "50+",
-      "sort_order": 0
-    },
-    {
-      "id": "com.mainragames.indogamedev",
-      "appId": "com.mainragames.indogamedev",
-      "title": "IndoGameDev",
-      "description": "Pusat informasi, database komunitas, dan kolaborasi game developer Indonesia.",
-      "image": "https://play-lh.googleusercontent.com/QfR_7iYMWpmza9BvndzdMdPKYeVnRP3zWrsMYY2YQarV_3EDtx06J5oUhI38tbyhcIrbbQphFEuGywrsMjcY4A",
-      "screenshots": [
-        "https://play-lh.googleusercontent.com/18tvyLPrw6t59_FVgir7Uhal1SbLP_iys3whRmtbJykn9Tt-2FEEj2E5Exj7_wZGEAK4wx1Uca-bLy1a6rTi",
-        "https://play-lh.googleusercontent.com/Z1X3XviuAoqJ2pe-dwgIyrsc8oQktTbX5Z81XtrkfEYuWfHVE9onAvBCosYWH5ArI3qhlYG1vridaBsT5Rmx9g",
-        "https://play-lh.googleusercontent.com/ah2G6k1loHWXYKgvD4RWoHxoFeMOWlzBJgfJ7bY19Qce-QhA5UEr13tCM4cXvPqljRV--l5ljAn8jhNg-2NeNQ",
-        "https://play-lh.googleusercontent.com/emndc0oCOpyaIquTCPJpJvavc37khcXy9Pka_z6m2EHcsFJrsmLoVSOnTq6F2-85zVM-DY3khgzUvc_n9LM6pg",
-        "https://play-lh.googleusercontent.com/fyQ_OYWUytfjlRD6sXPocYEcUHAdalLHLu6-tkqL2SStZxcSfDjuF0Fug1bdsqtz1VtF-7xEAOTa2zvRVKPI7t8",
-        "https://play-lh.googleusercontent.com/CRt1JKAL2DEQIqRqSD59XZGnJBx86aXuIebWzbl-dHpmakmqD3fZahkLm6R3jjSEYAURwghJj0llMxolIRc-zg"
-      ],
-      "playLink": "https://play.google.com/store/apps/details?id=com.mainragames.indogamedev&hl=id&gl=id",
-      "category": "Alat",
-      "status": "Released",
-      "releaseDate": "2026-09-04",
-      "featured": true,
-      "platform": "Android",
-      "rating": null,
-      "installs": "1+",
-      "sort_order": 1
+      "appId": "com.MainraGames.Popit3DFidget"
     },
     {
       "id": "com.MainraGames.SquishyJellyMerge",
-      "appId": "com.MainraGames.SquishyJellyMerge",
       "title": "Squishy Jelly Merge",
-      "description": "Gabungkan jeli warna untuk menikmati keseruan tanpa akhir Jelly Merge!",
+      "short_description": "Relaxing swipe puzzle – merge same-color jellies and keep the board clear.",
+      "description": "Jelly Merge is a fun, satisfying, and addicting color merge puzzle game where you simply swipe to combine jelly blobs of the same color. As you merge them, the jellies grow bigger, your score climbs higher, and the board becomes more challenging to manage. It’s a casual brain game that’s easy to pick up but hard to put down.\n\nWith just a swipe of your finger, you can slide colorful jelly pieces across the board and watch them merge into bigger, brighter blobs. The more you merge, the higher your score—but be careful, because space is limited. You’ll need to think ahead, plan your moves, and stay sharp to keep the game going. Jelly Merge is perfect for players who enjoy logic puzzles, color match mechanics, and relaxing games that don’t rush you with timers or pressure.\n\nDesigned to be lightweight and playable offline, Jelly Merge runs smoothly on almost any device. It’s a perfect choice whether you’re on a quick break, commuting, or just need a moment to unwind. The colorful design and satisfying animations make every merge feel rewarding, while the increasing difficulty keeps things exciting as you go.\n\nWhether you're a fan of merge games, match games, or swipe puzzles, Jelly Merge offers a fresh and engaging twist on the genre. The gameplay is intuitive, the strategy is rewarding, and the visual experience is as fun as it is soothing. It's a game for kids, adults, and anyone in between who loves a good brain teaser with a playful vibe.\n\nIf you're searching for a casual puzzle game to relax with, challenge your mind, and pass the time, Jelly Merge is the game you’ve been looking for. Download now and see how big your jelly can grow.",
       "image": "https://play-lh.googleusercontent.com/YINHW0xX1h0L4sNemnda47EK6e5pFIdfMU4yCG5D8v1ekKW5l7NXKdRfbcre_sK041MADFj-CFXz_ho8437i",
       "screenshots": [
         "https://play-lh.googleusercontent.com/Dtfe5R2UmXeWnzsWVNeCdLh0wNT5LD2Pl3E0d-V01z7d6IEFEq1QU-EcYDMWa7L_4KBDZHm-OjfP7IL1tY4EOw",
@@ -66,49 +41,20 @@
         "https://play-lh.googleusercontent.com/YMdlY994DcbhTSk6wmndoj4N0MMMBkKLdlKT3wEw1ap8b9bKu5ljABYBgU6JMhS2QVpLDnxiTF04j_2wBAhalA",
         "https://play-lh.googleusercontent.com/jmPVwGCDQKGzIjue17BtMG8Nh3WCwoU0b6nZwvWNP0mI2VWxvH54-roxx9RLlwcCUaJGhH-L4RUy5Ke7PtRMjg"
       ],
-      "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.SquishyJellyMerge&hl=id&gl=id",
-      "category": "Kasual",
+      "playLink": "https://play.google.com/store/apps/details?id=com.MainraGames.SquishyJellyMerge&hl=en&gl=us",
+      "category": "Casual",
       "status": "Released",
-      "releaseDate": "2026-07-31",
+      "releaseDate": "2026-09-12",
       "featured": true,
       "platform": "Android",
       "rating": null,
-      "installs": "1.000+",
-      "sort_order": 1
-    },
-    {
-      "id": "com.algaproduction.litterallydiving",
-      "appId": "com.algaproduction.litterallydiving",
-      "title": "Litterally Diving",
-      "description": "Bergabunglah dengan Ally dalam misi membersihkan lautan dari tumpukan sampah!",
-      "image": "https://play-lh.googleusercontent.com/TpDsELFVDDgeV8kKESshsrbXEvZ7-f_jZVRd5ZJo5wFHRv7wfBlwZcGY8pkvrj9AGs-YkKqauatnvtbIMy4kl00",
-      "screenshots": [
-        "https://play-lh.googleusercontent.com/36SJnSYfmNb0GeGx-EA7JUclpg-ciX_Dkpnf1-Fhi-ggFzl0uF0aROC69ut8whJk3U2PPB6DR9cscOnrpHw9aUQ",
-        "https://play-lh.googleusercontent.com/N9rqk_m8YfSpoEVjz0gYXYu9_PzoehxCi68jwpqVwZ5c3OocEvhPGzn7NR6h4YG_r3irjWSCcUbtRm1z1X7Te9E",
-        "https://play-lh.googleusercontent.com/t4pAu7nh_JzgPB42VGy7socGpcvxi1FHMUUP5j2W6c_n9cTA98mm8s1ULFv1RVfPOcnkKlY6uM4BOCFtHwdKfA",
-        "https://play-lh.googleusercontent.com/_H0t57-Yn-HVjqFSl5_PTEg7rPw2vnI4SjV4ZNOlaJHP9ktZI7vdsGcsnDPRNNYCCWrA95EK29jICAUNMBdztSM",
-        "https://play-lh.googleusercontent.com/vlI1F6VNwZORbETFiXnrOdgwRmP7scjhUY7TnyYcUuqkTSFq6AJ-Tp1U26fZmoR_FgnCanPRjGeaferdaBi3ZA",
-        "https://play-lh.googleusercontent.com/o2PE7WhJx-w89_VsphsyU4EPa0qo1TklSRxsTMJJAsFpbsSTRyY9JvFD3q_Ifl1bmiSKHe5dLtStA_8cWH2qiA",
-        "https://play-lh.googleusercontent.com/LJwTjFSif0hTeJBfZZaUaIMNKKmg9B64tn5jiTmadqrzuKJXEukwpI_u8l5C60DfMCd4b9TCHnUYKB_-xxNXT-c",
-        "https://play-lh.googleusercontent.com/CJ-HHkxyAs-2_G1y6oa3MmxqyzuuEoZxbAunZpEJc-gamtEBrqrTWUCgSVTvIbk-rSMZjDH6u07c3pwKWS2V_A"
-      ],
-      "playLink": "https://play.google.com/store/apps/details?id=com.algaproduction.litterallydiving&hl=id&gl=id",
-      "category": "Kasual",
-      "status": "Released",
-      "releaseDate": "2026-02-22",
-      "featured": true,
-      "platform": "Android",
-      "rating": 5.0,
-      "ratings_count": 11,
-      "reviews_count": 4,
-      "installs": "50+",
-      "sort_order": 2
+      "appId": "com.MainraGames.SquishyJellyMerge"
     },
     {
       "id": "com.Mainra.GamePengenalanBinatang",
-      "appId": "com.Mainra.GamePengenalanBinatang",
       "title": "Pengenalan Binatang",
-      "description": "Game pengenalan hewan untuk siswa sekolah yang belajar di dunia Binatang",
+      "short_description": "Animal introduction game for school students studying in the world of Animals",
+      "description": "This game contains an adventure looking for animals in various habitats, there is a puzzle game mechanism when collecting animals at each stage. The animals that have been obtained can then be viewed via the animal encyclopedia menu, the encyclopedia contains interesting information about animals.\n\nTo open a stage the player is required to complete the previous stage by getting all the animals in the stage and before entering the new stage the player is tested on the animal knowledge obtained in the previous stage.",
       "image": "https://play-lh.googleusercontent.com/MFXdAccA-SAMQX9dkyBxKcqE47s07T7ib7sT449BUJdYDH2PkVWAwY71aVdHHHQT_2JIEvw-vFyms3TA9ffF",
       "screenshots": [
         "https://play-lh.googleusercontent.com/fWrl0cEpOVz0_AYHrtXlqXHK4QeGxDlAgsGnI-hvq6Avtb5vaZNzKUd-NQa9YXYU_EyeTwXaGl2t5NmgNY2B4XQ",
@@ -119,20 +65,27 @@
         "https://play-lh.googleusercontent.com/HqncI3Za5y7SyKPvz60eURDJFEak3K3ain8cbo4Bd1RfTXeBOW_3nawTu-A4fq8rz_aQUFjL7s3R2ZtvNHM1",
         "https://play-lh.googleusercontent.com/HHWWf3LKf9yJ7xYvq_9YcdpmPNzPxlfG2Vo_G657sVV4OQzGUNiTf2WC6b0YNwJJK80-2xrZDFZOrFLJPTuw3g"
       ],
-      "playLink": "https://play.google.com/store/apps/details?id=com.Mainra.GamePengenalanBinatang&hl=id&gl=id",
-      "category": "Edukasi",
+      "playLink": "https://play.google.com/store/apps/details?id=com.Mainra.GamePengenalanBinatang&hl=en&gl=us",
+      "category": "Educational",
       "status": "Released",
       "releaseDate": "2025-11-12",
       "featured": true,
       "platform": "Android",
       "rating": null,
-      "installs": "100+",
-      "sort_order": 2
+      "appId": "com.Mainra.GamePengenalanBinatang"
     }
   ],
   "highlight": {
     "active": true,
     "gameId": "com.MainraGames.SquishyJellyMerge",
-    "lastUpdated": "2026-09-11T22:56:52.145Z"
+    "lastUpdated": "2026-09-13T01:03:33.954Z",
+    "customTitle": "Squishy Jelly Merge",
+    "customDescription": "Jelly Merge is a fun, satisfying, and addicting color merge puzzle game where you simply swipe to combine jelly blobs of the same color. As you merge them, the jellies grow bigger, your score climbs higher, and the board becomes more challenging to manage. It’s a casual brain game that’s easy to pick up but hard to put down.\n\nWith just a swipe of your finger, you can slide colorful jelly pieces across the board and watch them merge into bigger, brighter blobs. The more you merge, the higher your score—but be careful, because space is limited. You’ll need to think ahead, plan your moves, and stay sharp to keep the game going. Jelly Merge is perfect for players who enjoy logic puzzles, color match mechanics, and relaxing games that don’t rush you with timers or pressure.\n\nDesigned to be lightweight and playable offline, Jelly Merge runs smoothly on almost any device. It’s a perfect choice whether you’re on a quick break, commuting, or just need a moment to unwind. The colorful design and satisfying animations make every merge feel rewarding, while the increasing difficulty keeps things exciting as you go.\n\nWhether you're a fan of merge games, match games, or swipe puzzles, Jelly Merge offers a fresh and engaging twist on the genre. The gameplay is intuitive, the strategy is rewarding, and the visual experience is as fun as it is soothing. It's a game for kids, adults, and anyone in between who loves a good brain teaser with a playful vibe.\n\nIf you're searching for a casual puzzle game to relax with, challenge your mind, and pass the time, Jelly Merge is the game you’ve been looking for. Download now and see how big your jelly can grow.",
+    "youtubeUrl": "",
+    "stats": {
+      "gameplay": "50+",
+      "characters": "25+",
+      "worlds": "5+"
+    }
   }
 }

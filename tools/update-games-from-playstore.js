@@ -89,7 +89,8 @@ async function fetchGamesFromPlayStore() {
             return {
                 id: getStableGameId(app.appId),
                 title: app.title,
-                description: app.summary || app.description || '',
+                short_description: app.summary || '',
+                description: app.description || app.summary || '',
                 image: app.icon || app.screenshots?.[0] || '',
                 screenshots: app.screenshots || [],
                 playLink: app.url || `https://play.google.com/store/apps/details?id=${app.appId}`,

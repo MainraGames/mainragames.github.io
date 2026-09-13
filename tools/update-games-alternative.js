@@ -170,6 +170,7 @@ async function updateGamesData() {
     const formattedGames = games.map((app, index) => ({
         id: getStableGameId(app.appId),
         title: app.title,
+        short_description: app.summary || '',
         description: app.description || app.summary || '',
         image: app.icon || app.image || '',
         screenshots: app.screenshots || [],
