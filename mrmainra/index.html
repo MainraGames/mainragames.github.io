@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -533,7 +533,7 @@
                                     <strong style="font-size:.9rem; color:var(--mainra-white)">Gemini Post Generator</strong>
                                     <span id="geminiConnectionStatusDot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#7fd1a1; margin-left:.3rem" title="API Siap"></span>
                                 </div>
-                                <button type="button" class="btn-admin ghost small" id="closeAiPanelBtn" style="padding:.18rem .45rem">✕</button>
+                                <button type="button" class="btn-admin ghost small" id="closeAiPanelBtn" aria-label="Tutup panel AI" style="padding:.18rem .45rem">✕</button>
                             </div>
 
                             <!-- Generation Controls: Tone & Custom Instruction -->
@@ -645,7 +645,7 @@
                                                         <div id="imagePasteStatus" style="font-size:.75rem; color:var(--mainra-orange); font-weight:600; text-overflow:ellipsis; white-space:nowrap; overflow:hidden;">Mengupload…</div>
                                                         <div id="imagePasteMeta" class="muted small" style="font-size:.68rem;"></div>
                                                     </div>
-                                                    <button type="button" class="btn-admin ghost small" id="removePastedImageBtn" title="Hapus gambar" style="padding:.2rem .4rem; font-size:.7rem; color:#ef4444;">✕</button>
+                                                    <button type="button" class="btn-admin ghost small" id="removePastedImageBtn" aria-label="Hapus gambar yang ditempel" title="Hapus gambar" style="padding:.2rem .4rem; font-size:.7rem; color:#ef4444;">✕</button>
                                                 </div>
                                                 <input type="file" id="postImageFileInput" accept="image/png, image/jpeg, image/webp, image/gif" style="display:none;">
                                             </div>
@@ -940,7 +940,7 @@
                     <div id="gmSubtitle" class="muted small" style="margin-top:.15rem">Sesuaikan metadata game, listing Google Play, dan aset promo</div>
                 </div>
             </div>
-            <button type="button" class="btn-admin ghost" id="gmClose" title="Tutup">✕</button>
+            <button type="button" class="btn-admin ghost" id="gmClose" aria-label="Tutup" title="Tutup">✕</button>
         </div>
 
         <div class="modal-body-scroll">
@@ -1149,7 +1149,7 @@
             <span class="badge" id="rpBadge" style="background:rgba(255,107,0,.15);color:var(--mainra-accent-hover);font-size:.75rem">Google Play Store</span>
             <h3 style="margin:0;font-size:1.15rem">Reply to Review</h3>
         </div>
-        <button type="button" class="btn-admin ghost" id="rpClose" title="Close" style="padding:.25rem .55rem">✕</button>
+        <button type="button" class="btn-admin ghost" id="rpClose" aria-label="Tutup" title="Close" style="padding:.25rem .55rem">✕</button>
     </div>
     
     <div id="rpContext" style="background:rgba(11,17,28,.6);border:1px solid var(--mainra-line);border-radius:var(--radius-md);padding:.75rem 1rem"></div>
@@ -1194,7 +1194,7 @@
     <form id="adminUserForm">
         <div class="modal-head" style="margin-bottom:1rem">
             <h3 style="margin:0;font-size:1.15rem">Tambah Admin Baru</h3>
-            <button type="button" class="btn-admin ghost" id="admClose" title="Close" style="padding:.25rem .55rem">✕</button>
+            <button type="button" class="btn-admin ghost" id="admClose" aria-label="Tutup" title="Close" style="padding:.25rem .55rem">✕</button>
         </div>
         <p class="muted small" style="margin:0 0 1.2rem;line-height:1.4">
             Pengguna yang ditambahkan akan memiliki akses penuh untuk mengelola katalog game, ulasan Play Store, dan akun admin lainnya.
@@ -1219,7 +1219,7 @@
 <dialog id="inboxModal" class="admin-modal" style="max-width:600px;padding:1.4rem 1.6rem">
     <div class="modal-head" style="margin-bottom:1rem">
         <h3 id="inboxModalSubject" style="margin:0;font-size:1.15rem">Detail Pesan</h3>
-        <button type="button" class="btn-admin ghost" id="inboxModalClose" title="Close" style="padding:.25rem .55rem">✕</button>
+        <button type="button" class="btn-admin ghost" id="inboxModalClose" aria-label="Tutup" title="Close" style="padding:.25rem .55rem">✕</button>
     </div>
     <div style="background:rgba(255,255,255,0.02); border:1px solid var(--admin-border-subtle); border-radius:var(--radius-sm); padding:.9rem 1.1rem; margin-bottom:1.1rem;">
         <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:.6rem; flex-wrap:wrap; gap:.5rem;">
@@ -1273,7 +1273,7 @@
     </div>
 </dialog>
 
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="../Assets/js/supabase-config.js"></script>

@@ -7,6 +7,7 @@
   --mainra-navy-dark: #0b111c;
   --mainra-orange: #f56b43;
   --mainra-orange-deep: #c94d2f;
+  --mainra-accent-hover: #ff8a63;
   --mainra-white: #ffffff;
   --mainra-ink: #e9edf3;
   --mainra-muted: #9eabbc;
@@ -16,6 +17,7 @@
   --mainra-panel-solid: #1b2637;
   --mainra-success: #7fd1a1;
   --mainra-gold: #efbd63;
+  --mainra-danger: #f87171;
   --content-width: 1180px;
   --header-height: 78px;
   --radius-sm: 3px;

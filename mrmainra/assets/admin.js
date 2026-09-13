@@ -2432,7 +2432,11 @@
             name = 'games';
             selectGamesSubtab('analytics');
         }
-        $$('.admin-nav button').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === name); });
+        $$('.admin-nav button').forEach(function (b) {
+        var isActive = b.dataset.tab === name;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-current', isActive ? 'page' : 'false');
+    });
         $$('.tab').forEach(function (t) { t.classList.toggle('active', t.id === 'tab-' + name); });
         $('#tabTitle').textContent = TITLES[name] || name;
         window.scrollTo({ top: 0, behavior: 'auto' });
