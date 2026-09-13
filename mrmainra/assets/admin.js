@@ -48,6 +48,62 @@
         }, duration);
     }
 
+    /* ---------- custom confirmation modal (replaces crude window.confirm) ---------- */
+    function showConfirmModal(options) {
+        return new Promise(function (resolve) {
+            var modal = $('#confirmModal');
+            if (!modal) {
+                // Fallback to native confirm if element not found
+                resolve(window.confirm(options.message || 'Konfirmasi tindakan?'));
+                return;
+            }
+
+            var titleEl = $('#confirmTitle');
+            var msgEl = $('#confirmMessage');
+            var iconBox = $('#confirmIconBox');
+            var okBtn = $('#confirmOkBtn');
+            var cancelBtn = $('#confirmCancelBtn');
+
+            if (titleEl) titleEl.textContent = options.title || 'Konfirmasi Tindakan';
+            if (msgEl) msgEl.textContent = options.message || '';
+            if (iconBox) iconBox.textContent = options.icon || (options.isDanger ? '🗑️' : '🚀');
+            if (okBtn) {
+                okBtn.textContent = options.okText || 'Lanjutkan';
+                if (options.isDanger) {
+                    okBtn.style.background = '#ef4444';
+                    okBtn.style.borderColor = '#dc2626';
+                    okBtn.style.color = '#fff';
+                } else {
+                    okBtn.style.background = 'var(--mainra-orange)';
+                    okBtn.style.borderColor = 'var(--mainra-orange)';
+                    okBtn.style.color = '#1a0e08';
+                }
+            }
+            if (cancelBtn) cancelBtn.textContent = options.cancelText || 'Batal';
+
+            function cleanup() {
+                modal.close();
+                okBtn.removeEventListener('click', onOk);
+                cancelBtn.removeEventListener('click', onCancel);
+            }
+
+            function onOk() {
+                cleanup();
+                resolve(true);
+            }
+
+            function onCancel() {
+                cleanup();
+                resolve(false);
+            }
+
+            okBtn.addEventListener('click', onOk);
+            cancelBtn.addEventListener('click', onCancel);
+
+            modal.showModal();
+        });
+    }
+
     function esc(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
             return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[c];
@@ -504,9 +560,14 @@
             return;
         }
 
-        if (!confirm('Yakin ingin mem-publish Title & Deskripsi game "' + g.title + '" langsung ke Google Play Console?')) {
-            return;
-        }
+        var ok = await showConfirmModal({
+            title: 'Push Listing ke Play Console',
+            message: 'Yakin ingin mem-publish Title & Deskripsi game "' + g.title + '" langsung ke Google Play Console?',
+            icon: '🚀',
+            okText: 'Ya, Publish Sekarang',
+            cancelText: 'Batal'
+        });
+        if (!ok) return;
 
         var btn = $('#pushToPlayStoreBtn');
         if (btn) {
@@ -556,9 +617,14 @@
             return;
         }
 
-        if (!confirm('AI Gemini akan menerjemahkan, melokalisasi, dan mengoptimalkan Short & Full Description ke 10 bahasa global (en-US, es-419, pt-BR, ja-JP, de-DE, dll) dengan batasan resmi character Google Play, lalu mempublikasikannya sekaligus.\n\nLanjutkan publikasi global?')) {
-            return;
-        }
+        var ok = await showConfirmModal({
+            title: 'Publikasi ASO Global ke 10 Bahasa',
+            message: 'AI Gemini akan melokalisasi dan mengoptimalkan Short & Full Description ke 10 bahasa resmi Google Play (en-US, es-419, pt-BR, ja-JP, de-DE, dll) sesuai batasan karakter, lalu mempublikasikannya sekaligus.\n\nLanjutkan publikasi global sekarang?',
+            icon: '🌐',
+            okText: 'Ya, Optimalkan & Publish Global',
+            cancelText: 'Batal'
+        });
+        if (!ok) return;
 
         var btn = $('#pushGlobalPlayStoreBtn');
         if (btn) {
@@ -637,7 +703,15 @@
     async function deleteGame(id) {
         var g = games.find(function (x) { return x.id === id; });
         if (!g) return;
-        if (!confirm('Delete "' + g.title + '" from the site? (The Play Store app itself is not affected.)')) return;
+        var ok = await showConfirmModal({
+            title: 'Hapus Game dari Website',
+            message: 'Hapus "' + g.title + '" dari katalog situs? (Aplikasi di Google Play Store tidak terpengaruh).',
+            icon: '🗑️',
+            isDanger: true,
+            okText: 'Hapus Game',
+            cancelText: 'Batal'
+        });
+        if (!ok) return;
         var res = await sb.from('games').delete().eq('id', id);
         if (res.error) { toast('Delete failed: ' + res.error.message, true); return; }
         if (highlight && String(highlight.gameId) === String(id)) {
@@ -2571,12 +2645,20 @@
 
             // Wire action buttons
             keysBody.querySelectorAll('[data-delete-key]').forEach(function (btn) {
-                btn.onclick = function () {
+                btn.onclick = async function () {
                     var idx = parseInt(btn.getAttribute('data-delete-key'));
                     var keyId = btn.getAttribute('data-key-id');
                     var entry = cachedKeys[idx];
                     if (!entry) return;
-                    if (!confirm('Hapus key "' + (entry.label || 'Key') + '"?')) return;
+                    var ok = await showConfirmModal({
+                        title: 'Hapus Gemini API Key',
+                        message: 'Hapus API key "' + (entry.label || 'Key') + '"?',
+                        icon: '🗑️',
+                        isDanger: true,
+                        okText: 'Hapus Key',
+                        cancelText: 'Batal'
+                    });
+                    if (!ok) return;
                     deleteKey(keyId, idx);
                 };
             });
@@ -3687,9 +3769,15 @@
     }
 
     async function deleteAdminUser(target) {
-        if (!confirm('Apakah Anda yakin ingin menghapus hak akses admin untuk ' + target.email + '?\nPengguna ini tidak akan bisa login lagi ke dashboard.')) {
-            return;
-        }
+        var ok = await showConfirmModal({
+            title: 'Hapus Akses Admin',
+            message: 'Apakah Anda yakin ingin menghapus hak akses admin untuk ' + target.email + '?\nPengguna ini tidak akan bisa login lagi ke dashboard.',
+            icon: '🛡️',
+            isDanger: true,
+            okText: 'Hapus Admin',
+            cancelText: 'Batal'
+        });
+        if (!ok) return;
 
         toast('Menghapus akses admin…');
         var res = await sb.functions.invoke('manage-admins', {
@@ -3950,7 +4038,15 @@
     };
 
     window.deleteInboxMessage = async function (id) {
-        if (!confirm('Apakah Anda yakin ingin menghapus pesan ini secara permanen?')) return;
+        var ok = await showConfirmModal({
+            title: 'Hapus Pesan Inbox',
+            message: 'Apakah Anda yakin ingin menghapus pesan ini secara permanen?',
+            icon: '🗑️',
+            isDanger: true,
+            okText: 'Hapus Pesan',
+            cancelText: 'Batal'
+        });
+        if (!ok) return;
         var res = await sb.from('contact_messages').delete().eq('id', id);
         if (res.error) {
             toast('Gagal menghapus pesan: ' + res.error.message, true);

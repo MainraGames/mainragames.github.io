@@ -1242,6 +1242,23 @@
     </div>
 </dialog>
 
+<!-- CONFIRMATION MODAL POPUP -->
+<dialog id="confirmModal" class="admin-modal" style="max-width:440px; padding:1.4rem 1.6rem; z-index:1000000">
+    <div style="display:flex; align-items:flex-start; gap:.85rem; margin-bottom:1rem">
+        <div id="confirmIconBox" style="width:40px; height:40px; border-radius:50%; background:rgba(255,107,0,0.12); display:flex; align-items:center; justify-content:center; font-size:1.25rem; flex-shrink:0">
+            ❓
+        </div>
+        <div>
+            <h3 id="confirmTitle" style="margin:0 0 .3rem; font-size:1.05rem; color:var(--mainra-white)">Konfirmasi Tindakan</h3>
+            <p id="confirmMessage" style="margin:0; font-size:.88rem; line-height:1.45; color:var(--mainra-ink); white-space:pre-line"></p>
+        </div>
+    </div>
+    <div class="form-foot" style="margin-top:1.2rem; display:flex; justify-content:flex-end; gap:.6rem">
+        <button type="button" class="btn-admin ghost" id="confirmCancelBtn">Batal</button>
+        <button type="button" class="btn-admin" id="confirmOkBtn">Lanjutkan</button>
+    </div>
+</dialog>
+
 <div id="toast" class="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

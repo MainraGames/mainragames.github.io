@@ -994,6 +994,17 @@ dialog.admin-modal:not([open]) {
     align-items: center;
 }
 
+#confirmModal[open] {
+    display: flex;
+    flex-direction: column;
+    z-index: 1000000;
+}
+#confirmModal::backdrop {
+    z-index: 999999;
+    background: rgba(4, 7, 13, 0.82);
+    backdrop-filter: blur(6px);
+}
+
 #gameModal:not([open]) {
     display: none !important;
 }
