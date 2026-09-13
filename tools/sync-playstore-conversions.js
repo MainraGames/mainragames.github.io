@@ -10,6 +10,7 @@
  */
 const crypto = require('crypto');
 const { parseConversionRates } = require('./conversion-utils');
+const { createSyncTally } = require('./http-utils.js');
 
 function need(name) {
     const v = (process.env[name] || '').trim();
@@ -100,7 +101,9 @@ async function main() {
 
     console.log(`Syncing store listing conversions for: ${packageNames.join(', ')}`);
 
+    const tally = createSyncTally('sync-conversions');
     for (const pkg of packageNames) {
+        tally.attempt();
         try {
             console.log(`Querying conversions for ${pkg}…`);
             const data = await queryConversion(token, pkg);
@@ -152,8 +155,12 @@ async function main() {
             console.log(`✓ ${pkg}: ${parsed.totalVisitors} visitors, ${parsed.totalAcquisitions} downloads (${parsed.conversionRatePercent}%)`);
         } catch (err) {
             console.warn(`⚠️ Skipped ${pkg}: ${err.message}`);
+            tally.failure();
         }
     }
+
+    const { exitCode } = tally.finish();
+    if (exitCode) process.exitCode = exitCode;
 
     console.log('Conversion metrics sync completed.');
 }

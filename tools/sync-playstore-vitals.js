@@ -10,6 +10,7 @@
  */
 const crypto = require('crypto');
 const { parseVitalsQueryResponse, assessVitalsHealth } = require('./vitals-utils');
+const { createSyncTally } = require('./http-utils.js');
 
 function need(name) {
     const v = (process.env[name] || '').trim();
@@ -88,7 +89,9 @@ async function main() {
     console.log(`Syncing Android Vitals for ${packages.length} game(s)...`);
     let count = 0;
 
+    const tally = createSyncTally('sync-vitals');
     for (const pkg of packages) {
+        tally.attempt();
         try {
             const rawCrash = await queryMetric(token, pkg, 'crashRate');
             const rawAnr = await queryMetric(token, pkg, 'anrRate');
@@ -141,8 +144,12 @@ async function main() {
             }
         } catch (err) {
             console.warn(`Error syncing vitals for ${pkg}: ${err.message}`);
+            tally.failure();
         }
     }
+
+    const { exitCode } = tally.finish();
+    if (exitCode) process.exitCode = exitCode;
 
     console.log(`Successfully updated vitals metrics for ${count} game(s).`);
 }

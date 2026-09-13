@@ -10,6 +10,7 @@
  */
 const crypto = require('crypto');
 const { parseTrackReleases } = require('./tracks-utils.js');
+const { createSyncTally } = require('./http-utils.js');
 
 const API = 'https://androidpublisher.googleapis.com/androidpublisher/v3';
 
@@ -124,7 +125,9 @@ async function run() {
 
     console.log(`[sync-tracks] Found ${packages.length} game(s) to inspect tracks: ${packages.join(', ')}`);
 
+    const tally = createSyncTally('sync-tracks');
     for (const pkg of packages) {
+        tally.attempt();
         try {
             console.log(`[sync-tracks] Inspecting tracks for ${pkg}...`);
             const tracks = await fetchTracksForApp(token, pkg);
@@ -162,8 +165,12 @@ async function run() {
             }
         } catch (err) {
             console.error(`[sync-tracks] Error processing ${pkg}:`, err.message || err);
+            tally.failure();
         }
     }
+
+    const { exitCode } = tally.finish();
+    if (exitCode) process.exitCode = exitCode;
 
     console.log('[sync-tracks] Finished track synchronization.');
 }

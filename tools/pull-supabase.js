@@ -5,6 +5,7 @@
  */
 const path = require('path');
 const fs = require('fs');
+const { assertOkResponse } = require('./http-utils.js');
 
 const DATA_PATH = path.join(__dirname, '..', 'Assets', 'data', 'games-data.json');
 
@@ -17,12 +18,16 @@ async function main() {
     }
 
     const headers = { apikey: key, Authorization: `Bearer ${key}` };
-    const games = await (await fetch(`${url}/rest/v1/games?select=*&order=sort_order.asc.nullslast,title.asc`, { headers })).json();
+    const gamesRes = await fetch(`${url}/rest/v1/games?select=*&order=sort_order.asc.nullslast,title.asc`, { headers });
+    await assertOkResponse(gamesRes, 'games');
+    const games = await gamesRes.json();
     if (!Array.isArray(games) || games.length === 0) {
         console.warn('⚠️  No games in Supabase — keeping scraped JSON.');
         return;
     }
-    const settingsRow = await (await fetch(`${url}/rest/v1/site_settings?key=eq.highlight&select=value`, { headers })).json();
+    const settingsRes = await fetch(`${url}/rest/v1/site_settings?key=eq.highlight&select=value`, { headers });
+    await assertOkResponse(settingsRes, 'site_settings');
+    const settingsRow = await settingsRes.json();
     const highlight = (settingsRow[0] && settingsRow[0].value) || null;
     if (highlight && !highlight.lastUpdated) {
         highlight.lastUpdated = new Date().toISOString();

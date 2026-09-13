@@ -10,6 +10,7 @@
  */
 const crypto = require('crypto');
 const { mapVoidedPurchase, summarizeVoidedPurchases } = require('./voided-purchases-utils');
+const { createSyncTally } = require('./http-utils.js');
 
 function need(name) {
     const v = (process.env[name] || '').trim();
@@ -82,7 +83,9 @@ async function main() {
     console.log(`Checking voided purchases for ${packages.length} package(s)...`);
     const allRecords = [];
 
+    const tally = createSyncTally('sync-voided-purchases');
     for (const pkg of packages) {
+        tally.attempt();
         try {
             console.log(`Fetching voided purchases for ${pkg}...`);
             const records = await fetchVoidedPurchases(token, pkg);
@@ -107,8 +110,12 @@ async function main() {
             }
         } catch (err) {
             console.warn(`  -> skipped/error for ${pkg}: ${err.message}`);
+            tally.failure();
         }
     }
+
+    const { exitCode } = tally.finish();
+    if (exitCode) process.exitCode = exitCode;
 
     const summary = summarizeVoidedPurchases(allRecords);
     console.log('\n--- Voided Purchases Summary ---');

@@ -13,6 +13,7 @@
  *   3. Push pending admin replies to Google Play (reviews.reply, max 1 reply per review)
  */
 const crypto = require('crypto');
+const { assertOkResponse } = require('./http-utils.js');
 
 function need(name) {
     const v = (process.env[name] || '').trim();
@@ -112,10 +113,7 @@ async function listReviews(token, packageName) {
         const res = await fetch(`https://androidpublisher.googleapis.com/androidpublisher/v3/reviews?${qs}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
-        if (!res.ok) {
-            console.error(`  list reviews ${packageName}: HTTP ${res.status} ${await res.text()}`);
-            break;
-        }
+        await assertOkResponse(res, `list reviews ${packageName}`);
         const data = await res.json();
         out.push(...(data.reviews || []));
         pageToken = (data.tokenPagination && data.tokenPagination.nextPageToken) || '';

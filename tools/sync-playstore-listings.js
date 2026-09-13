@@ -10,6 +10,7 @@
  */
 const crypto = require('crypto');
 const { parseStoreListingsResponse, mergeListingIntoGame } = require('./store-listings-utils');
+const { createSyncTally } = require('./http-utils.js');
 
 function need(name) {
     const v = (process.env[name] || '').trim();
@@ -94,7 +95,9 @@ async function main() {
     console.log(`Pulling store listings for ${packages.length} package(s)...`);
     let totalSynced = 0;
 
+    const tally = createSyncTally('sync-listings');
     for (const pkg of packages) {
+        tally.attempt();
         let editId = null;
         try {
             editId = await createEdit(token, pkg);
@@ -131,10 +134,14 @@ async function main() {
             }
         } catch (err) {
             console.warn(`  -> skipped/error for ${pkg}: ${err.message}`);
+            tally.failure();
         } finally {
             if (editId) await deleteEdit(token, pkg, editId);
         }
     }
+
+    const { exitCode } = tally.finish();
+    if (exitCode) process.exitCode = exitCode;
 
     console.log(`\n--- Store Listings Summary ---`);
     console.log(`Total multi-language listings synced: ${totalSynced}`);

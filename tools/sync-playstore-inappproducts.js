@@ -10,6 +10,7 @@
  */
 const crypto = require('crypto');
 const { mapInAppProduct, summarizeInAppProducts } = require('./inappproducts-utils');
+const { createSyncTally } = require('./http-utils.js');
 
 function need(name) {
     const v = (process.env[name] || '').trim();
@@ -82,7 +83,9 @@ async function main() {
     console.log(`Checking in-app products for ${packages.length} package(s)...`);
     const allProducts = [];
 
+    const tally = createSyncTally('sync-inappproducts');
     for (const pkg of packages) {
+        tally.attempt();
         try {
             console.log(`Fetching in-app products for ${pkg}...`);
             const products = await fetchInAppProducts(token, pkg);
@@ -111,8 +114,12 @@ async function main() {
             }
         } catch (err) {
             console.warn(`  -> skipped/error for ${pkg}: ${err.message}`);
+            tally.failure();
         }
     }
+
+    const { exitCode } = tally.finish();
+    if (exitCode) process.exitCode = exitCode;
 
     const summary = summarizeInAppProducts(allProducts);
     console.log('\n--- In-App Products Summary ---');
