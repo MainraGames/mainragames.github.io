@@ -492,7 +492,7 @@
             body: {
                 action: 'push',
                 appId: g.id,
-                language: 'id-ID',
+                language: 'id',
                 title: g.title,
                 shortDescription: g.short_description || '',
                 fullDescription: g.description || '',

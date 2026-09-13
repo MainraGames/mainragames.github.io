@@ -143,9 +143,14 @@ Deno.serve(async (req: Request) => {
 
     // PUSH ACTION: Update a store listing on Google Play Console
     if (action === "push") {
-      const { appId, language, title, shortDescription, fullDescription, video } = body;
+      let { appId, language, title, shortDescription, fullDescription, video } = body;
       if (!appId || !language) {
         return json(400, { message: "appId and language are required for push" });
+      }
+
+      // Google Play Developer API uses 'id' for Indonesian (not 'id-ID')
+      if (language.toLowerCase() === "id-id" || language.toLowerCase() === "id_id") {
+        language = "id";
       }
 
       // Validate Google Play Store character limits
