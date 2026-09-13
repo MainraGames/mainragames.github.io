@@ -212,4 +212,4 @@ if (require.main === module) {
     main().catch(err => { console.error('reviews sync failed:', err.message); process.exit(1); });
 }
 
-module.exports = { main };
+module.exports = { main, mapReview };

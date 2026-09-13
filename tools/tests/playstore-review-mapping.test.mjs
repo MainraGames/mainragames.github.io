@@ -1,74 +1,72 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 
-// Test mapping logic for Google Play Developer API reviews
-function mapApiReview(r, appId) {
-    const comment = (r.comments && r.comments[0]) || {};
-    const c = comment.userComment || {};
-    const reply = comment.developerComment || {};
-    const lm = c.lastModified && (c.lastModified.seconds || c.lastModified.serverValue);
+// Exercises the production mapper. A copy of the mapping logic used to live in
+// this file and had silently drifted (no device_name, no app_version_*, no
+// thumbs_*_count, no device_metadata, no replySentAt from the API).
 
-    // FIX: c.text is a string ("I had fun..."), NOT an array. c.text[0] was bugged to only grab the first character 'I'
-    let content = '';
-    if (typeof c.text === 'string') {
-        content = c.text;
-    } else if (Array.isArray(c.text)) {
-        content = c.text[0] || '';
-    }
+const require = createRequire(import.meta.url);
+const { mapReview } = require('../sync-playstore-reviews.js');
 
-    let replyText = null;
-    if (typeof reply.text === 'string') {
-        replyText = reply.text;
-    } else if (Array.isArray(reply.text)) {
-        replyText = reply.text[0] || '';
-    }
+const rawApiReview = {
+  reviewId: 'gp:AOqpTOH_sample_review_id',
+  authorName: { displayName: 'سجاد' },
+  comments: [
+    {
+      userComment: {
+        text: 'I had fun 😂😂😂😂😂 Okay',
+        starRating: 5,
+        reviewLanguage: 'fa',
+        deviceMetadata: { deviceModel: 'SM-T225' },
+        lastModified: { seconds: '1789218780' },
+      },
+      developerComment: {
+        text: 'Sorry about that! We have noted this issue and a fix is coming in the next update. Feel free to reach out at mainragames@gmail.com.',
+        lastModified: { seconds: '1789218800' },
+      },
+    },
+  ],
+};
 
-    const row = {
-        review_id: r.reviewId,
-        game_id: appId,
-        author_name: (r.authorName && (r.authorName.displayName || r.authorName)) || c.authorName || 'Anonymous',
-        content: content,
-        star_rating: c.starRating || null,
-        versionCode: c.appVersionName || null,
-        device: c.deviceMetadata && (c.deviceMetadata.deviceModel || (Array.isArray(c.deviceMetadata) && c.deviceMetadata[0]?.deviceModel)) || null,
-        review_timestamp: lm ? Number(lm) * 1000 : null,
-        lang: c.reviewLanguage || null,
-        source: 'playstore'
-    };
+test('mapReview keeps the whole review text and the developer reply', () => {
+  const mapped = mapReview(rawApiReview, 'com.MainraGames.SquishyJellyMerge');
 
-    if (replyText) {
-        row.reply_text = replyText;
-        row.replySentAt = new Date().toISOString();
-    }
-    return row;
-}
+  assert.equal(mapped.review_id, 'gp:AOqpTOH_sample_review_id');
+  assert.equal(mapped.game_id, 'com.MainraGames.SquishyJellyMerge');
+  assert.equal(mapped.author_name, 'سجاد');
+  assert.equal(mapped.content, 'I had fun 😂😂😂😂😂 Okay');
+  assert.equal(mapped.star_rating, 5);
+  assert.equal(mapped.lang, 'fa');
+  assert.equal(mapped.source, 'playstore');
+  assert.equal(mapped.reply_text.includes('mainragames@gmail.com'), true);
+});
 
-test('mapApiReview correctly handles full review text and edited ratings', () => {
-    const rawApiReview = {
-        reviewId: 'gp:AOqpTOH_sample_review_id',
-        authorName: { displayName: 'سجاد' },
-        comments: [
-            {
-                userComment: {
-                    text: 'I had fun 😂😂😂😂😂 Okay',
-                    starRating: 5,
-                    reviewLanguage: 'fa',
-                    deviceMetadata: { deviceModel: 'SM-T225' },
-                    lastModified: { seconds: '1789218780' }
-                },
-                developerComment: {
-                    text: 'Sorry about that! We have noted this issue and a fix is coming in the next update. Feel free to reach out at mainragames@gmail.com.',
-                    lastModified: { seconds: '1789218800' }
-                }
-            }
-        ]
-    };
+test('mapReview carries the device, version and thumbs fields the dashboard renders', () => {
+  const mapped = mapReview(rawApiReview, 'com.MainraGames.SquishyJellyMerge');
 
-    const mapped = mapApiReview(rawApiReview, 'com.MainraGames.SquishyJellyMerge');
+  assert.equal(mapped.device_name, 'SM-T225');
+  assert.deepEqual(mapped.device_metadata, { deviceModel: 'SM-T225' });
+  assert.equal(mapped.thumbs_up_count, 0);
+  assert.equal(mapped.thumbs_down_count, 0);
+  assert.equal(mapped.app_version_code, null);
+  assert.equal(mapped.app_version_name, null);
+});
 
-    assert.equal(mapped.author_name, 'سجاد');
-    assert.equal(mapped.content, 'I had fun 😂😂😂😂😂 Okay');
-    assert.equal(mapped.star_rating, 5);
-    assert.equal(mapped.lang, 'fa');
-    assert.equal(mapped.reply_text.includes('mainragames@gmail.com'), true);
+test('mapReview derives replySentAt from the API timestamp, not from the clock', () => {
+  const mapped = mapReview(rawApiReview, 'com.MainraGames.SquishyJellyMerge');
+
+  assert.equal(mapped.replySentAt, new Date(1789218800 * 1000).toISOString());
+});
+
+test('mapReview omits reply fields when the developer has not replied', () => {
+  const withoutReply = {
+    ...rawApiReview,
+    comments: [{ userComment: rawApiReview.comments[0].userComment }],
+  };
+
+  const mapped = mapReview(withoutReply, 'com.MainraGames.SquishyJellyMerge');
+
+  assert.equal('reply_text' in mapped, false);
+  assert.equal('replySentAt' in mapped, false);
 });
