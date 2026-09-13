@@ -810,6 +810,156 @@ Keluarkan HANYA dokumen JSON dengan schema berikut:
       return json(200, { success: true, modelUsed: result.model, keyUsed: result.keyLabel, result: finalResult });
     }
 
+    // ── Action: generate_aso_listing ──────────────────────────────
+    if (action === "generate_aso_listing") {
+      if (allKeys.length === 0) return json(200, { success: false, error: true, message: "Gemini API Key belum dikonfigurasi di sistem." });
+
+      const { title, category, shortDescription, fullDescription, targetField, focusKeywords, language } = payload;
+      let modelName = (payload.model || "gemini-2.5-flash").replace(/^models\//, "");
+      const langName = language === "en" ? "English" : "Bahasa Indonesia";
+
+      const systemInstruction = `Kamu adalah pakar ASO (App Store Optimization) dan Google Play Algorithm Specialist kelas dunia.
+Tujuanmu adalah menulis metadata game mobile yang:
+1. Sangat ramah algoritma Google Play Store (keyword indexing, natural keyword density 2-3%, semantic LSI search).
+2. Memaksimalkan rasio konversi klik (CTR) dan rasio download (Install Conversion Rate).
+3. Mengikuti regulasi ketat Google Play Metadata Policy (DILARANG menggunakan kata berlebihan seperti 'game terbaik', 'no.1', 'free', 'terhebat', 'download sekarang' yang dilarang Google Play).
+4. Sesuai batasan karakter resmi:
+   - Title: MAKSIMAL 30 karakter.
+   - Short Description: MAKSIMAL 80 karakter (WAJIB <= 80 karakter tanpa pengecualian).
+   - Full Description: Antara 1000 s/d 3500 karakter (Maksimal absolut 4000 karakter).
+
+Bahasa yang digunakan: ${langName}.`;
+
+      let prompt = "";
+      if (targetField === "short") {
+        prompt = `${systemInstruction}
+
+DATA GAME:
+- Judul Game: ${title || "Mobile Game"}
+- Kategori / Genre: ${category || "Casual"}
+- Draft Deskripsi Pendek Saat Ini: "${shortDescription || ""}"
+- Konteks Game / Fitur Lengkap: "${(fullDescription || "").slice(0, 1000)}"
+- Kata Kunci Fokus (ASO): ${focusKeywords || "game seru, santai, menantang, gameplay menarik"}
+
+TUGAS:
+Tulis ulang atau buat 1 (satu) kalimat Headline Promosi (Short Description) yang SANGAT MENARIK, persuasif, dan padat keyword.
+SYARAT MUTLAK:
+- Panjang teks HASIL AKHIR WAJIB DI BAWAH 80 KARAKTER (idealnya 65-78 karakter). JANGAN PERNAH LEBIH DARI 80 KARAKTER!
+- Berikan HANYA teks deskripsi pendek saja (tanpa tanda kutip, tanpa kalimat pembuka/penutup).`;
+      } else if (targetField === "full") {
+        prompt = `${systemInstruction}
+
+DATA GAME:
+- Judul Game: ${title || "Mobile Game"}
+- Kategori / Genre: ${category || "Casual"}
+- Headline / Short Description: "${shortDescription || ""}"
+- Draft Deskripsi Saat Ini: "${fullDescription || ""}"
+- Kata Kunci Fokus (ASO): ${focusKeywords || "game android, gameplay seru, grafis menarik, puzzle, petualangan"}
+
+TUGAS:
+Tulis deskripsi lengkap (Full Description) yang terstruktur rapi untuk halaman Google Play Store.
+STRUKTUR WAJIB:
+1. Paragraf Pembuka Hook (2-3 kalimat): Memikat pemain dan menjelaskan konsep utama game secara emosional & seru.
+2. Fitur Unggulan (Bullet points dengan emoji profesional): 4-6 poin fitur gameplay unik, kontrol, visual, tantangan.
+3. Cara Bermain Singkat (3 langkah mudah): Panduan cepat agar pemain langsung paham.
+4. Paragraf Penutup: Ajakan santai untuk bergabung dan mencoba game.
+
+SYARAT TEKNIS:
+- Panjang total 1200 - 2500 karakter (JANGAN melebihi batas 4000 karakter).
+- JANGAN gunakan format Markdown bold asteris ganda ganjil (**teks**) di luar batas wajar; gunakan huruf kapital rapi untuk judul bagian atau bullet points standar dengan emoji.
+- Berikan HANYA teks Full Description yang siap dicopy-paste ke Google Play Console tanpa kata pengantar AI.`;
+      } else {
+        // Generate both
+        prompt = `${systemInstruction}
+
+DATA GAME:
+- Judul Game: ${title || "Mobile Game"}
+- Kategori / Genre: ${category || "Casual"}
+- Input Tambahan: "${shortDescription || fullDescription || ""}"
+- Kata Kunci Fokus (ASO): ${focusKeywords || "game android, gameplay menarik, santai, seru"}
+
+TUGAS:
+Buatlah paket lengkap ASO untuk Google Play Store yang terdiri dari:
+1. Short Description (Maksimal 80 karakter).
+2. Full Description (1200 - 2500 karakter terstruktur dengan emoji & bullet points).
+
+KEMBALIKAN OUTPUT DALAM FORMAT JSON VALID:
+{
+  "short_description": "teks short description maks 80 karakter",
+  "full_description": "teks full description lengkap"
+}`;
+      }
+
+      const result = await callGeminiWithRolling(
+        allKeys, [modelName, "gemini-2.5-flash", "gemini-3.5-flash"],
+        () => ({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.6, maxOutputTokens: 3000, thinkingConfig: { thinkingBudget: 0 } },
+        }),
+        () => ({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.6, maxOutputTokens: 3000 },
+        })
+      );
+
+      if (!result.data) {
+        return json(200, { success: false, error: true, message: `Gemini API error: ${result.error}` });
+      }
+
+      const rawRes = (result.data?.candidates?.[0]?.content?.parts?.[0]?.text || "").trim();
+
+      if (targetField === "short") {
+        let cleanShort = rawRes.replace(/^["']|["']$/g, "").trim();
+        if (cleanShort.length > 80) {
+          cleanShort = cleanShort.slice(0, 77).trim() + "…";
+        }
+        return json(200, {
+          success: true,
+          targetField: "short",
+          short_description: cleanShort,
+          charCount: cleanShort.length,
+          modelUsed: result.model
+        });
+      }
+
+      if (targetField === "full") {
+        let cleanFull = rawRes.trim();
+        if (cleanFull.length > 4000) {
+          cleanFull = cleanFull.slice(0, 3990).trim() + "…";
+        }
+        return json(200, {
+          success: true,
+          targetField: "full",
+          full_description: cleanFull,
+          charCount: cleanFull.length,
+          modelUsed: result.model
+        });
+      }
+
+      // Both fields parsed from JSON
+      let parsed = { short_description: "", full_description: "" };
+      try {
+        const jsonMatch = rawRes.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[0]);
+        }
+      } catch (_) {
+        parsed.full_description = rawRes;
+      }
+
+      if (parsed.short_description && parsed.short_description.length > 80) {
+        parsed.short_description = parsed.short_description.slice(0, 77).trim() + "…";
+      }
+
+      return json(200, {
+        success: true,
+        targetField: "both",
+        short_description: parsed.short_description,
+        full_description: parsed.full_description,
+        modelUsed: result.model
+      });
+    }
+
     // ── Action: adapt_limits ───────────────────────────────────────
     if (action === "adapt_limits") {
       if (allKeys.length === 0) return json(200, { success: false, error: true, message: "Gemini API Key belum dikonfigurasi." });

@@ -313,9 +313,12 @@
         }
 
         var sc = $('#gmShortCounter');
+        var warnBox = $('#aiShortWarningBox');
         if (sc) {
             sc.textContent = sVal.length + ' / 80';
-            sc.className = 'field-counter' + (sVal.length > 80 ? ' error' : (sVal.length >= 70 ? ' warn' : ''));
+            var isShortOver = sVal.length > 80;
+            sc.className = 'field-counter' + (isShortOver ? ' error' : (sVal.length >= 70 ? ' warn' : ''));
+            if (warnBox) warnBox.style.display = isShortOver ? 'flex' : 'none';
         }
 
         var dc = $('#gmDescCounter');
@@ -355,6 +358,99 @@
                 gallery.style.display = 'none';
                 gallery.innerHTML = '';
             }
+        }
+    }
+
+    async function generateAsoListingField(targetField) {
+        var form = $('#gameForm');
+        if (!form) return;
+
+        var title = (form.elements.title && form.elements.title.value.trim()) || '';
+        var category = (form.elements.category && form.elements.category.value) || 'Casual';
+        var shortDesc = (form.elements.short_description && form.elements.short_description.value.trim()) || '';
+        var fullDesc = (form.elements.description && form.elements.description.value.trim()) || '';
+
+        var btnId = targetField === 'short' ? '#aiGenerateShortBtn' : '#aiGenerateFullBtn';
+        var btn = $(btnId);
+        var origHtml = btn ? btn.innerHTML : '';
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span>⏳</span> <span>Membuat ASO…</span>';
+        }
+        toast('Gemini AI sedang menyusun deskripsi ASO Google Play…');
+
+        var res = await sb.functions.invoke('ai-social-assistant', {
+            body: {
+                action: 'generate_aso_listing',
+                title: title,
+                category: category,
+                shortDescription: shortDesc,
+                fullDescription: fullDesc,
+                targetField: targetField,
+                language: 'id'
+            }
+        });
+
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origHtml;
+        }
+
+        if (res.error || !res.data || res.data.error) {
+            var errMsg = (res.data && res.data.message) || (res.error && res.error.message) || 'Gagal generate ASO.';
+            toast('AI ASO Error: ' + errMsg, true);
+            return;
+        }
+
+        var d = res.data;
+        if (targetField === 'short' && d.short_description) {
+            form.elements.short_description.value = d.short_description;
+            updateLiveFormPreviews();
+            toast('✨ Short description ASO berhasil dibuat (' + d.short_description.length + '/80 char)!');
+        } else if (targetField === 'full' && d.full_description) {
+            form.elements.description.value = d.full_description;
+            updateLiveFormPreviews();
+            toast('✨ Full description ASO berhasil dibuat (' + d.full_description.length + '/4000 char)!');
+        }
+    }
+
+    async function trimShortDescriptionWithAi() {
+        var form = $('#gameForm');
+        if (!form) return;
+        var sVal = (form.elements.short_description && form.elements.short_description.value.trim()) || '';
+        if (!sVal) return;
+
+        var btn = $('#aiTrimShortBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '⏳ Meringkas…';
+        }
+
+        var res = await sb.functions.invoke('ai-social-assistant', {
+            body: {
+                action: 'generate_aso_listing',
+                title: (form.elements.title && form.elements.title.value.trim()) || '',
+                shortDescription: sVal,
+                targetField: 'short',
+                language: 'id'
+            }
+        });
+
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '✂️ Ringkas ke ≤80 char dengan AI';
+        }
+
+        if (res.error || !res.data || res.data.error) {
+            toast('Gagal meringkas: ' + ((res.data && res.data.message) || 'Error'), true);
+            return;
+        }
+
+        if (res.data.short_description) {
+            form.elements.short_description.value = res.data.short_description;
+            updateLiveFormPreviews();
+            toast('✓ Berhasil diringkas menjadi ' + res.data.short_description.length + ' karakter!');
         }
     }
 
@@ -3752,6 +3848,9 @@
         on('#gmCancel', 'click', function () { $('#gameModal').close(); });
         on('#gameForm', 'submit', saveGame);
         on('#pushToPlayStoreBtn', 'click', pushGameListingToPlayStore);
+        on('#aiGenerateShortBtn', 'click', function () { generateAsoListingField('short'); });
+        on('#aiGenerateFullBtn', 'click', function () { generateAsoListingField('full'); });
+        on('#aiTrimShortBtn', 'click', trimShortDescriptionWithAi);
 
         // Live input listeners for character counts & previews in Game Modal
         var gmTitleInp = $('#gmTitleInput');

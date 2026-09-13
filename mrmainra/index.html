@@ -954,18 +954,34 @@
 
                 <label class="span2">
                     <div class="field-label-row">
-                        <span>Short Description (Headline Promosi)</span>
+                        <div style="display:flex; align-items:center; gap:.5rem">
+                            <span>Short Description (Headline Promosi)</span>
+                            <button type="button" class="btn-admin ghost small" id="aiGenerateShortBtn" style="padding:.12rem .5rem; font-size:.72rem; color:#c084fc; border-color:rgba(192,132,252,.35); display:inline-flex; align-items:center; gap:.25rem" title="Optimalkan headline promosi sesuai ASO Google Play">
+                                <span>✨</span> <span>ASO AI</span>
+                            </button>
+                        </div>
                         <span id="gmShortCounter" class="field-counter">0 / 80</span>
                     </div>
                     <input type="text" name="short_description" id="gmShortInput" maxlength="80" placeholder="Ringkasan fitur menarik game dalam 1 baris (maks. 80 karakter)">
+                    <div id="aiShortWarningBox" style="display:none; margin-top:.35rem; font-size:.75rem; color:#ef4444; display:flex; justify-content:space-between; align-items:center;">
+                        <span>⚠️ Melebihi batas 80 karakter!</span>
+                        <button type="button" class="btn-admin ghost small" id="aiTrimShortBtn" style="padding:.1rem .4rem; font-size:.7rem; color:#c084fc; border-color:rgba(192,132,252,.4);">
+                            ✂️ Ringkas ke &le;80 char dengan AI
+                        </button>
+                    </div>
                 </label>
 
                 <label class="span2">
                     <div class="field-label-row">
-                        <span>Full Description (Detail Fitur &amp; Gameplay)</span>
+                        <div style="display:flex; align-items:center; gap:.5rem">
+                            <span>Full Description (Detail Fitur &amp; Gameplay)</span>
+                            <button type="button" class="btn-admin ghost small" id="aiGenerateFullBtn" style="padding:.12rem .5rem; font-size:.72rem; color:#c084fc; border-color:rgba(192,132,252,.35); display:inline-flex; align-items:center; gap:.25rem" title="Tulis ulang fitur lengkap terstruktur dan ramah algoritma Google Play">
+                                <span>✨</span> <span>Optimalkan ASO AI</span>
+                            </button>
+                        </div>
                         <span id="gmDescCounter" class="field-counter">0 / 4000</span>
                     </div>
-                    <textarea name="description" id="gmDescInput" rows="4" maxlength="4000" placeholder="Deskripsi lengkap game, fitur unggulan, dan cara bermain..."></textarea>
+                    <textarea name="description" id="gmDescInput" rows="5" maxlength="4000" placeholder="Deskripsi lengkap game, fitur unggulan, dan cara bermain..."></textarea>
                 </label>
 
                 <label class="span2">
