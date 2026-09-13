@@ -958,7 +958,14 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
 .form-foot { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.3rem; }
 
 /* ---------- modals ---------- */
+dialog.admin-modal:not([open]) {
+    display: none !important;
+}
+
 .admin-modal {
+    position: fixed;
+    inset: 0;
+    margin: auto;
     width: min(680px, calc(100vw - 2rem));
     max-height: calc(100vh - 3rem);
     max-height: calc(100dvh - 3rem);
@@ -969,6 +976,7 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
     border-radius: var(--radius-lg);
     padding: 1.4rem 1.5rem;
     box-shadow: 0 16px 40px rgba(0,0,0,.6);
+    z-index: 100;
 }
 .admin-modal::backdrop { background: rgba(8, 12, 20, .78); backdrop-filter: blur(4px); }
 .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
@@ -986,7 +994,11 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
     align-items: center;
 }
 
-#gameModal {
+#gameModal:not([open]) {
+    display: none !important;
+}
+
+#gameModal[open] {
     width: min(840px, calc(100vw - 2rem));
     padding: 0;
     border-radius: var(--radius-lg);
