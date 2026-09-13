@@ -1938,8 +1938,8 @@
 
     /* ---------- sync actions (Edge Function, needs Google service account) ---------- */
 
-    async function callFunction(name, body) {
-        toast('Syncing with Play Store…');
+    async function callFunction(name, body, suppressToast) {
+        if (!suppressToast) toast('Syncing with Play Store…');
         var res = await sb.functions.invoke(name, { body: body || {} });
         if (res.error) {
             var errDetail = '';
@@ -1966,30 +1966,76 @@
                     });
                     var directData = await directRes.json().catch(function () { return {}; });
                     if (!directRes.ok || directData.error) {
-                        toast(name + ': ' + (directData.message || directData.detail || 'HTTP ' + directRes.status), true);
-                        return;
+                        var errText = directData.message || directData.detail || 'HTTP ' + directRes.status;
+                        if (!suppressToast) toast(name + ': ' + errText, true);
+                        return { error: true, message: errText };
                     }
-                    toast((directData.message || name + ' done') + ' ✓');
-                    loadGames(); loadReviews();
-                    return;
+                    if (!suppressToast) {
+                        toast((directData.message || name + ' done') + ' ✓');
+                        loadGames(); loadReviews();
+                    }
+                    return { error: false, message: directData.message };
                 } catch (fallbackErr) {
-                    toast(name + ': Network/Session issue. Please try signing out and signing back in.', true);
-                    return;
+                    var netMsg = 'Network/Session issue. Please try signing out and signing back in.';
+                    if (!suppressToast) toast(name + ': ' + netMsg, true);
+                    return { error: true, message: netMsg };
                 }
             } else if (msg.indexOf('not found') !== -1 || msg.indexOf('404') !== -1) {
-                toast('Edge Function "' + name + '" is not deployed yet — see README (Admin) section.', true);
+                var nfMsg = 'Edge Function "' + name + '" is not deployed yet.';
+                if (!suppressToast) toast(nfMsg, true);
+                return { error: true, message: nfMsg };
             } else {
-                toast(name + ' failed: ' + msg, true);
+                if (!suppressToast) toast(name + ' failed: ' + msg, true);
+                return { error: true, message: msg };
             }
-            return;
         }
         var data = res.data || {};
         if (data.error) {
-            toast(name + ' error: ' + (data.message || 'Operation failed'), true);
-            return;
+            if (!suppressToast) toast(name + ' error: ' + (data.message || 'Operation failed'), true);
+            return { error: true, message: data.message };
         }
-        toast((data.message || name + ' done') + ' ✓');
-        loadGames(); loadReviews();
+        if (!suppressToast) {
+            toast((data.message || name + ' done') + ' ✓');
+            loadGames(); loadReviews();
+        }
+        return { error: false, message: data.message };
+    }
+
+    async function syncAllGooglePlayData() {
+        var btn = $('#syncAllPlayStoreBtn');
+        var spinner = $('#syncAllSpinner');
+        if (btn) btn.disabled = true;
+        if (spinner) spinner.style.display = 'inline';
+
+        var steps = [
+            { name: 'sync-playstore', label: '1/4 Katalog Game' },
+            { name: 'sync-tracks', label: '2/4 Status Rilis & Rollout' },
+            { name: 'sync-inappproducts', label: '3/4 Katalog IAP' },
+            { name: 'sync-vitals', label: '4/4 Android Vitals' }
+        ];
+
+        var warnings = [];
+        for (var i = 0; i < steps.length; i++) {
+            var step = steps[i];
+            toast('🔄 Sinkronisasi (' + step.label + ')…');
+            var result = await callFunction(step.name, {}, true);
+            if (result && result.error) {
+                warnings.push(step.name + ': ' + (result.message || 'Error'));
+            }
+        }
+
+        if (btn) btn.disabled = false;
+        if (spinner) spinner.style.display = 'none';
+
+        // Reload data into views
+        await loadGames();
+        await loadReviews();
+
+        if (warnings.length === 0) {
+            toast('✅ Seluruh data Google Play Store berhasil disinkronkan!');
+        } else {
+            toast('⚠️ Sinkronisasi selesai dengan peringatan: ' + warnings.join(' | '), true);
+        }
     }
 
     /* ---------- tabs ---------- */
@@ -3712,6 +3758,7 @@
         on('#rpCancel', 'click', function () { $('#replyModal').close(); });
         on('#rpSaveDraft', 'click', saveReplyDraft);
         on('#rpPostGoogle', 'click', postReplyToGoogle);
+        on('#syncAllPlayStoreBtn', 'click', syncAllGooglePlayData);
         on('#syncGamesBtn', 'click', function () { callFunction('sync-playstore'); });
         on('#syncTracksBtn', 'click', function () { callFunction('sync-tracks'); });
         on('#syncIapAllBtn', 'click', function () { callFunction('sync-inappproducts'); });

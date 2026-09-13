@@ -120,10 +120,9 @@
                 <div class="admin-actions" style="margin-bottom:1rem; justify-content:space-between; align-items:center;">
                     <div style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
                         <button type="button" class="btn-admin" id="newGameBtn" aria-label="Tambah game baru ke katalog">+ Add Game</button>
-                        <button type="button" class="btn-admin ghost" id="syncGamesBtn" aria-label="Sinkronkan data katalog dari Google Play Store">↻ Sync Catalog</button>
-                        <button type="button" class="btn-admin ghost" id="syncTracksBtn" aria-label="Sinkronkan status rilis & staged rollout dari Play Store tracks">🚀 Sync Releases</button>
-                        <button type="button" class="btn-admin ghost" id="syncIapAllBtn" aria-label="Sinkronkan katalog IAP dari Google Play">💎 Sync All IAP</button>
-                        <button type="button" class="btn-admin ghost" id="syncVitalsAllBtn" aria-label="Sinkronkan metrik Android Vitals dari Google Play">🩺 Sync Vitals</button>
+                        <button type="button" class="btn-admin ghost" id="syncAllPlayStoreBtn" aria-label="Sinkronkan seluruh data Play Store (Katalog, Rilis, IAP, Vitals)">
+                            <span id="syncAllSpinner" style="display:none">⏳</span> 🔄 Sync Google Play (All)
+                        </button>
                     </div>
                     <button type="button" class="btn-admin ghost" id="exportJsonBtn" aria-label="Ekspor data game ke format JSON">⤓ Export games-data.json</button>
                 </div>
