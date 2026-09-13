@@ -199,7 +199,11 @@ Deno.serve(async (req: Request) => {
 
   const saRaw = (Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "").trim();
   if (!saRaw) {
-    return json(400, { message: "Google Service Account key is not configured in Supabase secrets." });
+    return json(200, {
+      success: false,
+      error: true,
+      message: "GOOGLE_SERVICE_ACCOUNT_JSON secret belum dikonfigurasi di Supabase Secrets."
+    });
   }
 
   try {

@@ -1880,12 +1880,36 @@
             if (res.error.context && typeof res.error.context.json === 'function') {
                 try {
                     var errJson = await res.error.context.json();
-                    errDetail = errJson.message || '';
+                    errDetail = errJson.message || errJson.detail || '';
                 } catch (_) {}
             }
             var msg = errDetail || String(res.error.message || res.error);
             if (msg.indexOf('Failed to send a request') !== -1) {
-                toast(name + ': Network/Session issue. Please try signing out and signing back in.', true);
+                // Fallback attempt with direct fetch in case of SDK FunctionsClient header/relay conflict
+                try {
+                    var sess = (await sb.auth.getSession()).data.session;
+                    var token = sess ? sess.access_token : '';
+                    var directRes = await fetch(window.SUPABASE_URL + '/functions/v1/' + name, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + token,
+                            'apikey': window.SUPABASE_ANON_KEY
+                        },
+                        body: JSON.stringify(body || {})
+                    });
+                    var directData = await directRes.json().catch(function () { return {}; });
+                    if (!directRes.ok || directData.error) {
+                        toast(name + ': ' + (directData.message || directData.detail || 'HTTP ' + directRes.status), true);
+                        return;
+                    }
+                    toast((directData.message || name + ' done') + ' ✓');
+                    loadGames(); loadReviews();
+                    return;
+                } catch (fallbackErr) {
+                    toast(name + ': Network/Session issue. Please try signing out and signing back in.', true);
+                    return;
+                }
             } else if (msg.indexOf('not found') !== -1 || msg.indexOf('404') !== -1) {
                 toast('Edge Function "' + name + '" is not deployed yet — see README (Admin) section.', true);
             } else {
@@ -1894,6 +1918,10 @@
             return;
         }
         var data = res.data || {};
+        if (data.error) {
+            toast(name + ' error: ' + (data.message || 'Operation failed'), true);
+            return;
+        }
         toast((data.message || name + ' done') + ' ✓');
         loadGames(); loadReviews();
     }

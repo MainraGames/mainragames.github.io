@@ -161,11 +161,14 @@ Deno.serve(async (req: Request) => {
   const onlyAppId = typeof body.appId === "string" && body.appId.trim() ? body.appId.trim() : "";
 
   try {
+    // Financial Reports permission is required for voided purchases API
     const saRaw = (Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "").trim();
     if (!saRaw) {
-      return json(400, {
-        message: "GOOGLE_SERVICE_ACCOUNT_JSON secret is not configured in Supabase",
-        detail: "Please configure service account credentials to access Google Play voided purchases.",
+      return json(200, {
+        success: false,
+        error: true,
+        message: "GOOGLE_SERVICE_ACCOUNT_JSON secret belum dikonfigurasi di Supabase Secrets.",
+        detail: "Silakan set GOOGLE_SERVICE_ACCOUNT_JSON di Supabase Dashboard / CLI.",
       });
     }
 

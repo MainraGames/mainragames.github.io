@@ -133,7 +133,11 @@ Deno.serve(async (req: Request) => {
   try {
     const saRaw = (Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON") || "").trim();
     if (!saRaw) {
-      return json(400, { message: "GOOGLE_SERVICE_ACCOUNT_JSON secret is not configured" });
+      return json(200, {
+        success: false,
+        error: true,
+        message: "GOOGLE_SERVICE_ACCOUNT_JSON secret belum dikonfigurasi di Supabase Secrets."
+      });
     }
     const token = await accessToken(JSON.parse(saRaw));
 
