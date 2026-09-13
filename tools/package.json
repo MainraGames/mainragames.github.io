@@ -14,7 +14,9 @@
     "sync-voided-purchases": "node sync-playstore-voided-purchases.js",
     "sync-inappproducts": "node sync-playstore-inappproducts.js",
     "sync-listings": "node sync-playstore-listings.js",
-    "sync-vitals": "node sync-playstore-vitals.js"
+    "sync-vitals": "node sync-playstore-vitals.js",
+    "sync-conversions": "node sync-playstore-conversions.js",
+    "test": "node --test tests/*.test.mjs"
   },
   "keywords": [
     "google-play-store",

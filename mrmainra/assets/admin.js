@@ -1221,6 +1221,9 @@
 
         // Render Android Vitals Health & Metrics
         loadSingleGameVitals(g.id);
+
+        // Render Store Listing Funnel & Conversions
+        loadSingleGameConversions(g.id);
     }
 
     function renderTrackDetails(g) {
@@ -1547,6 +1550,105 @@
         }
         toast(((res.data && res.data.message) || 'Vitals synced') + ' ✓');
         loadSingleGameVitals(gameId);
+    }
+
+    /* ---------- store listing conversion & funnel monitoring ---------- */
+
+    async function loadSingleGameConversions(gameId) {
+        var box = $('#singleConversionContent');
+        var badge = $('#singleConversionBadge');
+        if (box) box.innerHTML = '<div class="muted">Memuat data akuisisi &amp; rasio konversi…</div>';
+
+        var res = await sb.from('game_conversion_metrics')
+            .select('*')
+            .eq('game_id', gameId)
+            .order('metric_date', { ascending: false })
+            .limit(10);
+
+        var game = games.find(function (x) { return x.id === gameId; });
+        var overallRate = game && game.conversion_rate != null ? game.conversion_rate : null;
+        var overallVisitors = game && game.conversion_visitors != null ? game.conversion_visitors : 0;
+        var overallAcquisitions = game && game.conversion_acquisitions != null ? game.conversion_acquisitions : 0;
+
+        if (overallRate != null && badge) {
+            badge.textContent = overallRate.toFixed(1) + '%';
+            badge.className = 'badge ' + (overallRate >= 25 ? 'ok' : (overallRate >= 15 ? 'ok' : 'warn'));
+        }
+
+        var rows = res.data || [];
+        if (rows.length === 0 && overallVisitors === 0) {
+            if (badge) { badge.className = 'badge warn'; badge.textContent = 'Belum Ada Data'; }
+            if (box) {
+                box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">' +
+                    '<span class="muted">Metrik konversi pengunjung ke unduhan belum ditarik dari Play Console.</span>' +
+                    '<button type="button" class="btn-admin ghost small" id="triggerConversionFetchBtn">📊 Sync Konversi Sekarang</button>' +
+                '</div>';
+                var trg = $('#triggerConversionFetchBtn');
+                if (trg) trg.onclick = function () { syncSingleGameConversion(gameId); };
+            }
+            return;
+        }
+
+        var rateColor = overallRate >= 25 ? 'color:var(--mainra-success)' : (overallRate >= 15 ? 'color:var(--mainra-gold)' : 'color:var(--mainra-danger)');
+
+        var html = '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:1rem;margin-bottom:1rem">' +
+            '<div style="background:rgba(11,17,28,.65);border:1px solid var(--mainra-line);border-radius:var(--radius-sm);padding:.9rem">' +
+                '<div class="muted" style="font-size:.78rem;margin-bottom:.3rem">Store Listing Visitors</div>' +
+                '<div style="font-size:1.35rem;font-weight:700;color:var(--mainra-white)">' + esc(overallVisitors.toLocaleString('id-ID')) + '</div>' +
+                '<div class="muted" style="font-size:.73rem;margin-top:.25rem">Pengunjung halaman Play Store</div>' +
+            '</div>' +
+            '<div style="background:rgba(11,17,28,.65);border:1px solid var(--mainra-line);border-radius:var(--radius-sm);padding:.9rem">' +
+                '<div class="muted" style="font-size:.78rem;margin-bottom:.3rem">Installers / Acquisitions</div>' +
+                '<div style="font-size:1.35rem;font-weight:700;color:#38bdf8">' + esc(overallAcquisitions.toLocaleString('id-ID')) + '</div>' +
+                '<div class="muted" style="font-size:.73rem;margin-top:.25rem">Pengguna yang menekan unduh</div>' +
+            '</div>' +
+            '<div style="background:rgba(11,17,28,.65);border:1px solid var(--mainra-line);border-radius:var(--radius-sm);padding:.9rem">' +
+                '<div class="muted" style="font-size:.78rem;margin-bottom:.3rem">Conversion Rate (CTR Funnel)</div>' +
+                '<div style="font-size:1.35rem;font-weight:700;' + rateColor + '">' + (overallRate != null ? overallRate.toFixed(1) + '%' : '—') + '</div>' +
+                '<div class="muted" style="font-size:.73rem;margin-top:.25rem">Benchmark industri: 15% – 25%</div>' +
+            '</div>' +
+        '</div>';
+
+        if (rows.length > 0) {
+            html += '<div style="font-size:.82rem;font-weight:600;margin-bottom:.5rem;color:var(--mainra-white)">Rincian Kanal &amp; Negara Teratas:</div>' +
+                '<div style="max-height:160px;overflow-y:auto;border:1px solid var(--mainra-line);border-radius:var(--radius-sm)">' +
+                '<table class="admin-table" style="font-size:.8rem;margin:0">' +
+                '<thead><tr><th>Negara</th><th>Kanal Traffic</th><th>Pengunjung</th><th>Unduhan</th><th>Konversi</th></tr></thead>' +
+                '<tbody>' +
+                rows.map(function (r) {
+                    return '<tr>' +
+                        '<td><span class="badge" style="font-size:.7rem">' + esc(r.country) + '</span></td>' +
+                        '<td>' + esc(r.traffic_source) + '</td>' +
+                        '<td>' + esc(r.visitors.toLocaleString('id-ID')) + '</td>' +
+                        '<td>' + esc(r.acquisitions.toLocaleString('id-ID')) + '</td>' +
+                        '<td><strong>' + esc(r.conversion_rate.toFixed(1)) + '%</strong></td>' +
+                    '</tr>';
+                }).join('') +
+                '</tbody></table></div>';
+        }
+
+        if (box) box.innerHTML = html;
+    }
+
+    async function syncSingleGameConversion(gameId) {
+        var btn = $('#syncSingleConversionBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Syncing…';
+        }
+        toast('Syncing conversion funnel from Play Console…');
+        var res = await sb.functions.invoke('sync-conversions', { body: gameId ? { appId: gameId } : {} });
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '↻ Sync Conversion';
+        }
+        if (res.error) {
+            toast('Conversion sync failed: ' + (res.error.message || res.error), true);
+            return;
+        }
+        toast(((res.data && res.data.message) || 'Conversion synced') + ' ✓');
+        await loadGames();
+        loadSingleGameConversions(gameId);
     }
 
     /* ---------- voided purchases & refund monitoring ---------- */
@@ -2271,10 +2373,11 @@
         if (spinner) spinner.style.display = 'inline';
 
         var steps = [
-            { name: 'sync-playstore', label: '1/4 Katalog Game' },
-            { name: 'sync-tracks', label: '2/4 Status Rilis & Rollout' },
-            { name: 'sync-inappproducts', label: '3/4 Katalog IAP' },
-            { name: 'sync-vitals', label: '4/4 Android Vitals' }
+            { name: 'sync-playstore', label: '1/5 Katalog Game' },
+            { name: 'sync-tracks', label: '2/5 Status Rilis & Rollout' },
+            { name: 'sync-inappproducts', label: '3/5 Katalog IAP' },
+            { name: 'sync-vitals', label: '4/5 Android Vitals' },
+            { name: 'sync-conversions', label: '5/5 Rasio Konversi Funnel' }
         ];
 
         var warnings = [];
@@ -4161,6 +4264,10 @@
         on('#syncSingleVitalsBtn', 'click', function () {
             var g = games.find(function (x) { return x.id === $('#analyticsGameFilter').value; });
             if (g) syncSingleGameVitals(g.id);
+        });
+        on('#syncSingleConversionBtn', 'click', function () {
+            var g = games.find(function (x) { return x.id === $('#analyticsGameFilter').value; });
+            if (g) syncSingleGameConversion(g.id);
         });
         on('#syncVoidedBtn', 'click', function () {
             callFunction('sync-voided-purchases');

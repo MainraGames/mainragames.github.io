@@ -21,7 +21,7 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
 - `Assets/js/nav.js` — Kontrol navigasi dan menu mobile.
 - `Assets/css/mainra.css` — Gaya visual website.
 - `Assets/img/` — Folder berisi gambar dan ikon website.
-- `supabase/` — Migration SQL, seed, dan Edge Functions (`sync-playstore`, `sync-reviews`, `sync-tracks`, `sync-voided-purchases`, `sync-inappproducts`, `sync-store-listings`, `sync-vitals`, `process-review-queue`, `sync-buffer`, `ai-social-assistant`, `manage-admins`).
+- `supabase/` — Migration SQL, seed, dan Edge Functions (`sync-playstore`, `sync-reviews`, `sync-tracks`, `sync-voided-purchases`, `sync-inappproducts`, `sync-store-listings`, `sync-vitals`, `sync-conversions`, `verify-purchase`, `process-review-queue`, `sync-buffer`, `ai-social-assistant`, `manage-admins`).
 - `supabase/migrations/0018_game_tracks_and_releases.sql` — Kolom metadata track, staged rollout status, version, dan changelog/release notes resmi dari Play Console.
 - `supabase/migrations/0019_game_voided_purchases.sql` — Tabel transaksi dibatalkan, di-refund, dan chargeback/fraud (IAP).
 - `supabase/migrations/0020_game_inapp_products.sql` — Tabel katalog In-App Products (IAP), SKU, harga lokal, deskripsi, dan etalase toko.
