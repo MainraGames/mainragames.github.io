@@ -75,25 +75,17 @@ async function accessToken(sa: any) {
 }
 
 async function requireAdmin(req: Request) {
-  const authHeader = req.headers.get("authorization") || "";
-  const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-  if (!token) return { admin: null, user: null, message: "Missing authorization token" };
-
-  const adminClient = createClient(
+  const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+  const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    { auth: { persistSession: false } }
+    { auth: { persistSession: false } },
   );
-
-  const { data: { user }, error } = await adminClient.auth.getUser(token);
-  if (error || !user) return { admin: null, user: null, message: "Invalid or expired session token" };
-
-  const { data: isAdmin, error: adminErr } = await adminClient.rpc("is_admin", { user_uid: user.id });
-  if (adminErr || !isAdmin) {
-    return { admin: null, user, message: "Access denied. Admin privileges required." };
-  }
-
-  return { admin: adminClient, user, message: "" };
+  const { data, error } = await admin.auth.getUser(token);
+  if (error || !data?.user) return { admin: null, message: "Unauthorized" };
+  const { data: adm } = await admin.from("admin_users").select("user_id").eq("user_id", data.user.id).maybeSingle();
+  if (!adm) return { admin: null, message: "Not an admin" };
+  return { admin, user: data.user, message: "" };
 }
 
 Deno.serve(async (req) => {
