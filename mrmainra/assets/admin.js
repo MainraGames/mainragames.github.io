@@ -12,13 +12,40 @@
     var $ = function (sel) { return document.querySelector(sel); };
     var $$ = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
 
-    function toast(msg, isError) {
+    function toast(msg, isError, isSuccess) {
         var t = $('#toast');
-        t.textContent = msg;
-        t.style.display = 'block';
-        t.style.background = isError ? 'var(--mainra-orange-deep)' : 'var(--mainra-orange)';
+        if (!t) return;
+        
+        // Clear previous state and timeout
         clearTimeout(t._h);
-        t._h = setTimeout(function () { t.style.display = 'none'; }, 3200);
+        t.className = 'toast';
+
+        // Auto-detect error or success if not explicitly given
+        var isErr = Boolean(isError);
+        var isOk = Boolean(isSuccess) || (!isErr && (msg.indexOf('✓') !== -1 || msg.indexOf('✅') !== -1 || msg.indexOf('berhasil') !== -1 || msg.indexOf('success') !== -1));
+
+        if (isErr) {
+            t.classList.add('toast-error');
+        } else if (isOk) {
+            t.classList.add('toast-success');
+        } else {
+            t.classList.add('toast-info');
+        }
+
+        // Icon prefix
+        var icon = isErr ? '⚠️ ' : (isOk ? '✅ ' : 'ℹ️ ');
+        var cleanMsg = msg.replace(/^[⚠️✅✓ℹ️\s]+/, '');
+        t.innerHTML = '<span>' + icon + '</span><span>' + esc(cleanMsg) + '</span>';
+
+        // Animate entrance
+        requestAnimationFrame(function () {
+            t.classList.add('toast-visible');
+        });
+
+        var duration = isErr ? 4800 : 3500;
+        t._h = setTimeout(function () {
+            t.classList.remove('toast-visible');
+        }, duration);
     }
 
     function esc(s) {
