@@ -163,16 +163,26 @@
             return;
         }
         tb.innerHTML = games.map(function (g) {
+            var rolloutBadge = '';
+            if (g.rollout_status) {
+                var statusClass = g.rollout_status === 'completed' ? 'ok' : (g.rollout_status === 'inProgress' ? 'info' : 'warn');
+                var pctText = typeof g.rollout_percentage === 'number' ? ' (' + g.rollout_percentage + '%)' : '';
+                var verText = g.active_version_name || g.active_version_code ? ' v' + (g.active_version_name || g.active_version_code) : '';
+                rolloutBadge = '<br><span class="badge ' + statusClass + '" style="font-size:.7rem;margin-top:.25rem" title="Track status: ' + esc(g.rollout_status) + '">' +
+                    (g.rollout_status === 'inProgress' ? '🚀 ' : '📦 ') + esc(g.rollout_status) + pctText + esc(verText) +
+                '</span>';
+            }
+
             return '<tr>' +
                 '<td><img class="thumb" src="' + esc(icon256(g.image)) + '" alt="' + esc(g.title) + ' Icon" loading="lazy" onerror="this.src=\'../Assets/img/LogoMainraGames.png\'"></td>' +
                 '<td><strong>' + esc(g.title) + '</strong><br><span class="muted" style="font-size:.8rem;font-family:monospace">' + esc(g.id) + '</span></td>' +
                 '<td>' + esc(g.category || '—') + '</td>' +
-                '<td><span class="badge' + (g.status === 'Released' ? ' ok' : ' warn') + '">' + esc(g.status || '—') + '</span></td>' +
+                '<td><span class="badge' + (g.status === 'Released' ? ' ok' : ' warn') + '">' + esc(g.status || '—') + '</span>' + rolloutBadge + '</td>' +
                 '<td>' + (g.rating != null ? '★ ' + esc(g.rating) : '—') + '</td>' +
                 '<td>' + (g.featured ? '<span class="badge ok">yes</span>' : '<span class="muted">no</span>') + '</td>' +
                 '<td><div class="actions">' +
                     '<button class="btn ghost small" data-edit="' + esc(g.id) + '" type="button" aria-label="Edit data game ' + esc(g.title) + '">Edit</button>' +
-                    '<button class="btn ghost small" data-view-analytics="' + esc(g.id) + '" type="button" aria-label="Lihat analitik ulasan game ' + esc(g.title) + '">Analytics</button>' +
+                    '<button class="btn ghost small" data-view-analytics="' + esc(g.id) + '" type="button" aria-label="Lihat analitik ulasan game ' + esc(g.title) + '">Analytics &amp; Tracks</button>' +
                     '<button class="btn danger small" data-del="' + esc(g.id) + '" type="button" aria-label="Hapus game ' + esc(g.title) + '">Delete</button>' +
                 '</div></td>' +
             '</tr>';
@@ -231,12 +241,14 @@
     }
 
     function formToGame(fd) {
-        var shots = String(fd.get('screenshots') || '').split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+        var shots = String(fd.get('screenshots') || '').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
         var ratingRaw = String(fd.get('rating') || '').trim();
         return {
             id: String(fd.get('id') || '').trim(),
             title: String(fd.get('title') || '').trim(),
+            short_description: String(fd.get('short_description') || '').trim(),
             description: String(fd.get('description') || '').trim(),
+            video_url: String(fd.get('video_url') || '').trim() || null,
             image: String(fd.get('image') || '').trim(),
             screenshots: shots,
             playLink: String(fd.get('playLink') || '').trim(),
@@ -256,10 +268,15 @@
         form.reset();
         var g = id ? games.find(function (x) { return x.id === id; }) : null;
         $('#gmTitle').textContent = g ? 'Edit Game — ' + g.title : 'Add Game';
+        var pushBtn = $('#pushToPlayStoreBtn');
+        if (pushBtn) pushBtn.style.display = g ? 'inline-block' : 'none';
+
         if (g) {
             form.elements.id.value = g.id; form.elements.id.readOnly = true;
             form.elements.title.value = g.title || '';
+            form.elements.short_description.value = g.short_description || '';
             form.elements.description.value = g.description || '';
+            form.elements.video_url.value = g.video_url || '';
             form.elements.image.value = g.image || '';
             form.elements.screenshots.value = (g.screenshots || []).join('\n');
             form.elements.playLink.value = g.playLink || '';
@@ -275,8 +292,75 @@
         $('#gameModal').showModal();
     }
 
+    async function pushGameListingToPlayStore() {
+        var form = $('#gameForm');
+        var g = formToGame(new FormData(form));
+        if (!g.id || !g.title) {
+            toast('ID game dan Title wajib diisi', true);
+            return;
+        }
+
+        if (g.title.length > 30) {
+            toast('Title Google Play maksimal 30 karakter (saat ini: ' + g.title.length + ')', true);
+            return;
+        }
+
+        if (g.short_description && g.short_description.length > 80) {
+            toast('Short description maksimal 80 karakter (saat ini: ' + g.short_description.length + ')', true);
+            return;
+        }
+
+        if (g.description && g.description.length > 4000) {
+            toast('Full description maksimal 4000 karakter (saat ini: ' + g.description.length + ')', true);
+            return;
+        }
+
+        if (!confirm('Yakin ingin mem-publish Title & Deskripsi game "' + g.title + '" langsung ke Google Play Console?')) {
+            return;
+        }
+
+        var btn = $('#pushToPlayStoreBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Publishing to Play Store…';
+        }
+        toast('Mengirim pembaruan listing ke Google Play Console…');
+
+        var res = await sb.functions.invoke('sync-store-listings', {
+            body: {
+                action: 'push',
+                appId: g.id,
+                language: 'id-ID',
+                title: g.title,
+                shortDescription: g.short_description || '',
+                fullDescription: g.description || '',
+                video: g.video_url || ''
+            }
+        });
+
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🚀 Push to Google Play Store';
+        }
+
+        if (res.error) {
+            var errDetail = '';
+            if (res.error.context && typeof res.error.context.json === 'function') {
+                try {
+                    var errJson = await res.error.context.json();
+                    errDetail = errJson.message || '';
+                } catch (_) {}
+            }
+            toast('Push failed: ' + (errDetail || res.error.message || res.error), true);
+            return;
+        }
+
+        toast(((res.data && res.data.message) || 'Listing published to Play Store') + ' ✓');
+        await saveGame(new Event('submit'));
+    }
+
     async function saveGame(e) {
-        e.preventDefault();
+        if (e && typeof e.preventDefault === 'function') e.preventDefault();
         var form = $('#gameForm');
         var g = formToGame(new FormData(form));
         if (!g.id || !g.title) { toast('ID and title are required', true); return; }
@@ -426,6 +510,9 @@
                 $('#syncAnalyticsBtn').dataset.gid = '';
                 $('#syncAnalyticsBtn').textContent = '↻ Sync All from Play Store';
             }
+            if ($('#syncSingleTrackBtn')) {
+                $('#syncSingleTrackBtn').style.display = 'none';
+            }
             renderAnalyticsOverview();
         } else {
             $('#analyticsOverview').style.display = 'none';
@@ -435,6 +522,12 @@
                 if ($('#syncAnalyticsBtn')) {
                     $('#syncAnalyticsBtn').dataset.gid = g.appId || g.id;
                     $('#syncAnalyticsBtn').textContent = '↻ Sync ' + (g.title.split(':')[0] || 'Game');
+                }
+                var syncTrackBtn = $('#syncSingleTrackBtn');
+                if (syncTrackBtn) {
+                    syncTrackBtn.style.display = 'inline-block';
+                    syncTrackBtn.dataset.gid = g.appId || g.id;
+                    syncTrackBtn.textContent = '🚀 Sync Rollout (' + (g.title.split(':')[0] || 'Game') + ')';
                 }
                 $('#singleGameReviewTitle').textContent = 'Reviews for ' + g.title;
                 loadTabAnalytics(g);
@@ -790,6 +883,431 @@
             if (box) box.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
         renderLanguageGrid('singleLangGrid', 'singleLangCount', gReviews);
+
+        // Render Play Store Tracks & Staged Rollout
+        renderTrackDetails(g);
+
+        // Render In-App Products Catalog
+        loadSingleGameIap(g.id);
+
+        // Render Android Vitals Health & Metrics
+        loadSingleGameVitals(g.id);
+    }
+
+    function renderTrackDetails(g) {
+        var card = $('#singleTrackCard');
+        var badge = $('#singleRolloutBadge');
+        var syncedAtEl = $('#singleTrackSyncedAt');
+        var content = $('#singleTrackContent');
+        if (!card || !content) return;
+
+        if (g.tracks_synced_at) {
+            syncedAtEl.textContent = 'Synced ' + new Date(g.tracks_synced_at).toLocaleString('id-ID');
+        } else {
+            syncedAtEl.textContent = 'Belum pernah disinkronkan';
+        }
+
+        var tracks = g.track_releases || {};
+        var prodTrack = tracks.production;
+        var prodRel = prodTrack ? prodTrack.currentRelease : null;
+
+        if (!prodRel) {
+            badge.className = 'badge warn';
+            badge.textContent = g.rollout_status ? g.rollout_status : 'Not Synced';
+            content.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">' +
+                '<p class="muted" style="margin:0;font-size:.9rem">Data track dan rilis untuk game ini belum ditarik dari Google Play Console.</p>' +
+                '<button type="button" class="btn-admin ghost small" id="triggerTrackFetchBtn">🚀 Tarik Track Sekarang</button>' +
+            '</div>';
+            var triggerBtn = $('#triggerTrackFetchBtn');
+            if (triggerBtn) {
+                triggerBtn.onclick = function () { syncSingleGameTracks(g.appId || g.id); };
+            }
+            return;
+        }
+
+        var status = prodRel.status || 'unknown';
+        var pct = prodRel.rolloutPercentage ?? 100;
+        var verCode = prodRel.versionCode || (prodRel.versionCodes && prodRel.versionCodes[0]) || '—';
+        var verName = prodRel.name || ('v' + verCode);
+
+        if (status === 'completed') {
+            badge.className = 'badge ok';
+            badge.textContent = '✓ 100% Production Rollout';
+        } else if (status === 'inProgress') {
+            badge.className = 'badge info';
+            badge.textContent = '🚀 Staged Rollout: ' + pct + '%';
+        } else if (status === 'halted') {
+            badge.className = 'badge danger';
+            badge.textContent = '⏸ Rollout Dihentikan (Halted)';
+        } else {
+            badge.className = 'badge warn';
+            badge.textContent = status;
+        }
+
+        var progressColor = status === 'completed' ? 'var(--mainra-success)' : (status === 'halted' ? 'var(--mainra-danger, #f87171)' : 'var(--mainra-accent, #ff6b00)');
+
+        // Extract changelog/release notes
+        var notes = prodRel.notes || {};
+        var noteHtml = '';
+        var noteKeys = Object.keys(notes);
+        if (noteKeys.length > 0) {
+            noteHtml = '<div style="margin-top:1rem;background:rgba(11,17,28,.6);border:1px solid var(--mainra-line);border-radius:var(--radius-sm);padding:.8rem 1rem">' +
+                '<div style="font-weight:600;font-size:.82rem;color:var(--mainra-gold);margin-bottom:.4rem">📝 Release Notes (Play Console):</div>' +
+                noteKeys.map(function (k) {
+                    return '<div style="margin-bottom:.4rem;font-size:.85rem"><span class="badge lang" style="font-size:.68rem">' + esc(k) + '</span> ' + esc(notes[k]) + '</div>';
+                }).join('') +
+            '</div>';
+        }
+
+        // Check if other tracks exist (beta, alpha, internal)
+        var otherTracksHtml = '';
+        var otherKeys = Object.keys(tracks).filter(function (k) { return k !== 'production'; });
+        if (otherKeys.length > 0) {
+            otherTracksHtml = '<div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:.9rem">' +
+                otherKeys.map(function (k) {
+                    var trk = tracks[k] || {};
+                    var rel = trk.currentRelease;
+                    if (!rel) return '';
+                    return '<span class="badge" style="background:rgba(255,255,255,.05);font-size:.75rem">' +
+                        esc(k) + ': ' + esc(rel.name || rel.versionCode || rel.status) +
+                    '</span>';
+                }).join('') +
+            '</div>';
+        }
+
+        content.innerHTML =
+            '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:1rem;margin-bottom:1rem">' +
+                '<div>' +
+                    '<div class="muted small">Active Version</div>' +
+                    '<strong style="font-size:1.15rem;color:var(--mainra-white)">' + esc(verName) + '</strong>' +
+                    '<div class="muted" style="font-size:.78rem">Version Code: ' + esc(verCode) + '</div>' +
+                '</div>' +
+                '<div>' +
+                    '<div class="muted small">Track &amp; Status</div>' +
+                    '<strong style="font-size:1.15rem;color:var(--mainra-white);text-transform:capitalize">' + esc(status) + '</strong>' +
+                    '<div class="muted" style="font-size:.78rem">Track: Production</div>' +
+                '</div>' +
+                '<div>' +
+                    '<div class="muted small">Rollout Coverage</div>' +
+                    '<strong style="font-size:1.15rem;color:' + progressColor + '">' + pct + '% of Players</strong>' +
+                    '<div class="muted" style="font-size:.78rem">' + (status === 'completed' ? 'All users updated' : 'Gradual staged release') + '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div style="width:100%;background:rgba(255,255,255,.08);height:8px;border-radius:4px;overflow:hidden">' +
+                '<div style="width:' + Math.min(100, Math.max(0, pct)) + '%;background:' + progressColor + ';height:100%;transition:width .4s ease"></div>' +
+            '</div>' +
+            noteHtml +
+            otherTracksHtml;
+    }
+
+    async function syncSingleGameTracks(appId) {
+        var btn = $('#syncSingleTrackBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Syncing Rollout…';
+        }
+        toast('Syncing tracks with Play Console…');
+        var res = await sb.functions.invoke('sync-tracks', { body: appId ? { appId: appId } : {} });
+        if (btn) {
+            btn.disabled = false;
+            var g = games.find(function (x) { return x.id === appId || x.appId === appId; });
+            btn.textContent = '🚀 Sync Rollout (' + (g ? g.title.split(':')[0] : 'Game') + ')';
+        }
+        if (res.error) {
+            var errDetail = '';
+            if (res.error.context && typeof res.error.context.json === 'function') {
+                try {
+                    var errJson = await res.error.context.json();
+                    errDetail = errJson.message || '';
+                } catch (_) {}
+            }
+            toast('Track sync failed: ' + (errDetail || res.error.message || res.error), true);
+            return;
+        }
+        toast(((res.data && res.data.message) || 'Tracks synced') + ' ✓');
+        await loadGames();
+        renderAnalyticsTab();
+    }
+
+    /* ---------- in-app products (IAP) management ---------- */
+
+    async function loadSingleGameIap(gameId) {
+        var box = $('#singleIapContent');
+        var badge = $('#singleIapBadge');
+        if (box) box.innerHTML = '<div class="muted">Memuat item in-app purchase…</div>';
+
+        var res = await sb.from('game_inapp_products')
+            .select('*')
+            .eq('game_id', gameId)
+            .order('status', { ascending: true })
+            .order('title', { ascending: true });
+
+        if (res.error) {
+            if (box) box.innerHTML = '<div class="muted" style="color:var(--mainra-danger)">Gagal memuat produk IAP: ' + esc(res.error.message) + '</div>';
+            return;
+        }
+
+        var items = res.data || [];
+        if (badge) badge.textContent = items.length + ' Items';
+
+        if (!box) return;
+        if (!items.length) {
+            box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.8rem;padding:.5rem 0">' +
+                '<span class="muted">Belum ada in-app product tersinkron untuk game ini. Pastikan produk sudah dibuat di Google Play Console &amp; klik tombol "Sync IAP".</span>' +
+            '</div>';
+            return;
+        }
+
+        box.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:1rem">' +
+            items.map(function (item) {
+                var isManaged = item.purchase_type === 'managedUser';
+                var typeBadge = isManaged ? '📦 Item / In-Game Purchase' : '🔄 Langganan (Sub)';
+                var statusClass = item.status === 'active' ? 'ok' : 'warn';
+                var priceStr = item.formatted_price || (item.currency + ' ' + (item.price_micros ? Number(item.price_micros) / 1000000 : '—'));
+
+                return '<div style="background:rgba(11,17,28,.65);border:1px solid var(--mainra-line);border-radius:var(--radius-sm);padding:1rem;display:flex;flex-direction:column;justify-content:space-between">' +
+                    '<div>' +
+                        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;margin-bottom:.4rem">' +
+                            '<strong style="font-size:.95rem;color:var(--mainra-ink)">' + esc(item.title || item.sku) + '</strong>' +
+                            '<span class="badge ' + statusClass + '" style="font-size:.68rem">' + esc(item.status) + '</span>' +
+                        '</div>' +
+                        '<div class="muted" style="font-family:monospace;font-size:.76rem;margin-bottom:.5rem">' + esc(item.sku) + '</div>' +
+                        '<p class="muted" style="font-size:.82rem;margin:0 0 .8rem;line-height:1.4">' + esc(item.description || 'Tidak ada deskripsi.') + '</p>' +
+                    '</div>' +
+                    '<div style="border-top:1px solid rgba(255,255,255,.06);padding-top:.6rem;display:flex;justify-content:space-between;align-items:center">' +
+                        '<span class="muted" style="font-size:.75rem">' + esc(typeBadge) + '</span>' +
+                        '<strong style="color:var(--mainra-gold);font-size:1.02rem">' + esc(priceStr) + '</strong>' +
+                    '</div>' +
+                '</div>';
+            }).join('') +
+        '</div>';
+    }
+
+    async function syncSingleGameIap(gameId) {
+        var btn = $('#syncSingleIapBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Syncing IAP…';
+        }
+        toast('Syncing In-App Products with Play Console…');
+        var res = await sb.functions.invoke('sync-inappproducts', { body: gameId ? { appId: gameId } : {} });
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🔄 Sync IAP';
+        }
+        if (res.error) {
+            var errDetail = '';
+            if (res.error.context && typeof res.error.context.json === 'function') {
+                try {
+                    var errJson = await res.error.context.json();
+                    errDetail = errJson.message || '';
+                } catch (_) {}
+            }
+            toast('IAP sync failed: ' + (errDetail || res.error.message || res.error), true);
+            return;
+        }
+        toast(((res.data && res.data.message) || 'IAP synced') + ' ✓');
+        loadSingleGameIap(gameId);
+    }
+
+    /* ---------- android vitals & crash / anr monitoring ---------- */
+
+    async function loadSingleGameVitals(gameId) {
+        var box = $('#singleVitalsContent');
+        var badge = $('#singleVitalsBadge');
+        if (box) box.innerHTML = '<div class="muted">Memuat metrik stabilitas Android Vitals…</div>';
+
+        var res = await sb.from('game_vitals_metrics')
+            .select('*')
+            .eq('game_id', gameId)
+            .maybeSingle();
+
+        if (res.error) {
+            if (box) box.innerHTML = '<div class="muted" style="color:var(--mainra-danger)">Gagal memuat vitals: ' + esc(res.error.message) + '</div>';
+            return;
+        }
+
+        var vitals = res.data;
+        if (!vitals) {
+            if (badge) { badge.className = 'badge warn'; badge.textContent = 'Belum Ada Data'; }
+            if (box) {
+                box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem">' +
+                    '<span class="muted">Metrik Android Vitals belum disinkronkan dari Play Console untuk game ini.</span>' +
+                    '<button type="button" class="btn-admin ghost small" id="triggerVitalsFetchBtn">🩺 Sync Vitals Sekarang</button>' +
+                '</div>';
+                var triggerBtn = $('#triggerVitalsFetchBtn');
+                if (triggerBtn) triggerBtn.onclick = function () { syncSingleGameVitals(gameId); };
+            }
+            return;
+        }
+
+        var status = vitals.health_status || 'healthy';
+        var statusBadgeClass = status === 'healthy' ? 'ok' : (status === 'warning' ? 'warn' : 'danger');
+        var statusBadgeLabel = status === 'healthy' ? '✓ Healthy' : (status === 'warning' ? '⚠ Warning' : '🚨 Critical');
+
+        if (badge) {
+            badge.className = 'badge ' + statusBadgeClass;
+            badge.textContent = statusBadgeLabel;
+        }
+
+        var crashPct = vitals.crash_rate != null ? (vitals.crash_rate * 100).toFixed(2) + '%' : '0.00%';
+        var anrPct = vitals.anr_rate != null ? (vitals.anr_rate * 100).toFixed(2) + '%' : '0.00%';
+
+        var crashClass = vitals.crash_exceeded_threshold ? 'color:var(--mainra-danger, #f87171)' : (vitals.crash_near_threshold ? 'color:var(--mainra-gold)' : 'color:var(--mainra-success)');
+        var anrClass = vitals.anr_exceeded_threshold ? 'color:var(--mainra-danger, #f87171)' : (vitals.anr_near_threshold ? 'color:var(--mainra-gold)' : 'color:var(--mainra-success)');
+
+        var alertBox = '';
+        if (vitals.crash_exceeded_threshold || vitals.anr_exceeded_threshold) {
+            alertBox = '<div style="background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);border-radius:var(--radius-sm);padding:.8rem 1rem;margin-bottom:1rem;color:#fca5a5;font-size:.85rem;line-height:1.4">' +
+                '<strong>🚨 PERINGATAN AMBANG BATAS BURUK:</strong> ' + esc(vitals.health_message) +
+            '</div>';
+        } else if (vitals.crash_near_threshold || vitals.anr_near_threshold) {
+            alertBox = '<div style="background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);border-radius:var(--radius-sm);padding:.8rem 1rem;margin-bottom:1rem;color:#fde047;font-size:.85rem;line-height:1.4">' +
+                '<strong>⚠ PERINGATAN WASPADA:</strong> ' + esc(vitals.health_message) +
+            '</div>';
+        }
+
+        if (box) {
+            box.innerHTML = alertBox +
+                '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:1rem;margin-bottom:.8rem">' +
+                    '<div style="background:rgba(11,17,28,.65);border:1px solid var(--mainra-line);border-radius:var(--radius-sm);padding:.9rem">' +
+                        '<div class="muted" style="font-size:.78rem;margin-bottom:.3rem">User-Perceived Crash Rate</div>' +
+                        '<div style="font-size:1.4rem;font-weight:700;' + crashClass + '">' + esc(crashPct) + '</div>' +
+                        '<div class="muted" style="font-size:.75rem;margin-top:.3rem">Ambang Batas Play Store: <strong>1.09%</strong></div>' +
+                    '</div>' +
+                    '<div style="background:rgba(11,17,28,.65);border:1px solid var(--mainra-line);border-radius:var(--radius-sm);padding:.9rem">' +
+                        '<div class="muted" style="font-size:.78rem;margin-bottom:.3rem">User-Perceived ANR Rate</div>' +
+                        '<div style="font-size:1.4rem;font-weight:700;' + anrClass + '">' + esc(anrPct) + '</div>' +
+                        '<div class="muted" style="font-size:.75rem;margin-top:.3rem">Ambang Batas Play Store: <strong>0.47%</strong></div>' +
+                    '</div>' +
+                    '<div style="background:rgba(11,17,28,.65);border:1px solid var(--mainra-line);border-radius:var(--radius-sm);padding:.9rem">' +
+                        '<div class="muted" style="font-size:.78rem;margin-bottom:.3rem">Active Users Sampled</div>' +
+                        '<div style="font-size:1.4rem;font-weight:700;color:var(--mainra-white)">' + (vitals.distinct_users ? Number(vitals.distinct_users).toLocaleString() : '—') + '</div>' +
+                        '<div class="muted" style="font-size:.75rem;margin-top:.3rem">Status: ' + esc(status) + '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;font-size:.76rem" class="muted">' +
+                    '<span>Disinkronkan via Google Play Developer Reporting API</span>' +
+                    '<span>Update terakhir: ' + (vitals.synced_at ? new Date(vitals.synced_at).toLocaleString('id-ID') : '—') + '</span>' +
+                '</div>';
+        }
+    }
+
+    async function syncSingleGameVitals(gameId) {
+        var btn = $('#syncSingleVitalsBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = 'Syncing Vitals…';
+        }
+        toast('Syncing Android Vitals with Play Console…');
+        var res = await sb.functions.invoke('sync-vitals', { body: gameId ? { appId: gameId } : {} });
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '↻ Sync Vitals';
+        }
+        if (res.error) {
+            var errDetail = '';
+            if (res.error.context && typeof res.error.context.json === 'function') {
+                try {
+                    var errJson = await res.error.context.json();
+                    errDetail = errJson.message || '';
+                } catch (_) {}
+            }
+            toast('Vitals sync failed: ' + (errDetail || res.error.message || res.error), true);
+            return;
+        }
+        toast(((res.data && res.data.message) || 'Vitals synced') + ' ✓');
+        loadSingleGameVitals(gameId);
+    }
+
+    /* ---------- voided purchases & refund monitoring ---------- */
+
+    var voidedPurchases = [];
+
+    async function loadVoidedPurchases() {
+        var tbody = $('#voidedPurchasesTbody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center;padding:2rem">Memuat data voided purchases…</td></tr>';
+
+        var res = await sb.from('game_voided_purchases')
+            .select('*')
+            .order('voided_time_millis', { ascending: false })
+            .limit(100);
+
+        if (res.error) {
+            if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center;padding:2rem;color:var(--mainra-danger)">Gagal memuat: ' + esc(res.error.message) + '</td></tr>';
+            return;
+        }
+
+        voidedPurchases = res.data || [];
+        renderVoidedPurchases();
+    }
+
+    function renderVoidedPurchases() {
+        var tbody = $('#voidedPurchasesTbody');
+        var totalEl = $('#kpiTotalVoided');
+        var fraudEl = $('#kpiFraudCount');
+        var fraudRiskEl = $('#kpiFraudRisk');
+        var userEl = $('#kpiUserVoided');
+        var googleEl = $('#kpiGoogleVoided');
+        var badge = $('#voidedTableCount');
+
+        var total = voidedPurchases.length;
+        var fraudCount = 0;
+        var userCount = 0;
+        var googleCount = 0;
+
+        voidedPurchases.forEach(function (v) {
+            if (v.is_fraud_or_chargeback) fraudCount++;
+            if (v.voided_source === 0) userCount++;
+            if (v.voided_source === 2) googleCount++;
+        });
+
+        if (totalEl) totalEl.textContent = total;
+        if (fraudEl) fraudEl.textContent = fraudCount;
+        if (userEl) userEl.textContent = userCount;
+        if (googleEl) googleEl.textContent = googleCount;
+        if (badge) badge.textContent = total + ' Transaksi';
+
+        if (fraudRiskEl) {
+            if (fraudCount === 0) {
+                fraudRiskEl.textContent = 'Low Risk (Aman)';
+                fraudRiskEl.style.color = 'var(--mainra-success)';
+            } else if (fraudCount < 5) {
+                fraudRiskEl.textContent = 'Moderate (Perhatikan)';
+                fraudRiskEl.style.color = 'var(--mainra-gold)';
+            } else {
+                fraudRiskEl.textContent = 'High Risk (Waspada)';
+                fraudRiskEl.style.color = 'var(--mainra-danger, #f87171)';
+            }
+        }
+
+        if (!tbody) return;
+
+        if (!voidedPurchases.length) {
+            tbody.innerHTML = '<tr><td colspan="7" class="muted" style="text-align:center;padding:2rem">Tidak ada transaksi yang dibatalkan / refund dalam 30 hari terakhir. Studio Anda aman! ✨</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = voidedPurchases.map(function (v) {
+            var g = games.find(function (x) { return x.id === v.game_id || x.appId === v.game_id; });
+            var gTitle = g ? g.title.split(':')[0] : (v.game_id || 'Unknown Game');
+            var buyDate = v.purchase_time_millis ? new Date(v.purchase_time_millis).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+            var voidDate = v.voided_time_millis ? new Date(v.voided_time_millis).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+
+            var riskBadge = v.is_fraud_or_chargeback
+                ? '<span class="badge danger" style="font-size:.72rem">🚨 FRAUD / CHARGEBACK</span>'
+                : '<span class="badge ok" style="font-size:.72rem">Standard Refund</span>';
+
+            return '<tr>' +
+                '<td><strong style="font-family:monospace;font-size:.84rem">' + esc(v.order_id || '—') + '</strong></td>' +
+                '<td>' + esc(gTitle) + '</td>' +
+                '<td style="font-size:.82rem">' + esc(buyDate) + '</td>' +
+                '<td style="font-size:.82rem">' + esc(voidDate) + '</td>' +
+                '<td><span class="badge info" style="font-size:.72rem">' + esc(v.voided_source_label || 'User') + '</span></td>' +
+                '<td>' + esc(v.voided_reason_label || 'Other') + '</td>' +
+                '<td>' + riskBadge + '</td>' +
+            '</tr>';
+        }).join('');
     }
 
     async function loadTabReviews(gameId) {
@@ -1385,7 +1903,7 @@
     var TITLES = { games: 'Games & Analitik Review', social: 'Social Broadcast', inbox: 'Pesan Masuk (Inbox)', admins: 'Kelola Sistem & Admin' };
 
     function selectGamesSubtab(subtabName) {
-        var validSubtab = subtabName === 'analytics' ? 'analytics' : 'catalog';
+        var validSubtab = (subtabName === 'analytics' || subtabName === 'voided') ? subtabName : 'catalog';
         $$('.subtab-btn').forEach(function (btn) {
             var isActive = btn.dataset.subtab === validSubtab;
             btn.classList.toggle('active', isActive);
@@ -1397,6 +1915,8 @@
         try { localStorage.setItem('mainra-games-subtab', validSubtab); } catch (e) {}
         if (validSubtab === 'analytics') {
             renderAnalyticsTab();
+        } else if (validSubtab === 'voided') {
+            loadVoidedPurchases();
         }
     }
 
@@ -3055,6 +3575,7 @@
         on('#gmClose', 'click', function () { $('#gameModal').close(); });
         on('#gmCancel', 'click', function () { $('#gameModal').close(); });
         on('#gameForm', 'submit', saveGame);
+        on('#pushToPlayStoreBtn', 'click', pushGameListingToPlayStore);
         on('#refreshStoreBtn', 'click', function () { callFunction('sync-playstore'); });
         on('#hideFeaturedBtn', 'click', hideFeatured);
         on('#exportJsonBtn', 'click', exportJson);
@@ -3085,6 +3606,26 @@
         on('#rpSaveDraft', 'click', saveReplyDraft);
         on('#rpPostGoogle', 'click', postReplyToGoogle);
         on('#syncGamesBtn', 'click', function () { callFunction('sync-playstore'); });
+        on('#syncTracksBtn', 'click', function () { callFunction('sync-tracks'); });
+        on('#syncIapAllBtn', 'click', function () { callFunction('sync-inappproducts'); });
+        on('#syncVitalsAllBtn', 'click', function () { callFunction('sync-vitals'); });
+        on('#syncSingleIapBtn', 'click', function () {
+            var g = games.find(function (x) { return x.id === $('#analyticsGameFilter').value; });
+            if (g) syncSingleGameIap(g.id);
+        });
+        on('#syncSingleVitalsBtn', 'click', function () {
+            var g = games.find(function (x) { return x.id === $('#analyticsGameFilter').value; });
+            if (g) syncSingleGameVitals(g.id);
+        });
+        on('#syncVoidedBtn', 'click', function () {
+            callFunction('sync-voided-purchases');
+            setTimeout(loadVoidedPurchases, 2500);
+        });
+        on('#syncSingleTrackBtn', 'click', function () {
+            var btn = $('#syncSingleTrackBtn');
+            var gid = btn ? btn.dataset.gid : '';
+            if (gid) syncSingleGameTracks(gid);
+        });
 
         on('#newAdminBtn', 'click', openAddAdminModal);
         on('#inboxModalClose', 'click', function () { $('#inboxModal').close(); });

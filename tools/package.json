@@ -9,7 +9,12 @@
     "update-games:alternative": "node update-games-alternative.js",
     "sync-supabase": "node sync-supabase.js",
     "pull-supabase": "node pull-supabase.js",
-    "sync-reviews": "node sync-playstore-reviews.js"
+    "sync-reviews": "node sync-playstore-reviews.js",
+    "sync-tracks": "node sync-playstore-tracks.js",
+    "sync-voided-purchases": "node sync-playstore-voided-purchases.js",
+    "sync-inappproducts": "node sync-playstore-inappproducts.js",
+    "sync-listings": "node sync-playstore-listings.js",
+    "sync-vitals": "node sync-playstore-vitals.js"
   },
   "keywords": [
     "google-play-store",

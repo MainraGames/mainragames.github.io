@@ -85,6 +85,10 @@
                     <span class="subtab-icon">📊</span>
                     <span>Analitik &amp; Review</span>
                 </button>
+                <button type="button" class="subtab-btn" data-subtab="voided" role="tab" aria-selected="false">
+                    <span class="subtab-icon">🛡️</span>
+                    <span>Refund &amp; Pembatalan (IAP)</span>
+                </button>
             </div>
 
             <!-- Subtab 1: Games Catalog & Featured -->
@@ -116,7 +120,10 @@
                 <div class="admin-actions" style="margin-bottom:1rem; justify-content:space-between; align-items:center;">
                     <div style="display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;">
                         <button type="button" class="btn-admin" id="newGameBtn" aria-label="Tambah game baru ke katalog">+ Add Game</button>
-                        <button type="button" class="btn-admin ghost" id="syncGamesBtn" aria-label="Sinkronkan data katalog dari Google Play Store">↻ Sync from Play Store</button>
+                        <button type="button" class="btn-admin ghost" id="syncGamesBtn" aria-label="Sinkronkan data katalog dari Google Play Store">↻ Sync Catalog</button>
+                        <button type="button" class="btn-admin ghost" id="syncTracksBtn" aria-label="Sinkronkan status rilis & staged rollout dari Play Store tracks">🚀 Sync Releases</button>
+                        <button type="button" class="btn-admin ghost" id="syncIapAllBtn" aria-label="Sinkronkan katalog IAP dari Google Play">💎 Sync All IAP</button>
+                        <button type="button" class="btn-admin ghost" id="syncVitalsAllBtn" aria-label="Sinkronkan metrik Android Vitals dari Google Play">🩺 Sync Vitals</button>
                     </div>
                     <button type="button" class="btn-admin ghost" id="exportJsonBtn" aria-label="Ekspor data game ke format JSON">⤓ Export games-data.json</button>
                 </div>
@@ -124,7 +131,7 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
-                                <th>Icon</th><th>Title</th><th>Category</th><th>Status</th><th>Rating</th><th>Homepage Featured</th><th>Actions</th>
+                                <th>Icon</th><th>Title</th><th>Category</th><th>Status &amp; Rollout</th><th>Rating</th><th>Homepage Featured</th><th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="gamesTbody">
@@ -148,7 +155,10 @@
                 </div>
                 <input type="hidden" id="analyticsGameFilter" value="">
 
-                <button type="button" class="btn-admin ghost" id="syncAnalyticsBtn" style="white-space:nowrap; flex-shrink:0">↻ Sync from Play Store</button>
+                <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+                    <button type="button" class="btn-admin ghost" id="syncSingleTrackBtn" style="display:none;white-space:nowrap;flex-shrink:0">🚀 Sync Rollout</button>
+                    <button type="button" class="btn-admin ghost" id="syncAnalyticsBtn" style="white-space:nowrap; flex-shrink:0">↻ Sync from Play Store</button>
+                </div>
             </div>
 
             <!-- Overview Section (shown when no specific game selected) -->
@@ -328,6 +338,48 @@
                     </div>
                 </div>
 
+                <!-- Live Track Releases & Staged Rollout Card -->
+                <div class="card" id="singleTrackCard" style="margin-bottom:1.5rem;padding:1.4rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.6rem">
+                        <div style="display:flex;align-items:center;gap:.6rem">
+                            <h3 style="margin:0;font-size:1.05rem">🚀 Release &amp; Staged Rollout Status (Play Console)</h3>
+                            <span id="singleRolloutBadge" class="badge info">Checking tracks…</span>
+                        </div>
+                        <span id="singleTrackSyncedAt" class="muted small">--</span>
+                    </div>
+                    <div id="singleTrackContent">
+                        <div class="muted">No track details loaded yet.</div>
+                    </div>
+                </div>
+
+                <!-- In-App Products Showcase & Store Catalog Card -->
+                <div class="card" id="singleIapCard" style="margin-bottom:1.5rem;padding:1.4rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.6rem">
+                        <div style="display:flex;align-items:center;gap:.6rem">
+                            <h3 style="margin:0;font-size:1.05rem">💎 In-App Purchases &amp; Store Items</h3>
+                            <span id="singleIapBadge" class="badge ok">0 Items</span>
+                        </div>
+                        <button type="button" class="btn-admin ghost small" id="syncSingleIapBtn">🔄 Sync IAP</button>
+                    </div>
+                    <div id="singleIapContent">
+                        <div class="muted">Memuat katalog produk in-game…</div>
+                    </div>
+                </div>
+
+                <!-- Android Vitals & App Stability Card -->
+                <div class="card" id="singleVitalsCard" style="margin-bottom:1.5rem;padding:1.4rem;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.6rem">
+                        <div style="display:flex;align-items:center;gap:.6rem">
+                            <h3 style="margin:0;font-size:1.05rem">🩺 Android Vitals &amp; Crash / ANR Health</h3>
+                            <span id="singleVitalsBadge" class="badge ok">Healthy</span>
+                        </div>
+                        <button type="button" class="btn-admin ghost small" id="syncSingleVitalsBtn">↻ Sync Vitals</button>
+                    </div>
+                    <div id="singleVitalsContent">
+                        <div class="muted">Memuat metrik stabilitas aplikasi…</div>
+                    </div>
+                </div>
+
                 <div class="card" style="padding: 0; overflow: hidden;">
                     <div class="analytics-filter-toolbar" style="flex-direction:column; align-items:stretch; gap:.8rem;">
                         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.8rem;">
@@ -358,6 +410,86 @@
                     </div>
                 </div>
             </div>
+            </div>
+
+            <!-- Subtab 3: Voided Purchases & Refund Monitoring -->
+            <div id="subtab-voided" class="subtab-content">
+                <div class="admin-actions" style="margin-bottom:1.4rem; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap">
+                    <div>
+                        <h3 style="margin:0;font-size:1.1rem;display:flex;align-items:center;gap:.5rem">
+                            <span>🛡️</span>
+                            <span>Monitoring Refund, Pembatalan &amp; Fraud (Google Play)</span>
+                        </h3>
+                        <p class="muted" style="margin:.25rem 0 0;font-size:.82rem">
+                            Melacak transaksi in-app purchase yang dibatalkan, di-refund, atau terkena chargeback dalam 30 hari terakhir.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-admin ghost" id="syncVoidedBtn" style="white-space:nowrap;flex-shrink:0">
+                        🔄 Sync Voided Purchases
+                    </button>
+                </div>
+
+                <!-- KPI Cards for Voided Purchases -->
+                <div class="analytics-kpi-grid" style="margin-bottom:1.5rem">
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:var(--mainra-orange)">💸</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Total Voided / Refunded</div>
+                            <div id="kpiTotalVoided" class="kpi-val">0</div>
+                            <div class="kpi-sub">30 hari terakhir</div>
+                        </div>
+                    </div>
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:#f87171">🚨</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Fraud &amp; Chargebacks</div>
+                            <div id="kpiFraudCount" class="kpi-val">0</div>
+                            <div class="kpi-sub" id="kpiFraudRisk">Low Risk</div>
+                        </div>
+                    </div>
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:var(--mainra-gold)">👤</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">User-Initiated</div>
+                            <div id="kpiUserVoided" class="kpi-val">0</div>
+                            <div class="kpi-sub">Permintaan pemain</div>
+                        </div>
+                    </div>
+                    <div class="stat-box kpi-card">
+                        <div class="kpi-icon" style="color:#60a5fa">🤖</div>
+                        <div class="kpi-body">
+                            <div class="kpi-label">Google / System Voided</div>
+                            <div id="kpiGoogleVoided" class="kpi-val">0</div>
+                            <div class="kpi-sub">Deteksi otomatis Google</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table of Voided Purchases -->
+                <div class="card" style="padding:0; overflow:hidden;">
+                    <div style="padding:.9rem 1.4rem; border-bottom:1px solid var(--mainra-line); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.6rem;">
+                        <h4 style="margin:0;font-size:.98rem">Riwayat Transaksi Voided</h4>
+                        <span id="voidedTableCount" class="badge ok" style="font-size:.72rem">0 Transaksi</span>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Game</th>
+                                    <th>Waktu Beli</th>
+                                    <th>Waktu Dibatalkan / Refund</th>
+                                    <th>Inisiator</th>
+                                    <th>Alasan Pembatalan</th>
+                                    <th>Status Risiko</th>
+                                </tr>
+                            </thead>
+                            <tbody id="voidedPurchasesTbody">
+                                <tr><td colspan="7" class="muted" style="text-align:center;padding:2rem">Memuat data voided purchases…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -787,11 +919,17 @@
             <label class="span2">Play Store app id (used as game id)
                 <input type="text" name="id" placeholder="com.MainraGames.MyGame" required>
             </label>
-            <label class="span2">Title
-                <input type="text" name="title" required maxlength="120">
+            <label class="span2">Title (Google Play Title, max 30 chars)
+                <input type="text" name="title" required maxlength="30">
             </label>
-            <label class="span2">Description
-                <textarea name="description" rows="3" maxlength="3000"></textarea>
+            <label class="span2">Short Description (Promotional headline, max 80 chars)
+                <input type="text" name="short_description" maxlength="80" placeholder="Ringkasan fitur menarik game dalam 1 baris">
+            </label>
+            <label class="span2">Full Description (Detail fitur &amp; gameplay, max 4000 chars)
+                <textarea name="description" rows="4" maxlength="4000"></textarea>
+            </label>
+            <label class="span2">Promo Video URL (YouTube)
+                <input type="url" name="video_url" placeholder="https://www.youtube.com/watch?v=...">
             </label>
             <label>Category
                 <input type="text" name="category" placeholder="Casual">
@@ -834,9 +972,16 @@
                 </select>
             </label>
         </div>
-        <div class="form-foot">
-            <button type="button" class="btn-admin ghost" id="gmCancel">Cancel</button>
-            <button type="submit" class="btn-admin">Save game</button>
+        <div class="form-foot" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.6rem">
+            <div>
+                <button type="button" class="btn-admin ghost" id="pushToPlayStoreBtn" style="border-color:rgba(34,197,94,.4);color:#4ade80" title="Publish judul & deskripsi langsung ke Google Play Console">
+                    🚀 Push to Google Play Store
+                </button>
+            </div>
+            <div style="display:flex;gap:.5rem">
+                <button type="button" class="btn-admin ghost" id="gmCancel">Cancel</button>
+                <button type="submit" class="btn-admin">Save game</button>
+            </div>
         </div>
     </form>
 </dialog>

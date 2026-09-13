@@ -378,6 +378,12 @@ class GamesLoader {
             }
             const safeGameIcon = this.safeUrl(gameIcon, ['play-lh.googleusercontent.com']) || 'Assets/img/LogoMainraGames.png';
             
+            var verBadge = '';
+            if (game.active_version_name || game.active_version_code) {
+                var ver = game.active_version_name || ('v' + game.active_version_code);
+                verBadge = `<span class="game-version" style="font-size:.78rem;color:#94a3b8;background:rgba(255,255,255,.07);padding:.15rem .45rem;border-radius:4px">v${this.escapeHtml(ver.replace(/^v/i, ''))}</span>`;
+            }
+
             return `
             <div class="game-item">
                 <div class="game-image">
@@ -385,8 +391,9 @@ class GamesLoader {
                 </div>
                 <div class="game-content">
                     <h3 class="game-title">${this.escapeHtml(game.title)}</h3>
-                    <div class="game-meta">
+                    <div class="game-meta" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
                         <span class="game-platform">${this.escapeHtml(game.platform || 'Multi Platform')}</span>
+                        ${verBadge}
                         ${game.rating ? `<span class="game-rating">${'★'.repeat(Math.floor(game.rating))} ${game.rating}/5</span>` : ''}
                     </div>
                     <div class="game-actions">
@@ -394,13 +401,105 @@ class GamesLoader {
                             `<a href="${this.escapeHtml(playLink)}" target="_blank" rel="noopener noreferrer" class="btn btn-play">Play</a>` :
                             `<span class="btn" aria-disabled="true">Coming Soon</span>`
                         }
-                        <a href="#" class="btn btn-details">Details</a>
+                        <button type="button" class="btn btn-details" data-details-id="${this.escapeHtml(game.id)}">Details</button>
                     </div>
                 </div>
             </div>
             `;
         }).join('');
         this.bindImageFallbacks(gamesList);
+        this.bindGameDetailsModal(gamesList);
+    }
+
+    bindGameDetailsModal(container) {
+        container.querySelectorAll('[data-details-id]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const gameId = btn.dataset.detailsId;
+                const game = this.games.find(g => String(g.id) === String(gameId));
+                if (game) this.showGameModal(game);
+            });
+        });
+    }
+
+    async showGameModal(game) {
+        let modal = document.getElementById('publicGameModal');
+        if (!modal) {
+            modal = document.createElement('dialog');
+            modal.id = 'publicGameModal';
+            modal.style.cssText = 'background:#0f172a;color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:16px;max-width:640px;width:90%;padding:1.8rem;box-shadow:0 25px 50px -12px rgba(0,0,0,.7);';
+            document.body.appendChild(modal);
+        }
+
+        const safePlayLink = this.safeUrl(game.playLink, ['play.google.com']);
+        const versionBadge = game.active_version_name ? ` · v${this.escapeHtml(game.active_version_name)}` : '';
+
+        modal.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.2rem">
+                <div style="display:flex;gap:1rem;align-items:center">
+                    <img src="${this.escapeHtml(game.image || 'Assets/img/LogoMainraGames.png')}" alt="" style="width:60px;height:60px;border-radius:12px;object-fit:cover" onerror="this.src='Assets/img/LogoMainraGames.png'">
+                    <div>
+                        <h3 style="margin:0;font-size:1.25rem;color:#f8fafc">${this.escapeHtml(game.title)}</h3>
+                        <div style="font-size:.85rem;color:#94a3b8;margin-top:.2rem">${this.escapeHtml(game.category || 'Game')}${versionBadge}</div>
+                    </div>
+                </div>
+                <button type="button" id="closePublicModalBtn" style="background:transparent;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;padding:.2rem .5rem">✕</button>
+            </div>
+            <p style="color:#cbd5e1;font-size:.92rem;line-height:1.5;margin-bottom:1.4rem">${this.escapeHtml(game.description || '')}</p>
+            
+            <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:1.2rem;margin-bottom:1.5rem">
+                <h4 style="margin:0 0 .8rem;font-size:1rem;color:#f1f5f9;display:flex;align-items:center;gap:.45rem">
+                    <span>💎</span> <span>In-Game Store &amp; In-App Products</span>
+                </h4>
+                <div id="publicIapItemsList">
+                    <div style="font-size:.85rem;color:#94a3b8">Memuat produk in-app…</div>
+                </div>
+            </div>
+
+            <div style="display:flex;justify-content:flex-end;gap:.8rem">
+                <button type="button" id="closePublicModalFootBtn" style="background:rgba(255,255,255,.08);color:#fff;border:none;padding:.55rem 1.1rem;border-radius:8px;cursor:pointer">Tutup</button>
+                ${safePlayLink ? `<a href="${this.escapeHtml(safePlayLink)}" target="_blank" rel="noopener noreferrer" style="background:linear-gradient(135deg,#ff6b00,#e05300);color:#fff;text-decoration:none;font-weight:600;padding:.55rem 1.2rem;border-radius:8px;display:inline-flex;align-items:center;gap:.4rem">Main di Google Play ▶</a>` : ''}
+            </div>
+        `;
+
+        modal.showModal();
+
+        const closeModal = () => modal.close();
+        modal.querySelector('#closePublicModalBtn').onclick = closeModal;
+        modal.querySelector('#closePublicModalFootBtn').onclick = closeModal;
+        modal.onclick = (e) => { if (e.target === modal) modal.close(); };
+
+        // Fetch In-App Products for this game from Supabase
+        const iapListContainer = modal.querySelector('#publicIapItemsList');
+        try {
+            if (window.supabaseClient) {
+                const { data: iaps, error } = await window.supabaseClient
+                    .from('game_inapp_products')
+                    .select('title,description,formatted_price,currency,price_micros,purchase_type')
+                    .eq('game_id', game.id)
+                    .eq('status', 'active');
+
+                if (!error && Array.isArray(iaps) && iaps.length > 0) {
+                    iapListContainer.innerHTML = `
+                        <div style="display:grid;grid-template-columns:1fr;gap:.6rem;max-height:220px;overflow-y:auto;padding-right:.3rem">
+                            ${iaps.map(item => `
+                                <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:.7rem .9rem;display:flex;justify-content:space-between;align-items:center;gap:.8rem">
+                                    <div>
+                                        <strong style="color:#f8fafc;font-size:.9rem">${this.escapeHtml(item.title)}</strong>
+                                        <div style="font-size:.78rem;color:#94a3b8;margin-top:.15rem">${this.escapeHtml(item.description || (item.purchase_type === 'managedUser' ? 'Item dalam game' : 'Langganan berkala'))}</div>
+                                    </div>
+                                    <span style="color:#f59e0b;font-weight:700;font-size:.95rem;white-space:nowrap">${this.escapeHtml(item.formatted_price || 'Tersedia')}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    return;
+                }
+            }
+            iapListContainer.innerHTML = '<div style="font-size:.84rem;color:#94a3b8;font-style:italic">Tidak ada item In-App Purchase khusus atau game ini 100% gratis dimainkan! 🎮</div>';
+        } catch (_) {
+            iapListContainer.innerHTML = '<div style="font-size:.84rem;color:#94a3b8">Game gratis dimainkan langsung di Google Play.</div>';
+        }
     }
 
     formatDate(dateStr) {

@@ -21,11 +21,20 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
 - `Assets/js/nav.js` — Kontrol navigasi dan menu mobile.
 - `Assets/css/mainra.css` — Gaya visual website.
 - `Assets/img/` — Folder berisi gambar dan ikon website.
-- `supabase/` — Migration SQL, seed, dan Edge Functions (`sync-playstore`, `sync-reviews`, `process-review-queue`, `sync-buffer`, `ai-social-assistant`, `manage-admins`).
-- `supabase/migrations/0010_contact_messages.sql` — Tabel pesan masuk formulir kontak dengan Row Level Security (RLS).
+- `supabase/` — Migration SQL, seed, dan Edge Functions (`sync-playstore`, `sync-reviews`, `sync-tracks`, `sync-voided-purchases`, `sync-inappproducts`, `sync-store-listings`, `sync-vitals`, `process-review-queue`, `sync-buffer`, `ai-social-assistant`, `manage-admins`).
+- `supabase/migrations/0018_game_tracks_and_releases.sql` — Kolom metadata track, staged rollout status, version, dan changelog/release notes resmi dari Play Console.
+- `supabase/migrations/0019_game_voided_purchases.sql` — Tabel transaksi dibatalkan, di-refund, dan chargeback/fraud (IAP).
+- `supabase/migrations/0020_game_inapp_products.sql` — Tabel katalog In-App Products (IAP), SKU, harga lokal, deskripsi, dan etalase toko.
+- `supabase/migrations/0021_game_store_listings.sql` — Tabel multi-language store listings (title, short description, full description, video promo).
+- `supabase/migrations/0022_game_vitals_metrics.sql` — Tabel metrik stabilitas Android Vitals (Crash Rate, ANR Rate, Bad Behavior Thresholds).
 - `tools/sync-supabase.js` — Mirror JSON → Supabase (insert-only, aman untuk edit admin).
 - `tools/pull-supabase.js` — Bangun ulang `games-data.json` dari Supabase.
 - `tools/sync-playstore-reviews.js` — Tarik review Play Store & posting balasan admin (butuh Play Developer API).
+- `tools/sync-playstore-tracks.js` — Tarik track rilis, status staged rollout, dan changelog resmi via Play Developer API (`edits.tracks`).
+- `tools/sync-playstore-voided-purchases.js` — Tarik riwayat voided purchases, deteksi refund abuse, dan fraud/chargeback via Play Developer API (`purchases.voidedpurchases`).
+- `tools/sync-playstore-inappproducts.js` — Tarik katalog SKU produk in-game, harga IDR/USD, dan status IAP via Play Developer API (`inappproducts`).
+- `tools/sync-playstore-listings.js` — Sinkronisasi 2 arah deskripsi toko dan metadata multibahasa via Play Developer API (`edits.listings`).
+- `tools/sync-playstore-vitals.js` — Tarik metrik stabilitas teknis crash rate & ANR rate via Google Play Developer Reporting API (`vitals.crashrate`, `vitals.anrrate`).
 - `app-ads.txt` — Daftar authorized seller untuk inventory aplikasi di Google AdMob.
 - `sellers.json` — Referensi seller lokal dengan publisher ID AdMob.
 
@@ -46,7 +55,7 @@ Website Mainra Games menampilkan koleksi game dari Mainra Team. Website ini stat
    - `SUPABASE_URL` = `https://mjuzjvyatunjmgaiqtdv.supabase.co`
    - `SUPABASE_SECRET_KEY` = service role key (`sb_secret_…` / legacy `service_role`) — **jangan pernah** ditulis ke file repo.
    - `GOOGLE_SERVICE_ACCOUNT_JSON` (opsional, untuk auto-post reply): JSON service account dari Google Cloud yang di-invite di Play Console dengan permission "Reply to reviews" lalu: `supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON=...` untuk Edge Function juga.
-3. Deploy ulang Edge Functions bila diubah: `supabase functions deploy sync-playstore --no-verify-jwt && supabase functions deploy sync-reviews --no-verify-jwt && supabase functions deploy process-review-queue --no-verify-jwt`.
+3. Deploy ulang Edge Functions bila diubah: `supabase functions deploy sync-playstore --no-verify-jwt && supabase functions deploy sync-reviews --no-verify-jwt && supabase functions deploy sync-tracks --no-verify-jwt && supabase functions deploy sync-voided-purchases --no-verify-jwt && supabase functions deploy sync-inappproducts --no-verify-jwt && supabase functions deploy sync-store-listings --no-verify-jwt && supabase functions deploy sync-vitals --no-verify-jwt && supabase functions deploy process-review-queue --no-verify-jwt`.
 4. Dashboard: buka `https://mainragames.github.io/mrmainra/` (atau `https://mainragames.com/mrmainra/` setelah deploy) dan login.
 
 ## AdMob sellers.json dan app-ads.txt
