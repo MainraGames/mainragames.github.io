@@ -2989,8 +2989,8 @@
                     return;
                 }
 
-                var apiKey = keyInput ? keyInput.value.trim() : '';
-                var model = modelSelect ? modelSelect.value : 'gemini-3.8-flash';
+                var modelSelect = $('#geminiGlobalModelSelect');
+                var model = modelSelect && modelSelect.value ? modelSelect.value : 'gemini-2.5-flash';
 
                 autoFitBtn.disabled = true;
                 autoFitBtn.innerHTML = '<span>⏳ Memadatkan teks…</span>';
@@ -2998,7 +2998,6 @@
                 var res = await sb.functions.invoke('ai-social-assistant', {
                     body: {
                         action: "adapt_limits",
-                        client_gemini_key: apiKey,
                         model: model,
                         text: currentTxt,
                         targetLimit: targetLimit,
@@ -3036,6 +3035,7 @@
                     }
                     contentInput.value = cleanedCap.trim();
                     wireLivePreview();
+                    updateSocialLimitIndicators(contentInput.value.length);
                     toast('Caption dipadatkan menjadi ' + contentInput.value.length + ' karakter untuk ' + targetPlatform + '! ✓');
                 }
             };
