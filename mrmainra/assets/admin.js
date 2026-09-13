@@ -267,9 +267,12 @@
         var form = $('#gameForm');
         form.reset();
         var g = id ? games.find(function (x) { return x.id === id; }) : null;
-        $('#gmTitle').textContent = g ? 'Edit Game — ' + g.title : 'Add Game';
+        $('#gmTitle').textContent = g ? 'Edit Game — ' + g.title : 'Tambah Game Baru';
         var pushBtn = $('#pushToPlayStoreBtn');
         if (pushBtn) pushBtn.style.display = g ? 'inline-block' : 'none';
+
+        var idHint = $('#gmIdHint');
+        if (idHint) idHint.textContent = g ? 'Terkunci (ID database resmi)' : 'Masukkan package name unik Play Store';
 
         if (g) {
             form.elements.id.value = g.id; form.elements.id.readOnly = true;
@@ -280,7 +283,7 @@
             form.elements.image.value = g.image || '';
             form.elements.screenshots.value = (g.screenshots || []).join('\n');
             form.elements.playLink.value = g.playLink || '';
-            form.elements.category.value = g.category || '';
+            form.elements.category.value = g.category || 'Kasual';
             form.elements.status.value = g.status || 'Released';
             form.elements.platform.value = g.platform || 'Android';
             form.elements.releaseDate.value = (g.releaseDate || '').slice(0, 10);
@@ -289,7 +292,70 @@
         } else {
             form.elements.id.readOnly = false;
         }
+
+        updateLiveFormPreviews();
         $('#gameModal').showModal();
+    }
+
+    function updateLiveFormPreviews() {
+        var form = $('#gameForm');
+        if (!form) return;
+
+        // 1. Character counters
+        var tVal = (form.elements.title && form.elements.title.value) || '';
+        var sVal = (form.elements.short_description && form.elements.short_description.value) || '';
+        var dVal = (form.elements.description && form.elements.description.value) || '';
+
+        var tc = $('#gmTitleCounter');
+        if (tc) {
+            tc.textContent = tVal.length + ' / 30';
+            tc.className = 'field-counter' + (tVal.length > 30 ? ' error' : (tVal.length >= 26 ? ' warn' : ''));
+        }
+
+        var sc = $('#gmShortCounter');
+        if (sc) {
+            sc.textContent = sVal.length + ' / 80';
+            sc.className = 'field-counter' + (sVal.length > 80 ? ' error' : (sVal.length >= 70 ? ' warn' : ''));
+        }
+
+        var dc = $('#gmDescCounter');
+        if (dc) {
+            dc.textContent = dVal.length + ' / 4000';
+            dc.className = 'field-counter' + (dVal.length > 4000 ? ' error' : (dVal.length >= 3800 ? ' warn' : ''));
+        }
+
+        // 2. Icon live preview
+        var iconUrl = (form.elements.image && form.elements.image.value) || '';
+        var iconBox = $('#gmIconPreviewBox');
+        var iconImg = $('#gmIconPreview');
+        if (iconBox && iconImg) {
+            if (iconUrl.trim()) {
+                iconBox.style.display = 'flex';
+                iconImg.src = icon256(iconUrl.trim());
+                iconImg.onerror = function () { iconImg.src = '../Assets/img/LogoMainraGames.png'; };
+            } else {
+                iconBox.style.display = 'none';
+            }
+        }
+
+        // 3. Screenshots gallery live preview
+        var shotsRaw = (form.elements.screenshots && form.elements.screenshots.value) || '';
+        var shotUrls = shotsRaw.split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
+        var shotsCounter = $('#gmShotsCounter');
+        var gallery = $('#gmShotsGallery');
+
+        if (shotsCounter) shotsCounter.textContent = shotUrls.length + ' Screenshot(s)';
+        if (gallery) {
+            if (shotUrls.length > 0) {
+                gallery.style.display = 'flex';
+                gallery.innerHTML = shotUrls.map(function (url) {
+                    return '<img src="' + esc(url) + '" alt="Shot Preview" loading="lazy" onerror="this.style.display=\'none\'">';
+                }).join('');
+            } else {
+                gallery.style.display = 'none';
+                gallery.innerHTML = '';
+            }
+        }
     }
 
     async function pushGameListingToPlayStore() {
@@ -3604,6 +3670,19 @@
         on('#gmCancel', 'click', function () { $('#gameModal').close(); });
         on('#gameForm', 'submit', saveGame);
         on('#pushToPlayStoreBtn', 'click', pushGameListingToPlayStore);
+
+        // Live input listeners for character counts & previews in Game Modal
+        var gmTitleInp = $('#gmTitleInput');
+        if (gmTitleInp) gmTitleInp.addEventListener('input', updateLiveFormPreviews);
+        var gmShortInp = $('#gmShortInput');
+        if (gmShortInp) gmShortInp.addEventListener('input', updateLiveFormPreviews);
+        var gmDescInp = $('#gmDescInput');
+        if (gmDescInp) gmDescInp.addEventListener('input', updateLiveFormPreviews);
+        var gmIconInp = $('#gmIconInput');
+        if (gmIconInp) gmIconInp.addEventListener('input', updateLiveFormPreviews);
+        var gmShotsInp = $('#gmShotsInput');
+        if (gmShotsInp) gmShotsInp.addEventListener('input', updateLiveFormPreviews);
+
         on('#refreshStoreBtn', 'click', function () { callFunction('sync-playstore'); });
         on('#hideFeaturedBtn', 'click', hideFeatured);
         on('#exportJsonBtn', 'click', exportJson);

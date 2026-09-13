@@ -986,6 +986,122 @@ table.admin-table { width: 100%; border-collapse: collapse; font-size: .88rem; }
     align-items: center;
 }
 
+#gameModal {
+    width: min(840px, calc(100vw - 2rem));
+    padding: 0;
+    border-radius: var(--radius-lg);
+    display: flex;
+    flex-direction: column;
+}
+
+#gameModal form {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(90vh);
+    max-height: calc(90dvh);
+}
+
+#gameModal .modal-head {
+    padding: 1.2rem 1.6rem;
+    margin: 0;
+    border-bottom: 1px solid var(--mainra-line);
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+#gameModal .modal-body-scroll {
+    padding: 1.5rem 1.6rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+#gameModal .form-foot {
+    padding: 1rem 1.6rem;
+    margin: 0;
+    border-top: 1px solid var(--mainra-line);
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+
+.modal-section-title {
+    font-size: .88rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--mainra-gold);
+    margin: 1.4rem 0 .8rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.modal-section-title:first-child {
+    margin-top: 0;
+}
+
+.field-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: .35rem;
+}
+
+.field-counter {
+    font-size: .75rem;
+    font-family: monospace;
+    color: var(--mainra-muted);
+}
+
+.field-counter.warn {
+    color: var(--mainra-gold);
+}
+
+.field-counter.error {
+    color: #f87171;
+    font-weight: 600;
+}
+
+.img-preview-box {
+    display: flex;
+    align-items: center;
+    gap: .8rem;
+    margin-top: .45rem;
+    padding: .5rem .8rem;
+    background: rgba(0,0,0,.25);
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: var(--radius-sm);
+}
+
+.img-preview-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,.1);
+}
+
+.screenshots-gallery-preview {
+    display: flex;
+    gap: .5rem;
+    overflow-x: auto;
+    padding: .6rem 0 .3rem;
+    margin-top: .4rem;
+}
+
+.screenshots-gallery-preview img {
+    height: 80px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,.12);
+    object-fit: cover;
+}
+
 /* ---------- toast ---------- */
 .toast {
     display: none;
