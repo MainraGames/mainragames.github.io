@@ -3341,33 +3341,98 @@
         }
     }
 
-    function shareTextToWhatsApp(title, text, link) {
+    async function fetchImageAsBlob(url) {
+        try {
+            var res = await fetch(url, { mode: 'cors' });
+            if (!res.ok) return null;
+            var blob = await res.blob();
+            var mime = blob.type || 'image/png';
+            var ext = mime.indexOf('jpeg') !== -1 || mime.indexOf('jpg') !== -1 ? 'jpg' : (mime.indexOf('webp') !== -1 ? 'webp' : 'png');
+            return new File([blob], 'mainra-broadcast.' + ext, { type: mime });
+        } catch (e) {
+            console.warn('Cannot fetch image blob for sharing:', e);
+            return null;
+        }
+    }
+
+    async function copyImageBlobToClipboard(file) {
+        if (!navigator.clipboard || typeof ClipboardItem === 'undefined') return false;
+        try {
+            // Clipboard API prefers PNG or JPEG
+            var item = new ClipboardItem({ [file.type]: file });
+            await navigator.clipboard.write([item]);
+            return true;
+        } catch (e) {
+            console.warn('Clipboard image copy failed:', e);
+            return false;
+        }
+    }
+
+    async function sharePostToWhatsApp(title, text, link, imageUrl) {
         var parts = [];
         if (title) parts.push('*' + title.trim() + '*');
         if (text) parts.push(text.trim());
         if (link) parts.push('🔗 ' + link.trim());
 
         var message = parts.join('\n\n');
-        if (!message) {
-            toast('Tidak ada teks untuk dibagikan ke WhatsApp.', true);
+        if (!message && !imageUrl) {
+            toast('Tidak ada konten untuk dibagikan ke WhatsApp.', true);
             return;
         }
 
+        var imageFile = null;
+        if (imageUrl) {
+            toast('Menyiapkan gambar untuk dibagikan…');
+            imageFile = await fetchImageAsBlob(imageUrl);
+        }
+
+        // 1. Try Native Web Share API (Mobile Android/iOS & supported desktop)
+        if (imageFile && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
+            try {
+                await navigator.share({
+                    title: title || 'Mainra Games',
+                    text: message,
+                    files: [imageFile]
+                });
+                toast('✓ Berhasil dibagikan ke WhatsApp beserta gambar!');
+                return;
+            } catch (err) {
+                // User cancelled or share aborted
+                if (err.name === 'AbortError') {
+                    return;
+                }
+                console.warn('Web Share API error, falling back to direct link:', err);
+            }
+        }
+
+        // 2. Fallback for Desktop / browsers without file share capability:
+        // Copy image to clipboard so user can instantly Ctrl+V in WhatsApp chat
+        if (imageFile) {
+            var copied = await copyImageBlobToClipboard(imageFile);
+            if (copied) {
+                toast('📋 Gambar disalin ke Clipboard! Tekan Ctrl+V di chat WhatsApp.');
+            }
+        }
+
+        // 3. Open WhatsApp with formatted text
         var waUrl = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(message);
         window.open(waUrl, '_blank', 'noopener,noreferrer');
-        toast('Membuka WhatsApp…');
+        if (!imageFile) {
+            toast('Membuka WhatsApp…');
+        }
     }
 
     function shareCurrentBroadcastToWhatsApp() {
         var title = ($('#postTitle') && $('#postTitle').value) || '';
         var content = ($('#postContent') && $('#postContent').value) || '';
         var link = ($('#postLink') && $('#postLink').value) || '';
+        var imageUrl = ($('#postImage') && $('#postImage').value) || '';
 
         if (!title && !content) {
             toast('Silakan tulis judul atau teks broadcast terlebih dahulu.', true);
             return;
         }
-        shareTextToWhatsApp(title, content, link);
+        sharePostToWhatsApp(title, content, link, imageUrl);
     }
 
     async function handleSocialBroadcastSubmit(e) {
@@ -3932,7 +3997,7 @@
             var id = btn.getAttribute('data-share-history-wa');
             var item = broadcastsList.find(function (b) { return String(b.id) === id; });
             if (item) {
-                shareTextToWhatsApp(item.title, item.content, item.target_link);
+                sharePostToWhatsApp(item.title, item.content, item.target_link, item.image_url);
             }
         });
         var postContentInput = $('#postContent');
