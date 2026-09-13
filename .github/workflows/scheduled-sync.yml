@@ -11,12 +11,41 @@ permissions:
 
 concurrency:
   group: sync-playstore-cms
-  cancel-in-progress: true
+  # The job writes to Supabase and pushes a commit: cancelling it mid-run can
+  # leave the CMS half-synced, so a newer run must wait its turn.
+  cancel-in-progress: false
 
 jobs:
-  sync:
+  test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tools/package-lock.json
+
+      - name: Install dependencies
+        working-directory: tools
+        env:
+          # The test suite never launches a browser, so skip the ~170 MB Chrome download.
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: npm ci
+
+      - name: Run tools test suite
+        working-directory: tools
+        run: npm test
+
+  sync:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -108,6 +137,7 @@ jobs:
           if [ -n "$(git status --porcelain Assets/data/games-data.json)" ]; then
             git add Assets/data/games-data.json
             git commit -m "chore(sync): auto-sync games & reviews from Play Store [skip ci]"
+            git pull --rebase --autostash origin main
             git push origin main
             echo "Changes committed and pushed."
           else
