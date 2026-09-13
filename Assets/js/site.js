@@ -205,6 +205,20 @@
             const email = (form.elements['email']?.value || '').trim();
             const subject = (form.elements['subject']?.value || '').trim();
             const message = (form.elements['message']?.value || '').trim();
+            const honeypot = (form.elements['website_hp']?.value || '').trim();
+
+            // Anti-bot Trap: If honeypot is filled, simulate success silently without saving
+            if (honeypot) {
+                form.reset();
+                if (status) {
+                    status.style.display = 'block';
+                    status.style.background = 'rgba(127, 209, 161, 0.15)';
+                    status.style.border = '1px solid rgba(127, 209, 161, 0.5)';
+                    status.style.color = 'var(--mainra-success)';
+                    status.textContent = 'Terima kasih! Pesan Anda telah berhasil terkirim ke tim Mainra Games. ✓';
+                }
+                return;
+            }
 
             if (!name || !email || !message) {
                 if (status) {

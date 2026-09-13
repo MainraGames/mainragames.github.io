@@ -105,6 +105,19 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Optional App Signature / Secret verification to protect Google Play quota from abuse
+    const configuredSecret = (Deno.env.get("IAP_VERIFY_SECRET") || "").trim();
+    if (configuredSecret) {
+      const clientSecret = req.headers.get("x-app-signature") || body.appSignature;
+      if (clientSecret !== configuredSecret) {
+        return json(401, {
+          success: false,
+          error: true,
+          message: "Unauthorized: Invalid or missing x-app-signature header."
+        });
+      }
+    }
+
     const sa = JSON.parse(saRaw);
     const token = await accessToken(sa);
 

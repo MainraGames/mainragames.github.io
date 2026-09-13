@@ -290,6 +290,11 @@
                         <label for="contact-name" class="sr-only">Your Name</label>
                         <input id="contact-name" type="text" name="name" placeholder="Your Name" required maxlength="100">
                     </div>
+                    <!-- Anti-spam invisible honeypot field (hidden from real human users, traps bots) -->
+                    <div style="position:absolute; left:-9999px; top:-9999px; opacity:0; height:0; width:0; pointer-events:none; z-index:-1;" aria-hidden="true">
+                        <label for="contact-website-hp">Website (leave blank)</label>
+                        <input id="contact-website-hp" type="text" name="website_hp" tabindex="-1" autocomplete="off">
+                    </div>
                     <div class="form-group">
                         <label for="contact-email" class="sr-only">Your Email</label>
                         <input id="contact-email" type="email" name="email" placeholder="Your Email" required maxlength="120">
